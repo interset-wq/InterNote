@@ -1,0 +1,38 @@
+{# Site footer component - expects: site, icons, i18n #}
+<div class="in-footer-icons" id="footer-icons">
+  <a class="in-nav-btn" href="{{ site.home_url }}/rss.xml" title="RSS" target="_blank" aria-label="RSS Feed">
+    <svg class="octicon" width="16" height="16"><path id="icon-rss" fill-rule="evenodd"></path></svg>
+  </a>
+  <a class="in-nav-btn" href="{{ site.blog_repo_url }}" title="GitHub" target="_blank" aria-label="GitHub Repository">
+    <svg class="octicon" width="16" height="16"><path id="icon-github" fill-rule="evenodd"></path></svg>
+  </a>
+</div>
+<div class="in-footer-line" id="footer-copyright">
+  Copyright &copy; <span id="copyright-year"></span>
+  <a href="{{ site.home_url }}">{{ site.title }}</a>
+</div>
+<div class="in-footer-powered" id="footer-powered">
+  {% if site.filing_num %}
+  <span id="filing-num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ site.filing_num }}</a></span>
+  {% endif %}
+  <span id="run-days"></span>
+  <span>Powered by <a href="https://github.com/interset-wq/InterNote">Internote</a></span>
+  {% if site.visit_counter == 'vercount' %}
+  <script src="{{ site.home_url }}/plugins/vercount.js"></script>
+  {% elif site.visit_counter == 'busuanzi' %}
+  <script src="{{ site.home_url }}/plugins/busuanzi.js"></script>
+  {% endif %}
+</div>
+<script>
+  (function() {
+    var now = new Date();
+    document.getElementById('copyright-year').textContent = now.getFullYear();
+    document.getElementById('icon-rss').setAttribute('d', window.icons.rss);
+    document.getElementById('icon-github').setAttribute('d', window.icons.github);
+    {% if site.start_site %}
+    var startSite = new Date('{{ site.start_site }}');
+    var diffDay = Math.floor((now.getTime() - startSite.getTime()) / (1000 * 60 * 60 * 24));
+    document.getElementById('run-days').textContent = '{{ i18n.run }}' + diffDay + '{{ i18n.days }}' + ' \u2022 ';
+    {% endif %}
+  })();
+</script>

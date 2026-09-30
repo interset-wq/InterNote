@@ -1,0 +1,134 @@
+{% extends 'base.j2.html' %}
+
+{% block head %}
+  {% set meta_title = site.title %}
+  {% set meta_description = site.sub_title %}
+  {% set meta_type = 'blog' %}
+  {% set meta_url = site.home_url %}
+  {% include 'components/head-meta.j2.html' %}
+{% endblock %}
+
+{% block style %}
+  <style>
+    .in-site-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; transition: transform 0.8s ease; flex-shrink: 0; }
+    .in-site-avatar:hover { transform: scale(1.15) rotate(360deg); }
+    .in-site-title { font-size: 28px; font-weight: 700; color: inherit; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .in-site-nav .in-nav-btn { padding: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    .in-site-nav .in-nav-btn:hover { background-color: var(--in-color-subtle); }
+
+    .in-post-list { border: 1px solid var(--in-color-border); border-radius: 6px; overflow: hidden; }
+    .in-post-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--in-color-border); text-decoration: none; color: inherit; transition: background-color 0.15s; gap: 12px; }
+    .in-post-list-item:last-child { border-bottom: none; }
+    .in-post-list-item:hover { background-color: var(--in-color-subtle); }
+    .in-post-list-title { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .in-post-list-title span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .in-post-list-badges { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+    .in-pagination { margin-top: 24px; display: flex; justify-content: center; gap: 8px; }
+    .in-pagination a, .in-pagination span { padding: 8px 16px; border: 1px solid var(--in-color-border); border-radius: 6px; text-decoration: none; color: var(--in-color-accent); font-size: 14px; }
+    .in-pagination a:hover { background-color: var(--in-color-subtle); }
+    .in-pagination .in-disabled { color: var(--in-color-muted); cursor: not-allowed; }
+
+    @media (max-width: 600px) {
+      .in-site-avatar { width: 40px; height: 40px; }
+      .in-site-title { display: none; }
+      .in-post-list-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .in-post-list-badges { flex-wrap: wrap; }
+    }
+  </style>
+  {{ site.index_style }}
+{% endblock %}
+
+{% block header %}
+  <div class="in-site-branding">
+    <img src="{{ site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
+    <a class="in-site-title" href="{{ site.home_url }}">{{ site.display_title }}</a>
+  </div>
+  <nav class="in-site-nav" aria-label="Site navigation">
+    <a class="in-nav-btn" href="{{ site.home_url }}/tag.html" title="{{ i18n.Search }}" aria-label="Search">
+      <svg class="octicon" width="16" height="16"><path id="icon-search" fill-rule="evenodd"></path></svg>
+    </a>
+    {% for name, url in site.exlink.items() %}
+    <a class="in-nav-btn" href="{{ url }}" title="{{ name }}" target="_blank" aria-label="{{ name }}">
+      <svg class="octicon" width="16" height="16"><path id="icon-{{ name }}" fill-rule="evenodd"></path></svg>
+    </a>
+    {% endfor %}
+    {% for key, item in site.single_list.items() %}
+    <a class="in-nav-btn" href="{{ site.home_url }}/{{ item.labels[0] }}.html" title="{{ item.title }}" aria-label="{{ item.title }}">
+      <svg class="octicon" width="16" height="16"><path id="icon-{{ item.title }}" fill-rule="evenodd"></path></svg>
+    </a>
+    {% endfor %}
+    <button class="in-nav-btn" type="button" onclick="modeSwitch()" title="{{ i18n.switchTheme }}" aria-label="Switch theme" {% if site.theme_mode == 'fix' %}style="display:none;"{% endif %}>
+      <svg class="octicon" width="16" height="16"><path id="themeSwitch" fill-rule="evenodd"></path></svg>
+    </button>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  {% if site.sub_title %}
+  <p class="in-site-subtitle">{{ site.sub_title }}</p>
+  {% endif %}
+  <nav class="in-post-list" aria-label="Post list">
+    {% for key, item in posts.items() %}
+    <a class="in-post-list-item" href="{{ item.url }}">
+      <div class="in-post-list-title">
+        <svg class="octicon" width="16" height="16" style="flex-shrink:0;color:var(--in-color-muted)">
+          <path class="in-post-icon-{{ item.top }}" fill-rule="evenodd"></path>
+        </svg>
+        <span>{{ item.title }}</span>
+      </div>
+      <div class="in-post-list-badges">
+        {% if item.comment_num > 0 %}
+        <span class="in-badge" style="background-color:{{ site.comment_label_color }}">{{ item.comment_num }}</span>
+        {% endif %}
+        {% for label in item.labels %}
+        <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">
+          <a href="{{ site.home_url }}/tag.html#{{ label }}">{{ label }}</a>
+        </span>
+        {% endfor %}
+        <span class="in-badge" style="background-color:{{ item.date_label_color }}">{{ item.created_date }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </nav>
+  {% if site.prev_url != 'disabled' or site.next_url != 'disabled' %}
+  <nav class="in-pagination" aria-label="Pagination">
+    {% if site.prev_url == 'disabled' %}
+    <span class="in-disabled" aria-disabled="true">{{ i18n.Previous }}</span>
+    {% else %}
+    <a rel="previous" href="{{ site.home_url }}{{ site.prev_url }}" aria-label="Previous Page">{{ i18n.Previous }}</a>
+    {% endif %}
+    {% if site.next_url == 'disabled' %}
+    <span class="in-disabled" aria-disabled="true">{{ i18n.Next }}</span>
+    {% else %}
+    <a rel="next" href="{{ site.home_url }}{{ site.next_url }}" aria-label="Next Page">{{ i18n.Next }}</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% endblock %}
+
+{% block script %}
+  <script>
+    (function() {
+      document.getElementById('icon-search').setAttribute('d', window.icons.search);
+      var iconTop = document.getElementsByClassName('in-post-icon-1');
+      var iconPost = document.getElementsByClassName('in-post-icon-0');
+      for (var i = 0; i < iconTop.length; i++) {
+        iconTop[i].setAttribute('d', window.icons.upload);
+        iconTop[i].parentNode.style.color = 'red';
+      }
+      for (var i = 0; i < iconPost.length; i++) {
+        iconPost[i].setAttribute('d', window.icons.post);
+      }
+      {% for name, url in site.exlink.items() %}
+      var el = document.getElementById('icon-{{ name }}');
+      if (el) el.setAttribute('d', window.icons['{{ name }}']);
+      {% endfor %}
+      {% for key, item in site.single_list.items() %}
+      var el = document.getElementById('icon-{{ item.title }}');
+      if (el) el.setAttribute('d', window.icons['{{ item.labels[0] }}']);
+      {% endfor %}
+    })();
+  </script>
+  {{ site.index_script }}
+{% endblock %}

@@ -1,46 +1,55 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <style>
-      body {
-        box-sizing: border-box;
-        min-width: 200px;
-        max-width: 900px;
-        margin: 20px auto;
-        padding: 45px;
-        font-size: 16px;
-        font-family: sans-serif;
-        line-height: 1.25;
-        min-height: 100vh;
+<!DOCTYPE html>
+<html lang="{{ site.language | default('zh-CN') }}" data-color-mode="light" data-dark-theme="{{ site.night_theme }}" data-light-theme="{{ site.day_theme }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <script>window.icons = {{ icons | tojson }};</script>
+  {{ site.primer_css }}
+  {{ site.all_head }}
+  <link rel="stylesheet" href="{{ site.home_url }}/templates/assets/main.css">
+  <link rel="icon" href="{{ site.favicon_url }}">
+  {% if site.theme_mode == 'manual' %}
+  <script>
+    (function() {
+      var theme = localStorage.getItem('internote_theme') || 'light';
+      document.documentElement.setAttribute('data-color-mode', theme);
+    })();
+  </script>
+  {% endif %}
+  {% block head %}{% endblock %}
+  {% block style %}{% endblock %}
+</head>
+<body>
+  <header class="in-site-header" id="header">{% block header %}{% endblock %}</header>
+  <main class="in-site-main" id="content">{% block content %}{% endblock %}</main>
+  <footer class="in-site-footer" id="footer">{% include 'components/footer.j2.html' %}</footer>
+
+  <script>
+    {% if site.theme_mode == 'manual' %}
+    var themeSettings = {
+      dark: ['dark', 'moon', '#00f0ff', 'dark'],
+      light: ['light', 'sun', '#ff5000', 'light'],
+      auto: ['auto', 'sync', '', 'preferred_color_scheme']
+    };
+    function changeTheme(mode, icon, color, giscusThemeName) {
+      document.documentElement.setAttribute('data-color-mode', mode);
+      document.getElementById('themeSwitch').setAttribute('d', window.icons[icon]);
+      document.getElementById('themeSwitch').parentNode.style.color = color;
+      if (window.giscusTheme) window.giscusTheme(giscusThemeName);
+    }
+    function modeSwitch() {
+      var currentMode = document.documentElement.getAttribute('data-color-mode');
+      var newMode = currentMode === 'light' ? 'dark' : currentMode === 'dark' ? 'auto' : 'light';
+      localStorage.setItem('internote_theme', newMode);
+      if (themeSettings[newMode]) {
+        changeTheme.apply(null, themeSettings[newMode]);
       }
-
-      header {
-        display: flex;
-        padding-bottom: 8px;
-        border-bottom: 1px solid
-          var(--borderColor-muted, var(--color-border-muted));
-        margin-bottom: 16px;
-      }
-
-      footer {
-        margin-top: 64px;
-        text-align: center;
-        font-size: small;
-      }
-    </style>
-    <style></style>
-    <script></script>
-  </head>
-  <body>
-    <header>{% include '../components/header.j2.html' %}</header>
-
-    <main>{% block content %}{% endblock %}</main>
-
-    <footer>{% include '../components/footer.j2.html' %}</footer>
-
-    <script></script>
-  </body>
+    }
+    if (themeSettings[theme]) { changeTheme.apply(null, themeSettings[theme]); }
+    {% endif %}
+    console.log('\n %c Internote {{ site.version }}\n', 'padding:5px 0;background:#02d81d;color:#fff');
+  </script>
+  {% block script %}{% endblock %}
+</body>
 </html>

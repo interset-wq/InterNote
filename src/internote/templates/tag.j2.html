@@ -1,0 +1,218 @@
+{% extends 'base.j2.html' %}
+
+{% block head %}
+  <meta name="description" content="{{ site.title }} search page">
+  <title>{{ site.title }} - Tag</title>
+{% endblock %}
+
+{% block style %}
+  <style>
+    .in-page-title { font-size: 32px; font-weight: 700; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .in-search-form { display: flex; align-items: center; margin-right: 8px; }
+    .in-search-input { width: 160px; height: 32px; padding: 4px 8px; border: 1px solid var(--in-color-border); border-right: none; border-radius: 6px 0 0 6px; font-size: 14px; outline: none; }
+    .in-search-input:focus { border-color: var(--in-color-accent); box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15); }
+    .in-search-btn { height: 32px; padding: 4px 12px; border: 1px solid var(--in-color-border); border-radius: 0 6px 6px 0; background: var(--in-color-btn-bg); cursor: pointer; font-size: 14px; }
+    .in-tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .in-tag-cloud .in-badge { cursor: pointer; padding: 4px 12px; font-size: 14px; }
+    .in-empty-state { font-size: 24px; margin: 16px 0; color: var(--in-color-muted); }
+    .in-post-list { border: 1px solid var(--in-color-border); border-radius: 6px; overflow: hidden; }
+    .in-post-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--in-color-border); text-decoration: none; color: inherit; transition: background-color 0.15s; gap: 12px; }
+    .in-post-list-item:last-child { border-bottom: none; }
+    .in-post-list-item:hover { background-color: var(--in-color-subtle); }
+    .in-post-list-title { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .in-post-list-title span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .in-post-list-badges { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    @media (max-width: 600px) {
+      .in-page-title { display: none; }
+      .in-post-list-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .in-post-list-badges { flex-wrap: wrap; }
+    }
+  </style>
+{% endblock %}
+
+{% block header %}
+  <h1 class="in-page-title"><span>Loading</span><span class="in-animated-ellipsis"></span></h1>
+  <nav class="in-site-nav" aria-label="Tag navigation">
+    <form class="in-search-form" onsubmit="event.preventDefault(); searchShow();">
+      <input type="search" class="in-search-input" aria-label="Search site" value="">
+      <button class="in-search-btn" type="submit">{{ i18n.Search }}</button>
+    </form>
+    <a class="in-nav-btn" href="{{ site.home_url }}" title="{{ i18n.home }}" aria-label="Home">
+      <svg class="octicon" width="16" height="16"><path id="icon-home" fill-rule="evenodd"></path></svg>
+    </a>
+    <button class="in-nav-btn" type="button" onclick="modeSwitch()" title="{{ i18n.switchTheme }}" aria-label="Switch theme" {% if site.theme_mode == 'fix' %}style="display:none;"{% endif %}>
+      <svg class="octicon" width="16" height="16"><path id="themeSwitch" fill-rule="evenodd"></path></svg>
+    </button>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <div class="in-tag-cloud" id="tag-cloud"></div>
+  <nav class="in-post-list" id="post-list" aria-label="Filtered posts"></nav>
+  <div class="in-empty-state" id="empty-state" style="display:none;">Not Find</div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    (function() {
+      document.getElementById('icon-home').setAttribute('d', window.icons.home);
+
+      var tagList = [];
+      var labelsCount = {};
+      var jsonData = null;
+
+      var request = new XMLHttpRequest();
+      request.open('GET', 'post-list.json');
+      request.responseType = 'text';
+      request.send();
+      request.onload = function() {
+        jsonData = JSON.parse(request.response);
+        showList();
+        setClassDisplay(decodeURI(window.location.hash.slice(1)));
+      };
+
+      function showList() {
+        var postList = document.getElementById('post-list');
+        var tagCloud = document.getElementById('tag-cloud');
+
+        jsonData.label_color_dict.All = '#000';
+        labelsCount.All = 0;
+        for (var key in jsonData) {
+          if (key !== 'label_color_dict' && Array.isArray(jsonData[key].labels)) {
+            labelsCount.All++;
+            jsonData[key].labels.forEach(function(label) {
+              labelsCount[label] = (labelsCount[label] || 0) + 1;
+            });
+          }
+        }
+
+        var sortedLabels = Object.keys(labelsCount).sort(function(a, b) {
+          return labelsCount[b] - labelsCount[a];
+        });
+
+        sortedLabels.forEach(function(label) {
+          tagList.push(label);
+          var btn = document.createElement('button');
+          btn.className = 'in-badge';
+          btn.style.backgroundColor = jsonData.label_color_dict[label];
+          btn.style.padding = '4px 12px';
+          btn.innerHTML = '&nbsp;&nbsp;' + label + ' ';
+          btn.onclick = function() { updateShowTag(label); };
+
+          var count = document.createElement('span');
+          count.style.color = '#fff';
+          count.style.backgroundColor = 'rgba(234, 238, 242, 0.5)';
+          count.textContent = labelsCount[label];
+          btn.appendChild(count);
+          tagCloud.appendChild(btn);
+        });
+
+        for (var key in jsonData) {
+          if (key === 'label_color_dict') continue;
+          var item = jsonData[key];
+          var div = document.createElement('div');
+          div.className = 'in-post-list-item-wrapper ' + item.labels.join(' ');
+
+          var link = document.createElement('a');
+          link.className = 'in-post-list-item';
+          link.href = item.post_url;
+
+          var titleDiv = document.createElement('div');
+          titleDiv.className = 'in-post-list-title';
+
+          var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('class', 'octicon');
+          svg.setAttribute('width', '16');
+          svg.setAttribute('height', '16');
+          svg.style.flexShrink = '0';
+          svg.style.color = 'var(--in-color-muted)';
+          var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', window.icons.post);
+          svg.appendChild(path);
+
+          var titleSpan = document.createElement('span');
+          titleSpan.textContent = item.post_title;
+
+          titleDiv.appendChild(svg);
+          titleDiv.appendChild(titleSpan);
+
+          var badgesDiv = document.createElement('div');
+          badgesDiv.className = 'in-post-list-badges';
+
+          item.labels.forEach(function(label) {
+            var badge = document.createElement('span');
+            badge.className = 'in-badge';
+            badge.style.backgroundColor = jsonData.label_color_dict[label];
+            badge.textContent = label;
+            badgesDiv.appendChild(badge);
+          });
+
+          var timeBadge = document.createElement('span');
+          timeBadge.className = 'in-badge';
+          timeBadge.style.backgroundColor = item.date_label_color;
+          timeBadge.textContent = item.created_date;
+          badgesDiv.appendChild(timeBadge);
+
+          link.appendChild(titleDiv);
+          link.appendChild(badgesDiv);
+          div.appendChild(link);
+          postList.appendChild(div);
+        }
+      }
+
+      function updateShowTag(label) {
+        if (window.location.hash.slice(1) !== encodeURI(label)) {
+          window.location.hash = '#' + label;
+          setClassDisplay(label);
+        }
+      }
+
+      function setClassDisplay(label) {
+        var lists = document.getElementsByClassName('in-post-list-item-wrapper');
+        var tagTitle = document.getElementsByClassName('in-page-title')[0];
+        tagTitle.innerHTML = 'Tag #' + label;
+        document.title = label + ' - {{ site.title }}';
+        document.getElementsByClassName('in-search-input')[0].value = '';
+
+        if (label === 'All') {
+          for (var i = 0; i < lists.length; i++) lists[i].style.display = 'block';
+          document.getElementById('empty-state').style.display = 'none';
+        } else if (tagList.indexOf(label) !== -1) {
+          for (var i = 0; i < lists.length; i++) lists[i].style.display = 'none';
+          var labels = document.getElementsByClassName(label);
+          for (var i = 0; i < labels.length; i++) labels[i].style.display = 'block';
+          document.getElementById('empty-state').style.display = 'none';
+        } else {
+          document.getElementsByClassName('in-search-input')[0].value = label;
+          searchShow();
+        }
+      }
+
+      function searchShow() {
+        var lists = document.getElementsByClassName('in-post-list-item-wrapper');
+        var tagTitle = document.getElementsByClassName('in-page-title')[0];
+        var searchInput = document.getElementsByClassName('in-search-input')[0].value;
+        tagTitle.innerHTML = 'Search #' + searchInput;
+        document.title = searchInput ? searchInput + ' - {{ site.title }}' : 'Search - {{ site.title }}';
+        var found = 0;
+        window.location.hash = '#' + searchInput;
+        for (var i = 0; i < lists.length; i++) {
+          var text = lists[i].textContent.toUpperCase();
+          if (text.indexOf(searchInput.toUpperCase()) === -1) {
+            lists[i].style.display = 'none';
+          } else {
+            lists[i].style.display = 'block';
+            found++;
+          }
+        }
+        var emptyState = document.getElementById('empty-state');
+        if (found === 0) {
+          emptyState.style.display = 'block';
+          emptyState.innerHTML = 'Not Find "' + searchInput + '"';
+        } else {
+          emptyState.style.display = 'none';
+        }
+      }
+    })();
+  </script>
+{% endblock %}
