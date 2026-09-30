@@ -24,7 +24,7 @@ class SiteConfig(BaseModel):
     og_image: str = ""
     home_url: str = ""
     version: str = "last"
-    language: Literal["CN", "EN", "RU"] = "CN"
+    language: Literal["CN", "EN"] = "CN"
     utc: int = 8
 
 

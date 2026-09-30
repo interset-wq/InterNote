@@ -58,7 +58,7 @@ uv run pytest -q                               # 运行测试
 
 | 分组 | 说明 |
 | --- | --- |
-| `[site]` | 标题、头像、语言（CN/EN/RU）、时区 `utc`、`version`（博客 workflow 检出的 InterNote 版本，`last` 为最新 tag） |
+| `[site]` | 标题、头像、语言（CN/EN）、时区 `utc`、`version`（博客 workflow 检出的 InterNote 版本，`last` 为最新 tag） |
 | `[theme]` | 明暗模式（`manual` 支持切换 / `fix` 固定）、年份标签配色、primer.css 地址 |
 | `[layout]` | 分页数量、单页 Label、建站日期、备案号、底部文字、注入的 `head/style/script` 等 |
 | `[nav]` | 附加导航图标（`exlink`）与自定义 SVG path（`icon_list`） |

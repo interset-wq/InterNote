@@ -10,7 +10,7 @@ avatar_url = "https://github.githubassets.com/favicons/favicon.svg"
 # og_image = ""             # 默认与 avatar_url 相同
 # home_url = ""             # 留空则自动推导（GitHub Pages 地址）
 version = "last"             # 博客仓库 workflow 检出的 InterNote 版本（tag 或 last）
-language = "CN"              # CN | EN | RU
+language = "CN"              # CN | EN
 utc = 8                      # 时区偏移（小时）
 
 [theme]

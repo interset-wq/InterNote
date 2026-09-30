@@ -68,6 +68,14 @@ def test_invalid_language_rejected(tmp_path: Path):
         load_config(path)
 
 
+def test_russian_language_rejected(tmp_path: Path):
+    path = tmp_path / "config.toml"
+    path.write_text(MINIMAL + 'language = "RU"\n', encoding="utf-8")
+
+    with pytest.raises(ValidationError):
+        load_config(path)
+
+
 def test_flat_context_uses_snake_case(tmp_path: Path):
     path = tmp_path / "config.toml"
     path.write_text(MINIMAL, encoding="utf-8")
