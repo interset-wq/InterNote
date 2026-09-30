@@ -360,3 +360,10 @@ def test_footer_icon_keys_and_blog_repo_url(workspace: Path):
     assert "'github'" in index
     assert "'rss'" in post
     assert "'rss'" in tag and "'github'" in tag
+
+
+def test_tocbot_placeholder_not_full_viewport():
+    src = (REPO_ROOT / "src" / "internote" / "plugins" / "tocbot.js").read_text(
+        encoding="utf-8"
+    )
+    assert "window.innerHeight + 'px'" not in src

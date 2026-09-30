@@ -52,8 +52,16 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    var footerPlaceholder = document.createElement('div');
-    footerPlaceholder.style.height = window.innerHeight + 'px';
-    document.body.appendChild(footerPlaceholder);
+    var lastHeading = headings[headings.length - 1];
+    if (lastHeading) {
+        var maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        var target = lastHeading.getBoundingClientRect().top + window.scrollY - 20;
+        var need = target - maxScroll;
+        if (maxScroll > 0 && need > 0) {
+            var footerPlaceholder = document.createElement('div');
+            footerPlaceholder.style.height = need + 'px';
+            document.body.appendChild(footerPlaceholder);
+        }
+    }
     console.log("\n %c Internote tocbot plugin • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#C333D0;color:#fff");
 });
