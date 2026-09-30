@@ -215,3 +215,17 @@ def test_theme_switch_syncs_giscus():
     assert "giscus" in html
     assert "setConfig" in html
     assert "https://giscus.app" in html
+
+
+def test_footer_icons_row_separate_from_poweredby_row():
+    html = render("post", base_context())
+
+    footer = _footer(html)
+    icons_row = footer.split('id="footer2"')[1].split('id="footer3"')[0]
+    powered_row = footer.split('id="footer3"')[1]
+
+    assert 'id="buttonRSS"' in icons_row
+    assert 'id="buttonGH"' in icons_row
+    assert "Powered by" not in icons_row
+    assert "Powered by" in powered_row
+    assert "2026" not in powered_row
