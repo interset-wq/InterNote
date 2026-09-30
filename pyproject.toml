@@ -1,0 +1,33 @@
+[project]
+name = "internote"
+version = "0.1.0"
+description = "A blog generator based on GitHub Issues, GitHub Pages and GitHub Actions. Based on Gmeek."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = [
+    "pydantic>=2.11",
+    "typer>=0.15",
+    "PyGithub>=2.6",
+    "requests>=2.32",
+    "Jinja2>=3.1",
+    "feedgen>=1.0",
+]
+
+[project.scripts]
+internote = "internote.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/internote"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
