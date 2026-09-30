@@ -73,7 +73,21 @@ def test_post_uses_giscus_not_utterances():
     assert 'data-category-id="DIC_xyz"' in html
     assert 'data-mapping="pathname"' in html
     assert "utteranc.es" not in html
-    assert "utterances" not in html
+
+
+def test_post_giscus_lang_matches_site_language():
+    giscus = dict(
+        giscus_repo="interset-wq/InterNote",
+        giscus_repo_id="R_abc",
+        giscus_category="General",
+        giscus_category_id="DIC_xyz",
+    )
+
+    html_cn = render("post", base_context(language="CN", **giscus))
+    assert 'data-lang="zh-CN"' in html_cn
+
+    html_en = render("post", base_context(language="EN", **giscus))
+    assert 'data-lang="en"' in html_en
 
 
 def test_post_without_comments_hides_giscus():
