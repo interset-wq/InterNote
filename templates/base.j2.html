@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html data-color-mode="light" data-dark-theme="{{ blogBase['nightTheme'] }}" data-light-theme="{{ blogBase['dayTheme'] }}" lang={% if blogBase['i18n']=='CN' %}"zh-CN"{% elif blogBase['i18n']=='RU' %}"ru"{% else -%}"en"{%- endif -%}>
+<html data-color-mode="light" data-dark-theme="{{ blogBase['night_theme'] }}" data-light-theme="{{ blogBase['day_theme'] }}" lang={% if blogBase['language']=='CN' %}"zh-CN"{% elif blogBase['language']=='RU' %}"ru"{% else -%}"en"{%- endif -%}>
 <head>
     <meta content="text/html; charset=utf-8" http-equiv="content-type" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    {{ blogBase['primerCSS'] }}
-    {{ blogBase['allHead'] }}
-    <link rel="icon" href="{{ blogBase['faviconUrl'] }}">
-    {%- if blogBase['themeMode']=='manual' -%}
+    {{ blogBase['primer_css'] }}
+    {{ blogBase['all_head'] }}
+    <link rel="icon" href="{{ blogBase['favicon_url'] }}">
+    {%- if blogBase['theme_mode']=='manual' -%}
     <script>
-        let theme = localStorage.getItem("meek_theme") || "light";
+        let theme = localStorage.getItem("internote_theme") || "light";
         document.documentElement.setAttribute("data-color-mode", theme);
     </script>
     {%- endif -%}
@@ -26,40 +26,50 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 <body>
     <div id="header">{% block header %}{% endblock %}</div>
     <div id="content">{% block content %}{% endblock %}</div>
-    <div id="footer">{% include 'footer.html' %}</div>
+    <div id="footer">{% include 'footer.j2.html' %}</div>
 </body>
 <script>
 var IconList={{ IconList }};
-var utterancesLoad=0;
-{% if blogBase['themeMode']=='manual' %}
+{% if blogBase['theme_mode']=='manual' %}
 let themeSettings={
-    "dark": ["dark","moon","#00f0ff","dark-blue"],
-    "light": ["light","sun","#ff5000","github-light"],
-    "auto": ["auto","sync","","preferred-color-scheme"]
+    "dark": ["dark","moon","#00f0ff","dark"],
+    "light": ["light","sun","#ff5000","light"],
+    "auto": ["auto","sync","","preferred_color_scheme"]
 };
-function changeTheme(mode, icon, color, utheme){
+function changeTheme(mode, icon, color, giscusThemeName){
     document.documentElement.setAttribute("data-color-mode",mode);
     document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
     document.getElementById("themeSwitch").parentNode.style.color=color;
-    if(utterancesLoad==1){utterancesTheme(utheme);}
+    giscusTheme(giscusThemeName);
 }
 function modeSwitch(){
     let currentMode=document.documentElement.getAttribute('data-color-mode');
     let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
-    localStorage.setItem("meek_theme", newMode);
+    localStorage.setItem("internote_theme", newMode);
     if(themeSettings[newMode]){
         changeTheme(...themeSettings[newMode]);
     }
 }
-function utterancesTheme(theme){
-    const message={type:'set-theme',theme: theme};
-    const iframe=document.getElementsByClassName('utterances-frame')[0];
-    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+function giscusTheme(theme){
+    {%- if blogBase['need_comment'] %}
+    const iframe=document.getElementsByClassName('giscus-frame')[0];
+    if(iframe){
+        iframe.contentWindow.postMessage({giscus:{setConfig:{theme:theme}}},'https://giscus.app');
+    }
+    {%- endif %}
 }
 if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+{%- else %}
+function giscusTheme(theme){
+    {%- if blogBase['need_comment'] %}
+    const iframe=document.getElementsByClassName('giscus-frame')[0];
+    if(iframe){
+        iframe.contentWindow.postMessage({giscus:{setConfig:{theme:theme}}},'https://giscus.app');
+    }
+    {%- endif %}
+}
 {%- endif %}
-console.log("\n %c Gmeek {{ blogBase['GMEEK_VERSION'] }} https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+console.log("\n %c Internote {{ blogBase['version'] }} • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
 </script>
 {% block script %}{% endblock %}
 </html>
-

@@ -55,5 +55,5 @@ document.addEventListener("DOMContentLoaded", function() {
     var footerPlaceholder = document.createElement('div');
     footerPlaceholder.style.height = window.innerHeight + 'px';
     document.body.appendChild(footerPlaceholder);
-    console.log("\n %c GmeekTocBot Plugins https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#C333D0;color:#fff");
+    console.log("\n %c Internote tocbot plugin • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#C333D0;color:#fff");
 });

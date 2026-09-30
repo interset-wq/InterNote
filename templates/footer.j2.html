@@ -1,0 +1,24 @@
+<div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="{{ blogBase['home_url'] }}">{{ blogBase['title'] }}</a></div>
+<div id="footer2">
+    {%- if blogBase['filing_num']!='' -%}
+    <span id="filing_num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ blogBase['filing_num'] }}</a> • </span>
+    {%- endif %}
+    <span id="runday"></span><span>Powered by <a href="https://github.com/interset-wq/InterNote">Internote</a> • Based on <a href="https://github.com/Meekdai/Gmeek" target="_blank">Gmeek</a></span>
+    {%- if blogBase['visit_counter']=='vercount' -%}
+    <script src="{{ blogBase['home_url'] }}/plugins/vercount.js"></script>
+    {%- elif blogBase['visit_counter']=='busuanzi' -%}
+    <script src="{{ blogBase['home_url'] }}/plugins/busuanzi.js"></script>
+    {%- endif -%}
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if("{{ blogBase['start_site'] }}"!=""){
+    var startSite=new Date("{{ blogBase['start_site'] }}");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="{{ i18n['run'] }}"+diffDay+"{{ i18n['days'] }}"+" • ";
+}
+</script>

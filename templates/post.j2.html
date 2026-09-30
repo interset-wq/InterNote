@@ -1,13 +1,13 @@
-{% extends 'base.html' %}
+{% extends 'base.j2.html' %}
 
 {% block head %}
 <meta name="description" content="{{ blogBase['description'] }}">
-<meta property="og:title" content="{{ blogBase['postTitle'] }}">
+<meta property="og:title" content="{{ blogBase['post_title'] }}">
 <meta property="og:description" content="{{ blogBase['description'] }}">
 <meta property="og:type" content="article">
-<meta property="og:url" content="{{ blogBase['postUrl'] }}">
-<meta property="og:image" content="{{ blogBase['ogImage'] }}">
-<title>{{ blogBase['postTitle'] }}</title>
+<meta property="og:url" content="{{ blogBase['post_url'] }}">
+<meta property="og:image" content="{{ blogBase['og_image'] }}">
+<title>{{ blogBase['post_title'] }}</title>
 {% if blogBase['highlight']==1 %}<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />{% endif %}
 {{ blogBase['head'] }}
 {% endblock %}
@@ -43,22 +43,22 @@
 
 {% endblock %}
 {% block header %}
-<h1 class="postTitle">{{ blogBase['postTitle'] }}</h1>
+<h1 class="postTitle">{{ blogBase['post_title'] }}</h1>
 <div class="title-right">
-    <a href="{{ blogBase['homeUrl'] }}" id="buttonHome" class="btn btn-invisible circle" title="{{ i18n['home'] }}">
+    <a href="{{ blogBase['home_url'] }}" id="buttonHome" class="btn btn-invisible circle" title="{{ i18n['home'] }}">
         <svg class="octicon" width="16" height="16">
             <path id="pathHome" fill-rule="evenodd"></path>
         </svg>
     </a>
-    {% if blogBase['showPostSource']==1 %}
-    <a href="{{ blogBase['postSourceUrl'] }}" target="_blank" class="btn btn-invisible circle" title="Issue">
+    {% if blogBase['show_post_source'] %}
+    <a href="{{ blogBase['post_source_url'] }}" target="_blank" class="btn btn-invisible circle" title="Issue">
         <svg class="octicon" width="16" height="16">
             <path id="pathIssue" fill-rule="evenodd"></path>
         </svg>
     </a>
     {% endif %}
 
-    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="{{ i18n['switchTheme'] }}" {%- if blogBase['themeMode']=='fix' -%}style="display:none;"{%- endif -%}>
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="{{ i18n['switchTheme'] }}" {%- if blogBase['theme_mode']=='fix' -%}style="display:none;"{%- endif -%}>
         <svg class="octicon" width="16" height="16" >
             <path id="themeSwitch" fill-rule="evenodd"></path>
         </svg>
@@ -68,27 +68,53 @@
 {% endblock %}
 
 {% block content %}
-<div class="markdown-body" id="postBody">{{ blogBase['postBody'] }}</div>
-<div style="font-size:small;margin-top:8px;float:right;">{{ blogBase['bottomText'] }}</div>
-{% if blogBase['needComment']==1 %}
+<div class="markdown-body" id="postBody">{{ blogBase['post_body'] }}</div>
+<div style="font-size:small;margin-top:8px;float:right;">{{ blogBase['bottom_text'] }}</div>
+{% if blogBase['need_comment'] %}
 <button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">{{ i18n['comments'] }}</button>
 <div class="comments" id="comments"></div>
+<template id="giscusTemplate">
+    <script src="https://giscus.app/client.js"
+        data-repo="{{ blogBase['giscus_repo'] }}"
+        data-repo-id="{{ blogBase['giscus_repo_id'] }}"
+        data-category="{{ blogBase['giscus_category'] }}"
+        data-category-id="{{ blogBase['giscus_category_id'] }}"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        crossorigin="anonymous"
+        async></script>
+</template>
 {% endif %}
 {% endblock %}
 
 {% block script %}
 <script>
 document.getElementById("pathHome").setAttribute("d",IconList["home"]);
-{% if blogBase['showPostSource']==1 %}document.getElementById("pathIssue").setAttribute("d",IconList["github"]);{% endif %}
-{% if blogBase['commentNum']>0 -%}
+{% if blogBase['show_post_source'] %}document.getElementById("pathIssue").setAttribute("d",IconList["github"]);{% endif %}
+{% if blogBase['comment_num']>0 -%}
     cmButton=document.getElementById("cmButton");
     span=document.createElement("span");
     span.setAttribute("class","Counter");
-    span.innerHTML="{{ blogBase['commentNum'] }}";
+    span.innerHTML="{{ blogBase['comment_num'] }}";
     cmButton.appendChild(span);
 {%- endif %}
 
-{% if blogBase['needComment']==1 %}
+{% if blogBase['need_comment'] %}
+function currentGiscusTheme(){
+    {%- if blogBase['theme_mode']=='manual' %}
+    var t=localStorage.getItem("internote_theme")||"light";
+    if(t=="dark"){return "dark";}
+    if(t=="auto"){return "preferred_color_scheme";}
+    return "light";
+    {%- else %}
+    return "{{ blogBase['night_theme'] }}";
+    {%- endif %}
+}
+
 function openComments(){
     cm=document.getElementById("comments");
     cmButton=document.getElementById("cmButton");
@@ -98,32 +124,22 @@ function openComments(){
     span.setAttribute("class","AnimatedEllipsis");
     cmButton.appendChild(span);
 
-    script=document.createElement("script");
-    script.setAttribute("src","https://utteranc.es/client.js");
-    script.setAttribute("repo","{{ blogBase['repoName'] }}");
-    script.setAttribute("issue-term","title");
-    {% if blogBase['themeMode']=='manual' %}
-    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
-    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
-    else{script.setAttribute("theme","preferred-color-scheme");}
-    {% else %}
-    script.setAttribute("theme","{{ blogBase['nightTheme'] }}");
-    {% endif %}
-    script.setAttribute("crossorigin","anonymous");
-    script.setAttribute("async","");
-    cm.appendChild(script);
+    var tpl=document.getElementById("giscusTemplate");
+    var giscusScript=tpl.content.firstElementChild.cloneNode(true);
+    giscusScript.setAttribute("data-theme",currentGiscusTheme());
+    cm.appendChild(giscusScript);
 
-    int=self.setInterval("iFrameLoading()",200);
+    int=self.setInterval("giscusLoaded()",200);
 }
 
-function iFrameLoading(){
-    var utterances=document.getElementsByClassName('utterances');
-    if(utterances.length==1){
-        if(utterances[0].style.height!=""){
-            utterancesLoad=1;
+function giscusLoaded(){
+    var giscusFrame=document.getElementsByClassName('giscus-frame');
+    if(giscusFrame.length==1){
+        if(giscusFrame[0].style.height!=""){
             int=window.clearInterval(int);
             document.getElementById("cmButton").style.display="none";
-            console.log("utterances Load OK");
+            giscusTheme(currentGiscusTheme());
+            console.log("giscus Load OK");
         }
     }
 }
@@ -197,5 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
 {%- endif %}
 
 </script>
+{%- if blogBase['toc'] %}
+<script src="{{ blogBase['home_url'] }}/plugins/tocbot.js"></script>
+{%- endif %}
 {{ blogBase['script'] }}
 {% endblock %}

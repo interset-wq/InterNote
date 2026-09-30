@@ -1,11 +1,11 @@
-{% extends 'base.html' %}
+{% extends 'base.j2.html' %}
 {% block head %}
-<meta name="description" content="{{ blogBase['subTitle'] }}">
+<meta name="description" content="{{ blogBase['sub_title'] }}">
 <meta property="og:title" content="{{ blogBase['title'] }}">
-<meta property="og:description" content="{{ blogBase['subTitle'] }}">
+<meta property="og:description" content="{{ blogBase['sub_title'] }}">
 <meta property="og:type" content="blog">
-<meta property="og:url" content="{{ blogBase['homeUrl'] }}">
-<meta property="og:image" content="{{ blogBase['ogImage'] }}">
+<meta property="og:url" content="{{ blogBase['home_url'] }}">
+<meta property="og:image" content="{{ blogBase['og_image'] }}">
 <title>{{ blogBase['title'] }}</title>
 {% endblock %}
 
@@ -34,20 +34,16 @@
     .LabelTime{display:none;}
 }
 </style>
-{{ blogBase['indexStyle'] }}
+{{ blogBase['index_style'] }}
 {% endblock %}
 
 {% block header %}
 <div class="title-left">
-    <img src="{{ blogBase['avatarUrl'] }}" class="avatar circle" id="avatarImg" alt="avatar">
-    {%- if blogBase['displayTitle']=='Meekdai' -%}
-    <a class="blogTitle" href="https://meekdai.com"><span style="font-size:0;">M</span>eekdai</a>
-    {% else -%}
-    <a class="blogTitle">{{ blogBase['displayTitle'] }}</a>
-    {%- endif -%}
+    <img src="{{ blogBase['avatar_url'] }}" class="avatar circle" id="avatarImg" alt="avatar">
+    <a class="blogTitle">{{ blogBase['display_title'] }}</a>
 </div>
 <div class="title-right">
-    <a href="{{ blogBase['homeUrl'] }}/tag.html" id="buttonSearch" class="btn btn-invisible circle" title="{{ i18n['Search'] }}">
+    <a href="{{ blogBase['home_url'] }}/tag.html" id="buttonSearch" class="btn btn-invisible circle" title="{{ i18n['Search'] }}">
         <svg class="octicon" width="16" height="16" >
             <path id="pathSearch" fill-rule="evenodd"></path>
         </svg>
@@ -59,19 +55,19 @@
         </svg>
     </a>
     {%- endfor %}
-    {% for num in blogBase['singeListJson'] -%}
-    <a href="{{ blogBase['homeUrl'] }}/{{ blogBase['singeListJson'][num]['labels'][0] }}.html" class="btn btn-invisible circle" title="{{ blogBase['singeListJson'][num]['postTitle'] }}">
+    {% for num in blogBase['single_list'] -%}
+    <a href="{{ blogBase['home_url'] }}/{{ blogBase['single_list'][num]['labels'][0] }}.html" class="btn btn-invisible circle" title="{{ blogBase['single_list'][num]['post_title'] }}">
         <svg class="octicon" width="16" height="16" >
-            <path id="{{ blogBase['singeListJson'][num]['postTitle'] }}" fill-rule="evenodd"></path>
+            <path id="{{ blogBase['single_list'][num]['post_title'] }}" fill-rule="evenodd"></path>
         </svg>
     </a>
     {%- endfor %}
-    <a href="{{ blogBase['homeUrl'] }}/rss.xml" target="_blank" id="buttonRSS" class="btn btn-invisible circle" title="RSS">
+    <a href="{{ blogBase['home_url'] }}/rss.xml" target="_blank" id="buttonRSS" class="btn btn-invisible circle" title="RSS">
         <svg class="octicon" width="16" height="16" >
             <path id="pathRSS" fill-rule="evenodd"></path>
         </svg>
     </a>
-    <a class="btn btn-invisible circle" onclick="modeSwitch()" title="{{ i18n['switchTheme'] }}" {%- if blogBase['themeMode']=='fix' -%}style="display:none;"{%- endif -%}>
+    <a class="btn btn-invisible circle" onclick="modeSwitch()" title="{{ i18n['switchTheme'] }}" {%- if blogBase['theme_mode']=='fix' -%}style="display:none;"{%- endif -%}>
         <svg class="octicon" width="16" height="16" >
             <path id="themeSwitch" fill-rule="evenodd"></path>
         </svg>
@@ -80,38 +76,38 @@
 {% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 16px;">{{ blogBase['subTitle'] }}</div>
+<div style="margin-bottom: 16px;">{{ blogBase['sub_title'] }}</div>
 <nav class="SideNav border">
-{% for num in postListJson -%}
-<a class="SideNav-item d-flex flex-items-center flex-justify-between" href="{{ postListJson[num]['postUrl']|e }}">
+{% for num in post_list -%}
+<a class="SideNav-item d-flex flex-items-center flex-justify-between" href="{{ post_list[num]['post_url']|e }}">
     <div class="d-flex flex-items-center">
-        <svg class="SideNav-icon octicon" style="width:16px;height:16px"><path class="svgTop{{ postListJson[num]['top'] }}" d=""></path>
+        <svg class="SideNav-icon octicon" style="width:16px;height:16px"><path class="svgTop{{ post_list[num]['top'] }}" d=""></path>
         </svg>
-        <span class="listTitle">{{ postListJson[num]['postTitle']|e }}</span>
+        <span class="listTitle">{{ post_list[num]['post_title']|e }}</span>
     </div>
     <div class="listLabels">
-        {% if postListJson[num]['commentNum']>0 %}<span class="Label" style="background-color:{{ blogBase['commentLabelColor'] }}">{{ postListJson[num]['commentNum'] }}</span>{% endif %}
-        {% for label in postListJson[num]['labels'] -%}
-        <span class="Label LabelName" style="background-color:{{ blogBase['labelColorDict'][label] }}"><object><a style="color:#fff" href="tag.html#{{ label }}">{{ label }}</a></object></span>
+        {% if post_list[num]['comment_num']>0 %}<span class="Label" style="background-color:{{ blogBase['comment_label_color'] }}">{{ post_list[num]['comment_num'] }}</span>{% endif %}
+        {% for label in post_list[num]['labels'] -%}
+        <span class="Label LabelName" style="background-color:{{ blogBase['label_color_dict'][label] }}"><object><a style="color:#fff" href="tag.html#{{ label }}">{{ label }}</a></object></span>
         {%- endfor %}
-        <span class="Label LabelTime" style="background-color:{{ postListJson[num]['dateLabelColor'] }}">{{ postListJson[num]['createdDate'] }}</span>
+        <span class="Label LabelTime" style="background-color:{{ post_list[num]['date_label_color'] }}">{{ post_list[num]['created_date'] }}</span>
     </div>
 </a>
 {%- endfor %}
 </nav>
-{%- if blogBase['prevUrl']!='disabled' or blogBase['nextUrl']!='disabled' -%}
+{%- if blogBase['prev_url']!='disabled' or blogBase['next_url']!='disabled' -%}
 <nav class="paginate-container" aria-label="Pagination">
     <div class="pagination">
-        {%- if blogBase['prevUrl']=='disabled' -%}
+        {%- if blogBase['prev_url']=='disabled' -%}
         <span class="previous_page" aria-disabled="true">{{ i18n['Previous'] }}</span>
         {% else -%}
-        <a class="previous_page" rel="previous" href="{{ blogBase['homeUrl'] }}{{ blogBase['prevUrl'] }}" aria-label="Previous Page">{{ i18n['Previous'] }}</a>
+        <a class="previous_page" rel="previous" href="{{ blogBase['home_url'] }}{{ blogBase['prev_url'] }}" aria-label="Previous Page">{{ i18n['Previous'] }}</a>
         {%- endif -%}
 
-        {%- if blogBase['nextUrl']=='disabled' -%}
+        {%- if blogBase['next_url']=='disabled' -%}
         <span class="next_page" aria-disabled="true">{{ i18n['Next'] }}</span>
         {% else -%}
-        <a class="next_page" rel="next" href="{{ blogBase['homeUrl'] }}{{ blogBase['nextUrl'] }}" aria-label="Next Page">{{ i18n['Next'] }}</a>
+        <a class="next_page" rel="next" href="{{ blogBase['home_url'] }}{{ blogBase['next_url'] }}" aria-label="Next Page">{{ i18n['Next'] }}</a>
         {%- endif -%}
 
     </div>
@@ -137,9 +133,9 @@ for(var i=0;i<iconPost.length;i++){
 document.getElementById("{{ key }}").setAttribute("d",value=IconList["{{ key }}"]);
 {%- endfor %}
 
-{% for num in blogBase['singeListJson'] -%}
-document.getElementById("{{ blogBase['singeListJson'][num]['postTitle'] }}").setAttribute("d",value=IconList["{{ blogBase['singeListJson'][num]['labels'][0] }}"]);
+{% for num in blogBase['single_list'] -%}
+document.getElementById("{{ blogBase['single_list'][num]['post_title'] }}").setAttribute("d",value=IconList["{{ blogBase['single_list'][num]['labels'][0] }}"]);
 {%- endfor %}
 </script>
-{{ blogBase['indexScript'] }}
+{{ blogBase['index_script'] }}
 {% endblock %}
