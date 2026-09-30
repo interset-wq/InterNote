@@ -308,3 +308,25 @@ def test_unlabeled_issue_is_skipped(workspace: Path):
     assert not (workspace / "dist" / "post" / "6.html").exists()
     state = json.loads((workspace / "internote.json").read_text(encoding="utf-8"))
     assert state["post_list"] == {}
+
+
+def test_run_all_with_no_issues_creates_sources_dir(workspace: Path):
+    gen = make_generator(workspace, FakeRepo([]))
+    gen.run_all()
+
+    assert (workspace / "sources").is_dir()
+    assert (workspace / "dist" / "index.html").exists()
+    assert (workspace / "internote.json").exists()
+
+
+def test_run_one_on_virgin_workspace_sets_up_full_site(workspace: Path):
+    repo = FakeRepo([FakeIssue(3, "First", "body")])
+    gen = make_generator(workspace, repo)
+    gen.run_one("3")
+
+    dist = workspace / "dist"
+    assert (dist / "post" / "3.html").exists()
+    assert (dist / "index.html").exists()
+    assert (dist / "plugins" / "tocbot.js").exists()
+    assert (dist / "rss.xml").exists()
+    assert (workspace / "sources" / "3.md").exists()

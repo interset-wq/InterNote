@@ -117,6 +117,8 @@ class Generator:
         print("====== start create static html ======")
         if self.state_path.exists():
             self._load_state()
+        else:
+            self._clean()
         issue = self.repo.get_issue(int(number_str))
         if issue.state != "open":
             print("====== issue is closed ======")
@@ -145,6 +147,7 @@ class Generator:
             if path.exists():
                 shutil.rmtree(path)
         self.post_dir.mkdir(parents=True)
+        self.sources_dir.mkdir(parents=True)
 
         if self.static_dir.exists():
             for item in self.static_dir.iterdir():
