@@ -1,13 +1,12 @@
 {% extends 'base.j2.html' %}
+{% from 'components/buttons.j2.html' import home_button, theme_switch with context %}
 
 {% block head %}
-<meta name="description" content="{{ blogBase['description'] }}">
-<meta property="og:title" content="{{ blogBase['post_title'] }}">
-<meta property="og:description" content="{{ blogBase['description'] }}">
-<meta property="og:type" content="article">
-<meta property="og:url" content="{{ blogBase['post_url'] }}">
-<meta property="og:image" content="{{ blogBase['og_image'] }}">
-<title>{{ blogBase['post_title'] }}</title>
+{%- set meta_title = blogBase['post_title'] -%}
+{%- set meta_description = blogBase['description'] -%}
+{%- set meta_type = 'article' -%}
+{%- set meta_url = blogBase['post_url'] -%}
+{% include 'components/head-meta.j2.html' %}
 {% if blogBase['highlight']==1 %}<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />{% endif %}
 {{ blogBase['head'] }}
 {% endblock %}
@@ -15,8 +14,6 @@
 {% block style %}
 <style>
 .postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
-.title-right{display:flex;margin:auto 0 0 auto;}
-.title-right .circle{padding: 14px 16px;margin-right:8px;}
 #postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
 #postBody hr{height:2px;}
 #cmButton{height:48px;margin-top:48px;}
@@ -45,18 +42,8 @@
 {% block header %}
 <h1 class="postTitle">{{ blogBase['post_title'] }}</h1>
 <div class="title-right">
-    <a href="{{ blogBase['home_url'] }}" id="buttonHome" class="btn btn-invisible circle" title="{{ i18n['home'] }}">
-        <svg class="octicon" width="16" height="16">
-            <path id="pathHome" fill-rule="evenodd"></path>
-        </svg>
-    </a>
-
-    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="{{ i18n['switchTheme'] }}" {%- if blogBase['theme_mode']=='fix' -%}style="display:none;"{%- endif -%}>
-        <svg class="octicon" width="16" height="16" >
-            <path id="themeSwitch" fill-rule="evenodd"></path>
-        </svg>
-    </a>
-
+    {{ home_button() }}
+    {{ theme_switch() }}
 </div>
 {% endblock %}
 

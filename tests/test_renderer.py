@@ -229,3 +229,17 @@ def test_footer_icons_row_separate_from_poweredby_row():
     assert "Powered by" not in icons_row
     assert "Powered by" in powered_row
     assert "2026" not in powered_row
+
+
+def test_theme_switch_button_uniform_across_pages():
+    for name in ("plist", "post", "tag"):
+        header = _header(render(name, base_context()))
+        assert 'onclick="modeSwitch()"' in header, name
+        assert header.count('id="themeSwitch"') == 1, name
+
+
+def test_giscus_theme_function_defined_once_in_base():
+    src = (
+        REPO_ROOT / "src" / "internote" / "templates" / "base.j2.html"
+    ).read_text(encoding="utf-8")
+    assert src.count("function giscusTheme") == 1

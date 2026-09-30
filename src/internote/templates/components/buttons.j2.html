@@ -1,0 +1,11 @@
+{% macro icon_button(path_id, href='', title='', button_id='', target='', onclick='', hidden=false) -%}
+<a{% if button_id %} id="{{ button_id }}"{% endif %}{% if href %} href="{{ href }}"{% endif %}{% if onclick %} onclick="{{ onclick }}"{% endif %}{% if hidden %} style="display:none;"{% endif %} class="btn btn-invisible circle" title="{{ title }}"{% if target %} target="{{ target }}"{% endif %}><svg class="octicon" width="16" height="16"><path id="{{ path_id }}" fill-rule="evenodd"></path></svg></a>
+{%- endmacro %}
+
+{% macro theme_switch() -%}
+{{ icon_button('themeSwitch', title=i18n['switchTheme'], onclick='modeSwitch()', hidden=(blogBase['theme_mode']=='fix')) }}
+{%- endmacro %}
+
+{% macro home_button() -%}
+{{ icon_button('pathHome', href=blogBase['home_url'], title=i18n['home'], button_id='buttonHome') }}
+{%- endmacro %}

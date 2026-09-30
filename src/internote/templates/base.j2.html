@@ -21,6 +21,8 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 #header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
 #footer {margin-top:64px; text-align: center;font-size: small;}
 #footer2 {margin-top:8px;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding:14px 16px;margin-right:8px;}
 
 </style>
 {% block style %}{% endblock %}
@@ -31,7 +33,15 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
     <div id="footer">{% include 'footer.j2.html' %}</div>
 </body>
 <script>
-{% if blogBase['theme_mode']=='manual' %}
+function giscusTheme(theme){
+    {%- if blogBase['need_comment'] %}
+    const iframe=document.getElementsByClassName('giscus-frame')[0];
+    if(iframe){
+        iframe.contentWindow.postMessage({giscus:{setConfig:{theme:theme}}},'https://giscus.app');
+    }
+    {%- endif %}
+}
+{%- if blogBase['theme_mode']=='manual' %}
 let themeSettings={
     "dark": ["dark","moon","#00f0ff","dark"],
     "light": ["light","sun","#ff5000","light"],
@@ -51,24 +61,7 @@ function modeSwitch(){
         changeTheme(...themeSettings[newMode]);
     }
 }
-function giscusTheme(theme){
-    {%- if blogBase['need_comment'] %}
-    const iframe=document.getElementsByClassName('giscus-frame')[0];
-    if(iframe){
-        iframe.contentWindow.postMessage({giscus:{setConfig:{theme:theme}}},'https://giscus.app');
-    }
-    {%- endif %}
-}
 if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
-{%- else %}
-function giscusTheme(theme){
-    {%- if blogBase['need_comment'] %}
-    const iframe=document.getElementsByClassName('giscus-frame')[0];
-    if(iframe){
-        iframe.contentWindow.postMessage({giscus:{setConfig:{theme:theme}}},'https://giscus.app');
-    }
-    {%- endif %}
-}
 {%- endif %}
 console.log("\n %c Internote {{ blogBase['version'] }} • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
 </script>

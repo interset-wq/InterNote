@@ -1,4 +1,5 @@
 {% extends 'base.j2.html' %}
+{% from 'components/buttons.j2.html' import home_button, theme_switch with context %}
 {% block head %}
 <meta name="description" content="{{ blogBase['title'] }} search page">
 <title>{{ blogBase['title'] }} - Tag</title>
@@ -7,8 +8,6 @@
 {% block style %}
 <style>
 .tagTitle{margin:auto 0;font-size:40px;font-weight:bold;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-.title-right{display:flex;margin:auto 0 0 auto;}
-.title-right .circle{padding: 14px 16px;margin-right:8px;}
 
 .subnav-search{width:222px;margin-top:8px;margin-right:8px;}
 .subnav-search-input{width:160px;border-top-right-radius:0px;border-bottom-right-radius:0px;}
@@ -42,16 +41,8 @@
             <path id="searchSVG" fill-rule="evenodd"></path>
         </svg>
     </div>
-    <a href="{{ blogBase['home_url'] }}" id="buttonHome" class="btn btn-invisible circle" title="{{ i18n['home'] }}">
-        <svg class="octicon" width="16" height="16">
-            <path id="pathHome" fill-rule="evenodd"></path>
-        </svg>
-    </a>
-    <a class="btn btn-invisible circle" onclick="modeSwitch()" title="{{ i18n['switchTheme'] }}" {%- if blogBase['theme_mode']=='fix' -%}style="display:none;"{%- endif -%}>
-        <svg class="octicon" width="16" height="16" >
-            <path id="themeSwitch" fill-rule="evenodd"></path>
-        </svg>
-    </a>
+    {{ home_button() }}
+    {{ theme_switch() }}
 </div>
 {% endblock %}
 
