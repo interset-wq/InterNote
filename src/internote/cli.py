@@ -28,6 +28,10 @@ def main(
     ),
 ) -> None:
     """Build the static site from GitHub Issues."""
+    if issue_number is not None:
+        issue_number = issue_number.strip()
+        if not issue_number:
+            issue_number = None
     if issue_number is not None and not issue_number.isdigit():
         raise typer.BadParameter(
             "issue number must be numeric", param_hint="--issue-number"

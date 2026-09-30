@@ -85,3 +85,13 @@ def test_cli_defaults_config_to_config_toml(monkeypatch, tmp_path):
     result = runner.invoke(cli.app, ["TOKEN", "owner/blog"])
     assert result.exit_code == 0, result.output
     assert events["config"] == "config.toml"
+
+
+def test_cli_empty_issue_number_runs_full_build(monkeypatch, tmp_path):
+    events = {}
+    install_fakes(monkeypatch, events)
+    result = runner.invoke(
+        cli.app, ["TOKEN", "owner/blog", "--issue_number", ""]
+    )
+    assert result.exit_code == 0, result.output
+    assert events["run"] == "all"
