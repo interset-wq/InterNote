@@ -9,6 +9,7 @@ I18N = {
         "days": " day(s)",
         "Previous": "Previous",
         "Next": "Next",
+        "updated": "updated",
     },
     "CN": {
         "Search": "搜索",
@@ -19,6 +20,7 @@ I18N = {
         "days": " 天",
         "Previous": "上一页",
         "Next": "下一页",
+        "updated": "更新",
     },
     "RU": {
         "Search": "Поиск",
@@ -29,6 +31,7 @@ I18N = {
         "days": " дней",
         "Previous": "Предыдущая",
         "Next": "Следующая",
+        "updated": "обновлено",
     },
 }
 

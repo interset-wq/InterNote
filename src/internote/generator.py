@@ -255,6 +255,13 @@ class Generator:
             this_time.year % len(year_colors)
         ]
 
+        updated = issue.updated_at
+        if updated.tzinfo is None:
+            updated = updated.replace(tzinfo=datetime.timezone.utc)
+        entry["updated_at"] = int(updated.timestamp())
+        upd_time = datetime.datetime.fromtimestamp(entry["updated_at"], tz=self.tz)
+        entry["updated_date"] = upd_time.strftime("%Y-%m-%d")
+
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         (self.sources_dir / f"{issue.number}.md").write_text(
             issue.body or "", encoding="utf-8"
@@ -309,6 +316,10 @@ class Generator:
         page["head"] = entry["head"]
         page["top"] = entry["top"]
         page["post_source_url"] = entry["source_url"]
+        page["created_date"] = entry["created_date"]
+        page["date_label_color"] = entry["date_label_color"]
+        page["updated_date"] = entry["updated_date"]
+        page["labels"] = entry["labels"]
 
         if entry["labels"][0] in self.ctx["single_page"]:
             page["bottom_text"] = ""

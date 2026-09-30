@@ -35,6 +35,10 @@ def base_context(**overrides):
             "script": "",
             "head": "",
             "top": 0,
+            "created_date": "2026-01-01",
+            "date_label_color": "#d4a72c",
+            "updated_date": "",
+            "labels": ["daily"],
         }
     )
     post_list = overrides.pop("post_list", {})
@@ -148,6 +152,40 @@ def test_post_toc_plugin_injected_when_enabled():
 def test_post_toc_plugin_absent_when_disabled():
     html = render("post", base_context(toc=False))
     assert "tocbot.js" not in html
+
+
+def test_post_meta_row():
+    html = render(
+        "post",
+        base_context(
+            created_date="2026-01-01",
+            date_label_color="#d4a72c",
+            updated_date="2026-03-15",
+            labels=["daily"],
+            label_color_dict={"daily": "#0969da"},
+        ),
+    )
+    assert 'class="postMeta"' in html
+    assert "LabelTime" in html
+    assert "2026-01-01" in html
+    assert "LabelUpdated" in html
+    assert "2026-03-15" in html
+    assert f'{HOME}/tag.html#daily' in html
+    assert "#0969da" in html
+
+
+def test_post_meta_hides_update_when_same_date():
+    html = render(
+        "post",
+        base_context(
+            created_date="2026-01-01",
+            date_label_color="#d4a72c",
+            updated_date="2026-01-01",
+            labels=["daily"],
+        ),
+    )
+    assert 'class="postMeta"' in html
+    assert "LabelUpdated" not in html
 
 
 def test_visit_counter_vercount():

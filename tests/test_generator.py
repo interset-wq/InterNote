@@ -41,6 +41,7 @@ class FakeIssue:
         state="open",
         pinned=False,
         comments=0,
+        updated_at=None,
     ):
         self.number = number
         self.title = title
@@ -50,6 +51,7 @@ class FakeIssue:
         self.created_at = created_at or datetime(
             2026, 1, number, tzinfo=timezone.utc
         )
+        self.updated_at = updated_at or self.created_at
         self._pinned = pinned
         self._comments = comments
 
@@ -296,6 +298,19 @@ def test_timestamp_override_from_body(workspace: Path):
     assert state["post_list"]["P5"]["created_at"] == 1700000000
     # UTC+8: 1700000000 -> 2023-11-15
     assert state["post_list"]["P5"]["created_date"] == "2023-11-15"
+
+
+def test_updated_date_from_issue(workspace: Path):
+    updated = datetime(2026, 3, 15, 9, 30, tzinfo=timezone.utc)
+    repo = FakeRepo([FakeIssue(5, "Edited", "body", updated_at=updated)])
+    gen = make_generator(workspace, repo)
+    gen.run_all()
+
+    state = json.loads((workspace / "internote.json").read_text(encoding="utf-8"))
+    entry = state["post_list"]["P5"]
+    assert entry["updated_at"] == int(updated.timestamp())
+    # UTC+8: 2026-03-15 09:30 -> 17:30 same day
+    assert entry["updated_date"] == "2026-03-15"
 
 
 def test_unlabeled_issue_is_skipped(workspace: Path):
