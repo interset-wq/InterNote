@@ -119,6 +119,7 @@ class Generator:
             self._load_state()
         else:
             self._clean()
+        self.sources_dir.mkdir(parents=True, exist_ok=True)
         issue = self.repo.get_issue(int(number_str))
         if issue.state != "open":
             print("====== issue is closed ======")

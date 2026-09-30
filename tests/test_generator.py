@@ -330,3 +330,17 @@ def test_run_one_on_virgin_workspace_sets_up_full_site(workspace: Path):
     assert (dist / "plugins" / "tocbot.js").exists()
     assert (dist / "rss.xml").exists()
     assert (workspace / "sources" / "3.md").exists()
+
+
+def test_run_one_recreates_sources_dir_when_missing(workspace: Path):
+    repo = two_post_repo()
+    gen = make_generator(workspace, repo)
+    gen.run_all()
+    # 空 sources 目录不会被 git 追踪，模拟检出后缺失
+    shutil.rmtree(workspace / "sources")
+
+    repo.issues.append(FakeIssue(6, "No Label", "x", labels=()))
+    gen2 = make_generator(workspace, repo)
+    gen2.run_one("6")
+
+    assert (workspace / "sources").is_dir()
