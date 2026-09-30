@@ -1,0 +1,496 @@
+# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+import datetime
+import html
+import json
+import os
+import re
+import shutil
+import urllib.parse
+from pathlib import Path
+
+from .config import InternoteConfig
+from .constants import ICONS, get_i18n
+from .feed import build_feed, strip_build_date
+from .renderer import Renderer
+
+MATHJAX_SCRIPT = (
+    '<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script>'
+    '<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>'
+)
+
+ALERT_BASE_STYLE = (
+    "<style>.markdown-alert{padding:0.5rem 1rem;margin-bottom:1rem;"
+    "border-left:.25em solid var(--borderColor-default,var(--color-border-default));}"
+    ".markdown-alert .markdown-alert-title {display:flex;"
+    "font-weight:var(--base-text-weight-medium,500);align-items:center;line-height:1;}"
+    ".markdown-alert>:first-child {margin-top:0;}"
+    ".markdown-alert>:last-child {margin-bottom:0;}</style>"
+)
+
+ALERT_STYLES = {
+    "note": "accent",
+    "tip": "success",
+    "important": "done",
+    "warning": "attention",
+    "caution": "danger",
+}
+
+POST_LIST_FIELDS = {
+    "post_title",
+    "post_url",
+    "labels",
+    "created_date",
+    "date_label_color",
+}
+
+
+class Generator:
+    def __init__(
+        self,
+        config: InternoteConfig,
+        repo,
+        repo_name: str,
+        *,
+        markdown,
+        root: str | Path = ".",
+    ):
+        self.config = config
+        self.repo = repo
+        self.repo_name = repo_name
+        self.markdown = markdown
+        self.root = Path(root)
+
+        self.dist_dir = self.root / "dist"
+        self.post_dir = self.dist_dir / "post"
+        self.sources_dir = self.root / "sources"
+        self.static_dir = self.root / "static"
+        self.plugins_dir = self.root / "plugins"
+        self.state_path = self.root / "internote.json"
+
+        self.ctx = config.context()
+        self.ctx["label_color_dict"] = {
+            label.name: "#" + label.color for label in repo.get_labels()
+        }
+        if not self.ctx["home_url"]:
+            if str(repo.name).lower() == (
+                str(repo.owner.login) + ".github.io"
+            ).lower():
+                self.ctx["home_url"] = f"https://{repo.name}"
+            else:
+                self.ctx["home_url"] = (
+                    f"https://{repo.owner.login}.github.io/{repo.name}"
+                )
+        # effective comment switch: user wants comments AND giscus configured
+        self.ctx["need_comment"] = bool(
+            self.ctx["need_comment"] and self.ctx["giscus_repo"]
+        )
+        print("GitHub Pages URL: ", self.ctx["home_url"])
+
+        self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
+        self.i18n = get_i18n(self.ctx["language"])
+        self.renderer = Renderer(self.root / "templates")
+
+        self.old_feed = ""
+        rss_path = self.dist_dir / "rss.xml"
+        if rss_path.exists():
+            self.old_feed = rss_path.read_text(encoding="utf-8")
+
+    # ------------------------------------------------------------------ run
+
+    def run_all(self):
+        print("====== start create static html ======")
+        self._clean()
+        for issue in self.repo.get_issues():
+            self._add_entry(issue)
+        for entry in list(self.ctx["post_list"].values()):
+            self._create_post(entry)
+        for entry in list(self.ctx["single_list"].values()):
+            self._create_post(entry)
+        self._create_lists()
+        self._create_feed()
+        self._finalize()
+        print("====== create static html end ======")
+
+    def run_one(self, number_str: str):
+        print("====== start create static html ======")
+        if self.state_path.exists():
+            self._load_state()
+        issue = self.repo.get_issue(int(number_str))
+        if issue.state != "open":
+            print("====== issue is closed ======")
+            return
+        entry = self._add_entry(issue)
+        if entry is None:
+            print("====== issue has no label, skipped ======")
+            return
+        self._create_post(entry)
+        self._create_lists()
+        self._create_feed()
+        self._finalize()
+        print("====== create static html end ======")
+
+    # -------------------------------------------------------------- prepare
+
+    def _clean(self):
+        workspace = os.environ.get("GITHUB_WORKSPACE")
+        if workspace:
+            for name in ("dist", "sources"):
+                stale = Path(workspace) / name
+                if stale.exists():
+                    shutil.rmtree(stale)
+
+        for path in (self.dist_dir, self.sources_dir):
+            if path.exists():
+                shutil.rmtree(path)
+        self.post_dir.mkdir(parents=True)
+
+        if self.static_dir.exists():
+            for item in self.static_dir.iterdir():
+                target = self.dist_dir / item.name
+                if item.is_dir():
+                    shutil.copytree(item, target)
+                else:
+                    shutil.copy2(item, target)
+        else:
+            print("static does not exist")
+
+        if self.plugins_dir.exists():
+            shutil.copytree(
+                self.plugins_dir, self.dist_dir / "plugins", dirs_exist_ok=True
+            )
+
+    def _load_state(self):
+        data = json.loads(self.state_path.read_text(encoding="utf-8"))
+        self.ctx["post_list"] = data.get("post_list", {})
+        self.ctx["single_list"] = data.get("single_list", {})
+
+    # -------------------------------------------------------------- entries
+
+    def _add_entry(self, issue):
+        if len(issue.labels) < 1:
+            return None
+        labels = [label.name for label in issue.labels]
+
+        if labels[0] in self.ctx["single_page"]:
+            list_name = "single_list"
+            file_name = re.sub(r'[<>:/\\|?*\"]|[\0-\31]', "-", labels[0])
+            html_dir = self.dist_dir / f"{file_name}.html"
+        else:
+            list_name = "post_list"
+            html_dir = self.post_dir / f"{issue.number}.html"
+
+        post_url = urllib.parse.quote(
+            html_dir.relative_to(self.dist_dir).as_posix()
+        )
+
+        entry = {
+            "number": issue.number,
+            "html_dir": str(html_dir),
+            "labels": labels,
+            "post_title": issue.title,
+            "post_url": post_url,
+            "source_url": f"https://github.com/{self.repo_name}/issues/{issue.number}",
+            "comment_num": issue.get_comments().totalCount,
+            "word_count": len(issue.body) if issue.body else 0,
+            "top": 0,
+            "style": self.ctx["style"],
+            "script": self.ctx["script"],
+            "head": self.ctx["head"],
+            "og_image": self.ctx["og_image"],
+        }
+
+        if issue.body:
+            if self.ctx["rss_split"] == "sentence":
+                period = "。" if self.ctx["language"] == "CN" else "."
+            else:
+                period = self.ctx["rss_split"]
+            entry["description"] = (
+                issue.body.split(period)[0].replace('"', "'") + period
+            )
+        else:
+            entry["description"] = ""
+
+        for event in issue.get_events():
+            if event.event == "pinned":
+                entry["top"] = 1
+            elif event.event == "unpinned":
+                entry["top"] = 0
+
+        try:
+            post_config = json.loads(
+                issue.body.split("\r\n")[-1:][0].split("##")[1]
+            )
+        except Exception:
+            post_config = {}
+
+        if "timestamp" in post_config:
+            created_at = int(post_config["timestamp"])
+        else:
+            created = issue.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=datetime.timezone.utc)
+            created_at = int(created.timestamp())
+        entry["created_at"] = created_at
+
+        if "style" in post_config:
+            entry["style"] = self.ctx["style"] + str(post_config["style"])
+        if "script" in post_config:
+            entry["script"] = self.ctx["script"] + str(post_config["script"])
+        if "head" in post_config:
+            entry["head"] = self.ctx["head"] + str(post_config["head"])
+        if "ogImage" in post_config:
+            entry["og_image"] = post_config["ogImage"]
+
+        this_time = datetime.datetime.fromtimestamp(created_at, tz=self.tz)
+        entry["created_date"] = this_time.strftime("%Y-%m-%d")
+        year_colors = self.ctx["year_color_list"]
+        entry["date_label_color"] = year_colors[
+            this_time.year % len(year_colors)
+        ]
+
+        self.sources_dir.mkdir(parents=True, exist_ok=True)
+        (self.sources_dir / f"{issue.number}.md").write_text(
+            issue.body or "", encoding="utf-8"
+        )
+
+        self.ctx[list_name][f"P{issue.number}"] = entry
+        return entry
+
+    # ---------------------------------------------------------------- pages
+
+    def _create_post(self, entry):
+        md_path = self.sources_dir / f"{entry['number']}.md"
+        post_body = self.markdown(md_path.read_text(encoding="utf-8"))
+
+        if "<math-renderer" in post_body:
+            post_body = re.sub(r"<math-renderer.*?>", "", post_body)
+            post_body = re.sub(r"</math-renderer>", "", post_body)
+            entry["script"] = entry["script"] + MATHJAX_SCRIPT
+
+        if '<p class="markdown-alert-title">' in post_body:
+            entry["style"] = entry["style"] + ALERT_BASE_STYLE
+            for alert, style in ALERT_STYLES.items():
+                if f"markdown-alert-{alert}" in post_body:
+                    entry["style"] += (
+                        f"<style>.markdown-alert.markdown-alert-{alert} {{"
+                        f"border-left-color:var(--borderColor-{style}-emphasis,"
+                        f" var(--color-{style}-emphasis));"
+                        f"background-color:var(--color-{style}-subtle);}}"
+                        f".markdown-alert.markdown-alert-{alert} "
+                        f".markdown-alert-title {{"
+                        f"color: var(--fgColor-{style},"
+                        f"var(--color-{style}-fg));}}</style>"
+                    )
+
+        if '<code class="notranslate">Gmeek-html' in post_body:
+            post_body = re.sub(
+                r'<code class="notranslate">Gmeek-html(.*?)</code>',
+                lambda match: html.unescape(match.group(1)),
+                post_body,
+                flags=re.DOTALL,
+            )
+
+        page = dict(self.ctx)
+        page["post_title"] = entry["post_title"]
+        page["post_url"] = self.ctx["home_url"] + "/" + entry["post_url"]
+        page["description"] = entry["description"]
+        page["og_image"] = entry["og_image"]
+        page["post_body"] = post_body
+        page["comment_num"] = entry["comment_num"]
+        page["style"] = entry["style"]
+        page["script"] = entry["script"]
+        page["head"] = entry["head"]
+        page["top"] = entry["top"]
+        page["post_source_url"] = entry["source_url"]
+
+        if entry["labels"][0] in self.ctx["single_page"]:
+            page["bottom_text"] = ""
+
+        if '<pre class="notranslate">' in post_body:
+            if '<div class="highlight' in post_body:
+                page["highlight"] = 1
+            else:
+                page["highlight"] = 2
+            keys = ["sun", "moon", "sync", "home", "github", "copy", "check"]
+        else:
+            page["highlight"] = 0
+            keys = ["sun", "moon", "sync", "home", "github"]
+
+        icon_list = {key: ICONS.get(key) for key in keys}
+        context = {
+            "blogBase": page,
+            "post_list": {},
+            "i18n": self.i18n,
+            "IconList": icon_list,
+        }
+        self.renderer.render_to("post", context, entry["html_dir"])
+        print(
+            "create postPage title=%s file=%s"
+            % (entry["post_title"], entry["html_dir"])
+        )
+
+    def _create_lists(self):
+        posts = dict(
+            sorted(
+                self.ctx["post_list"].items(),
+                key=lambda item: (item[1]["top"], item[1]["created_at"]),
+                reverse=True,
+            )
+        )
+        plist_keys = ["sun", "moon", "sync", "search", "rss", "upload", "post"]
+        plist_keys = list(
+            dict.fromkeys(plist_keys + self.ctx["single_page"])
+        )
+        plist_icon = {key: ICONS.get(key) for key in plist_keys}
+        plist_icon.update(self.ctx["icon_list"])
+        tag_icon = {
+            key: ICONS.get(key)
+            for key in ["sun", "moon", "sync", "home", "search", "post"]
+        }
+
+        page_size = self.ctx["one_page_list_num"]
+        post_num = len(posts)
+        page_flag = 0
+        while True:
+            top_num = page_flag * page_size
+            print("topNum=%d postNum=%d" % (top_num, post_num))
+            if post_num <= page_size:
+                if page_flag == 0:
+                    one_page = dict(list(posts.items())[:post_num])
+                    html_dir = self.dist_dir / "index.html"
+                    self.ctx["prev_url"] = "disabled"
+                    self.ctx["next_url"] = "disabled"
+                else:
+                    one_page = dict(
+                        list(posts.items())[top_num : top_num + post_num]
+                    )
+                    html_dir = self.dist_dir / f"page{page_flag + 1}.html"
+                    self.ctx["prev_url"] = (
+                        "/index.html"
+                        if page_flag == 1
+                        else f"/page{page_flag}.html"
+                    )
+                    self.ctx["next_url"] = "disabled"
+                self._render_list(one_page, html_dir, plist_icon)
+                break
+            else:
+                one_page = dict(
+                    list(posts.items())[top_num : top_num + page_size]
+                )
+                post_num = post_num - page_size
+                if page_flag == 0:
+                    html_dir = self.dist_dir / "index.html"
+                    self.ctx["prev_url"] = "disabled"
+                    self.ctx["next_url"] = "/page2.html"
+                else:
+                    html_dir = self.dist_dir / f"page{page_flag + 1}.html"
+                    self.ctx["prev_url"] = (
+                        "/index.html"
+                        if page_flag == 1
+                        else f"/page{page_flag}.html"
+                    )
+                    self.ctx["next_url"] = f"/page{page_flag + 2}.html"
+                self._render_list(one_page, html_dir, plist_icon)
+            page_flag = page_flag + 1
+
+        tag_context = {
+            "blogBase": self.ctx,
+            "post_list": one_page,
+            "i18n": self.i18n,
+            "IconList": tag_icon,
+        }
+        self.renderer.render_to("tag", tag_context, self.dist_dir / "tag.html")
+        print("create tag.html")
+
+    def _render_list(self, one_page, html_dir, plist_icon):
+        context = {
+            "blogBase": self.ctx,
+            "post_list": one_page,
+            "i18n": self.i18n,
+            "IconList": plist_icon,
+        }
+        self.renderer.render_to("plist", context, html_dir)
+        print("create " + str(html_dir))
+
+    # ----------------------------------------------------------------- feed
+
+    def _create_feed(self):
+        posts_sorted = dict(
+            sorted(
+                self.ctx["post_list"].items(),
+                key=lambda item: item[1]["created_at"],
+                reverse=False,
+            )
+        )
+        entries = list(self.ctx["single_list"].values()) + list(
+            posts_sorted.values()
+        )
+        new_xml = build_feed(self.ctx, entries)
+
+        if self.old_feed and strip_build_date(new_xml) == strip_build_date(
+            self.old_feed
+        ):
+            print("====== rss xml no update ======")
+            (self.dist_dir / "rss.xml").write_text(
+                self.old_feed, encoding="utf-8"
+            )
+            return
+
+        print("====== create rss xml ======")
+        (self.dist_dir / "rss.xml").write_text(new_xml, encoding="utf-8")
+
+    # --------------------------------------------------------------- output
+
+    def _finalize(self):
+        state = {
+            "post_list": self.ctx["post_list"],
+            "single_list": self.ctx["single_list"],
+        }
+        self.state_path.write_text(
+            json.dumps(state, ensure_ascii=False), encoding="utf-8"
+        )
+
+        stripped = {
+            key: {field: value for field, value in entry.items() if field in POST_LIST_FIELDS}
+            for key, entry in self.ctx["post_list"].items()
+        }
+        stripped["label_color_dict"] = self.ctx["label_color_dict"]
+        (self.dist_dir / "post-list.json").write_text(
+            json.dumps(stripped, ensure_ascii=False), encoding="utf-8"
+        )
+
+        self._write_readme()
+
+    def _write_readme(self):
+        workspace = os.environ.get("GITHUB_WORKSPACE")
+        if not workspace:
+            return
+        if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+            return
+
+        comments = sum(
+            entry.get("comment_num", 0)
+            for entry in self.ctx["post_list"].values()
+        )
+        words = sum(
+            entry.get("word_count", 0)
+            for entry in self.ctx["post_list"].values()
+        )
+        now = datetime.datetime.now(self.tz).strftime("%Y-%m-%d %H:%M:%S")
+        home = self.ctx["home_url"]
+        lines = [
+            f"# {self.ctx['title']} :link: {home} \r\n",
+            f"### :page_facing_up: [{len(self.ctx['post_list'])}]({home}/tag.html) \r\n",
+            f"### :speech_balloon: {comments} \r\n",
+            f"### :hibiscus: {words} \r\n",
+            f"### :alarm_clock: {now} \r\n",
+            "### Powered by :heart: [Internote]"
+            "(https://github.com/interset-wq/InterNote)"
+            " • Based on [Gmeek](https://github.com/Meekdai/Gmeek)\r\n",
+        ]
+        (Path(workspace) / "README.md").write_text(
+            "".join(lines), encoding="utf-8"
+        )
+        print("====== update readme file ======")
