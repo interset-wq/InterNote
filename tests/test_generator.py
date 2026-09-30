@@ -83,8 +83,6 @@ class FakeRepo:
 
 @pytest.fixture
 def workspace(tmp_path: Path):
-    shutil.copytree(REPO_ROOT / "templates", tmp_path / "templates")
-    shutil.copytree(REPO_ROOT / "plugins", tmp_path / "plugins")
     (tmp_path / "static").mkdir()
     (tmp_path / "static" / "robots.txt").write_text("User-agent: *\n", encoding="utf-8")
     (tmp_path / "config.toml").write_text(CONFIG_TOML, encoding="utf-8")

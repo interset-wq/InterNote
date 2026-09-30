@@ -6,10 +6,11 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_SUFFIX = ".j2.html"
+PKG_TEMPLATES = Path(__file__).resolve().parent / "templates"
 
 
 class Renderer:
-    def __init__(self, templates_dir: str | Path = "templates"):
+    def __init__(self, templates_dir: str | Path = PKG_TEMPLATES):
         self.templates_dir = Path(templates_dir)
         self.env = Environment(
             loader=FileSystemLoader(str(self.templates_dir)),

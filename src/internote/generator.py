@@ -66,7 +66,7 @@ class Generator:
         self.post_dir = self.dist_dir / "post"
         self.sources_dir = self.root / "sources"
         self.static_dir = self.root / "static"
-        self.plugins_dir = self.root / "plugins"
+        self.plugins_dir = Path(__file__).resolve().parent / "plugins"
         self.state_path = self.root / "internote.json"
 
         self.ctx = config.context()
@@ -91,7 +91,7 @@ class Generator:
 
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
         self.i18n = get_i18n(self.ctx["language"])
-        self.renderer = Renderer(self.root / "templates")
+        self.renderer = Renderer(Path(__file__).resolve().parent / "templates")
 
         self.old_feed = ""
         rss_path = self.dist_dir / "rss.xml"

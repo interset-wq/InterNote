@@ -6,7 +6,7 @@ from internote.constants import ICONS, get_i18n
 from internote.renderer import Renderer
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TEMPLATES = REPO_ROOT / "templates"
+TEMPLATES = REPO_ROOT / "src" / "internote" / "templates"
 HOME = "https://interset-wq.github.io/InterNote"
 
 COUNTER_SCRIPTS = {
