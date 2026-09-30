@@ -367,3 +367,10 @@ def test_tocbot_placeholder_not_full_viewport():
         encoding="utf-8"
     )
     assert "window.innerHeight + 'px'" not in src
+
+
+def test_toc_not_created_without_headings():
+    src = (REPO_ROOT / "src" / "internote" / "plugins" / "tocbot.js").read_text(
+        encoding="utf-8"
+    )
+    assert "if (headings.length > 0)" in src
