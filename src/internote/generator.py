@@ -86,6 +86,7 @@ class Generator:
         self.ctx["need_comment"] = bool(
             self.ctx["need_comment"] and self.ctx["giscus_repo"]
         )
+        self.ctx["blog_repo_url"] = f"https://github.com/{repo_name}"
         print("GitHub Pages URL: ", self.ctx["home_url"])
 
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
@@ -317,10 +318,10 @@ class Generator:
                 page["highlight"] = 1
             else:
                 page["highlight"] = 2
-            keys = ["sun", "moon", "sync", "home", "github", "copy", "check"]
+            keys = ["sun", "moon", "sync", "home", "github", "rss", "copy", "check"]
         else:
             page["highlight"] = 0
-            keys = ["sun", "moon", "sync", "home", "github"]
+            keys = ["sun", "moon", "sync", "home", "github", "rss"]
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
@@ -343,7 +344,7 @@ class Generator:
                 reverse=True,
             )
         )
-        plist_keys = ["sun", "moon", "sync", "search", "rss", "upload", "post"]
+        plist_keys = ["sun", "moon", "sync", "search", "rss", "github", "upload", "post"]
         plist_keys = list(
             dict.fromkeys(plist_keys + self.ctx["single_page"])
         )
@@ -351,7 +352,7 @@ class Generator:
         plist_icon.update(self.ctx["icon_list"])
         tag_icon = {
             key: ICONS.get(key)
-            for key in ["sun", "moon", "sync", "home", "search", "post"]
+            for key in ["sun", "moon", "sync", "home", "search", "post", "rss", "github"]
         }
 
         page_size = self.ctx["one_page_list_num"]

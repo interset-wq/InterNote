@@ -344,3 +344,21 @@ def test_run_one_recreates_sources_dir_when_missing(workspace: Path):
     gen2.run_one("6")
 
     assert (workspace / "sources").is_dir()
+
+
+def test_footer_icon_keys_and_blog_repo_url(workspace: Path):
+    repo = two_post_repo()
+    gen = make_generator(workspace, repo)
+    gen.run_all()
+
+    assert gen.ctx["blog_repo_url"] == "https://github.com/interset-wq/InterNote"
+
+    index = (workspace / "dist" / "index.html").read_text(encoding="utf-8")
+    post = (workspace / "dist" / "post" / "3.html").read_text(encoding="utf-8")
+    tag = (workspace / "dist" / "tag.html").read_text(encoding="utf-8")
+
+    assert 'id="buttonGH"' in index
+    assert 'id="buttonRSS"' in index
+    assert "'github'" in index
+    assert "'rss'" in post
+    assert "'rss'" in tag and "'github'" in tag

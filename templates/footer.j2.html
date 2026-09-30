@@ -1,5 +1,14 @@
 <div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="{{ blogBase['home_url'] }}">{{ blogBase['title'] }}</a></div>
 <div id="footer2">
+    {%- set gh_url = blogBase['post_source_url'] if (blogBase['post_source_url'] is defined and blogBase['post_source_url'] and blogBase['show_post_source']) else blogBase['blog_repo_url'] -%}
+    <span id="footerIcons">
+        <a href="{{ blogBase['home_url'] }}/rss.xml" target="_blank" id="buttonRSS" class="btn btn-invisible circle" title="RSS">
+            <svg class="octicon" width="16" height="16"><path id="pathRSS" fill-rule="evenodd"></path></svg>
+        </a>
+        <a href="{{ gh_url }}" target="_blank" id="buttonGH" class="btn btn-invisible circle" title="GitHub">
+            <svg class="octicon" width="16" height="16"><path id="pathGH" fill-rule="evenodd"></path></svg>
+        </a>
+    </span>
     {%- if blogBase['filing_num']!='' -%}
     <span id="filing_num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ blogBase['filing_num'] }}</a> • </span>
     {%- endif %}
@@ -14,6 +23,8 @@
 <script>
 var now=new Date();
 document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+document.getElementById("pathRSS").setAttribute("d",IconList["rss"]);
+document.getElementById("pathGH").setAttribute("d",IconList["github"]);
 
 if("{{ blogBase['start_site'] }}"!=""){
     var startSite=new Date("{{ blogBase['start_site'] }}");

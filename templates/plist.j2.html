@@ -30,7 +30,6 @@
     body {padding: 8px;}
     .avatar {width:40px;height:40px;}
     .blogTitle{display:none;}
-    #buttonRSS{display:none;}
     .LabelTime{display:none;}
 }
 </style>
@@ -62,11 +61,6 @@
         </svg>
     </a>
     {%- endfor %}
-    <a href="{{ blogBase['home_url'] }}/rss.xml" target="_blank" id="buttonRSS" class="btn btn-invisible circle" title="RSS">
-        <svg class="octicon" width="16" height="16" >
-            <path id="pathRSS" fill-rule="evenodd"></path>
-        </svg>
-    </a>
     <a class="btn btn-invisible circle" onclick="modeSwitch()" title="{{ i18n['switchTheme'] }}" {%- if blogBase['theme_mode']=='fix' -%}style="display:none;"{%- endif -%}>
         <svg class="octicon" width="16" height="16" >
             <path id="themeSwitch" fill-rule="evenodd"></path>
@@ -118,7 +112,6 @@
 {% block script %}
 <script>
 document.getElementById("pathSearch").setAttribute("d",IconList["search"]);
-document.getElementById("pathRSS").setAttribute("d",IconList["rss"]);
 iconTOP=document.getElementsByClassName("svgTop1");
 iconPost=document.getElementsByClassName("svgTop0");
 for(var i=0;i<iconTOP.length;i++){

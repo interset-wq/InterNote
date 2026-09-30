@@ -50,13 +50,6 @@
             <path id="pathHome" fill-rule="evenodd"></path>
         </svg>
     </a>
-    {% if blogBase['show_post_source'] %}
-    <a href="{{ blogBase['post_source_url'] }}" target="_blank" class="btn btn-invisible circle" title="Issue">
-        <svg class="octicon" width="16" height="16">
-            <path id="pathIssue" fill-rule="evenodd"></path>
-        </svg>
-    </a>
-    {% endif %}
 
     <a class="btn btn-invisible circle" onclick="modeSwitch();" title="{{ i18n['switchTheme'] }}" {%- if blogBase['theme_mode']=='fix' -%}style="display:none;"{%- endif -%}>
         <svg class="octicon" width="16" height="16" >
@@ -95,7 +88,6 @@
 {% block script %}
 <script>
 document.getElementById("pathHome").setAttribute("d",IconList["home"]);
-{% if blogBase['show_post_source'] %}document.getElementById("pathIssue").setAttribute("d",IconList["github"]);{% endif %}
 {% if blogBase['comment_num']>0 -%}
     cmButton=document.getElementById("cmButton");
     span=document.createElement("span");

@@ -21,6 +21,7 @@ def base_context(**overrides):
     blog.update(
         {
             "home_url": HOME,
+            "blog_repo_url": "https://github.com/x/y",
             "prev_url": "disabled",
             "next_url": "disabled",
             "post_title": "Hello World",
@@ -88,6 +89,48 @@ def test_post_giscus_lang_matches_site_language():
 
     html_en = render("post", base_context(language="EN", **giscus))
     assert 'data-lang="en"' in html_en
+
+
+def _header(html: str) -> str:
+    return html.split('id="header"')[1].split('id="content"')[0]
+
+
+def _footer(html: str) -> str:
+    return html.split('id="content"')[1]
+
+
+def test_plist_moves_rss_and_github_to_footer():
+    html = render("plist", base_context(post_source_url=""))
+
+    footer = _footer(html)
+    assert 'id="buttonRSS"' in footer
+    assert f'href="{HOME}/rss.xml"' in footer
+    assert 'id="buttonGH"' in footer
+    assert 'href="https://github.com/x/y"' in footer
+
+    header = _header(html)
+    assert "buttonRSS" not in header
+    assert "pathRSS" not in header
+
+
+def test_post_moves_issue_link_to_footer():
+    html = render("post", base_context())
+
+    footer = _footer(html)
+    assert 'id="buttonRSS"' in footer
+    assert 'id="buttonGH"' in footer
+    assert 'href="https://github.com/x/y/issues/1"' in footer
+
+    assert "pathIssue" not in html
+    assert 'id="buttonRSS"' not in _header(html)
+
+
+def test_post_github_falls_back_to_repo_when_source_hidden():
+    html = render("post", base_context(show_post_source=False))
+
+    footer = _footer(html)
+    assert 'href="https://github.com/x/y/issues/1"' not in footer
+    assert 'href="https://github.com/x/y"' in footer
 
 
 def test_post_without_comments_hides_giscus():
