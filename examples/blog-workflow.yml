@@ -1,0 +1,97 @@
+# 博客仓库的工作流模板（InterNote）
+# 用法：复制本文件到博客仓库的 .github/workflows/internote.yml
+#
+# 博客仓库需要包含：
+#   - config.toml      站点配置（复制本仓库的 config.sample.toml 修改）
+#   - .github/workflows/internote.yml  本文件
+#   - Issue            文章（保存时自动触发构建）
+# 生成产物会提交回博客仓库：dist/、sources/、internote.json、README.md
+# 因此博客仓库的 .gitignore 不要忽略这些路径。
+#
+# 触发方式：
+#   - Issue opened / edited   -> 增量重建该篇文章
+#   - schedule（每天）         -> 全局重建
+#   - workflow_dispatch        -> 手动全局重建（修改 config.toml 后执行一次）
+name: build Internote
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened, edited]
+  schedule:
+    - cron: "0 16 * * *"
+
+jobs:
+  build:
+    name: Generate blog
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.owner.id == github.event.sender.id || github.event_name == 'schedule' }}
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Clone InterNote source
+        run: |
+          INTERNOTE_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('config.toml','rb'))['site']['version'])")
+          git clone https://github.com/interset-wq/InterNote.git /opt/Internote
+          cd /opt/Internote/
+          if [ "$INTERNOTE_VERSION" == "last" ]; then
+            lastTag=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || git rev-parse HEAD)
+            git checkout $lastTag
+          else
+            git checkout $INTERNOTE_VERSION
+          fi
+
+      - name: Generate new html
+        run: |
+          cp -r ./* /opt/Internote/
+          cd /opt/Internote/
+          uv run --frozen internote ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} --issue_number '${{ github.event.issue.number }}'
+          cp -a /opt/Internote/dist ${{ github.workspace }}
+          cp -a /opt/Internote/sources ${{ github.workspace }}
+          cp /opt/Internote/internote.json ${{ github.workspace }}
+
+      - name: Update html
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -a -m 'chore: auto update by Internote action' || echo "nothing to commit"
+          git push || echo "nothing to push"
+          sleep 3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist/.'
+
+  deploy:
+    name: Deploy blog
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
