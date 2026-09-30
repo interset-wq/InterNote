@@ -1,0 +1,50 @@
+# InterNote 配置文件（config.toml）
+# 复制为 config.toml 后按需修改；所有键的详细说明见 README.md
+
+[site]
+title = "InterNote"
+sub_title = "My notes on everything"
+avatar_url = "https://github.githubassets.com/favicons/favicon.svg"
+# display_title = ""        # 默认与 title 相同
+# favicon_url = ""          # 默认与 avatar_url 相同
+# og_image = ""             # 默认与 avatar_url 相同
+# home_url = ""             # 留空则自动推导（GitHub Pages 地址）
+version = "last"             # 博客仓库 workflow 检出的 InterNote 版本（tag 或 last）
+language = "CN"              # CN | EN | RU
+utc = 8                      # 时区偏移（小时）
+
+[theme]
+mode = "manual"              # manual: 支持明暗切换 | fix: 固定
+day = "light"
+night = "dark"
+# year_colors = ["#bc4c00", "#0969da", "#1f883d", "#A333D0"]
+
+[layout]
+one_page_list_num = 15       # 每页文章数
+single_page = []             # 单页标签（如 ["about"]，对应 label 生成独立页面）
+start_site = ""              # 建站日期（如 "2026-01-01"，显示运行天数）
+filing_num = ""              # ICP 备案号（留空不显示）
+bottom_text = ""             # 文章页底部附加文字
+show_post_source = true      # 是否显示指向 Issue 的源码链接
+# head / style / script / index_script / index_style / all_head = ""  # 注入的 HTML 片段
+
+[nav]
+exlink = {}                  # 附加导航图标：{ "图标名": "链接" }，图标名需存在于 icon_list
+icon_list = {}               # 自定义 SVG path：{ "图标名": "d=..." }
+
+[comments]
+enabled = true               # 是否启用评论
+label_color = "#006b75"      # 评论数徽章颜色
+
+[giscus]
+repo = ""                    # 如 "your-name/your-blog"（评论存储的仓库，需开启 Discussions）
+repo_id = ""                 # giscus.app 提供
+category = ""                # 如 "Announcements"
+category_id = ""             # giscus.app 提供
+
+[features]
+toc = false                  # 文章页目录（tocbot）
+visit_counter = "off"        # off | vercount | busuanzi
+
+[feed]
+split = "sentence"           # RSS 摘要截断符："sentence" 或自定义字符
