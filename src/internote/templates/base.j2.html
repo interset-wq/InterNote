@@ -1,71 +1,46 @@
-<!DOCTYPE html>
-<html data-color-mode="light" data-dark-theme="{{ blogBase['night_theme'] }}" data-light-theme="{{ blogBase['day_theme'] }}" lang={% if blogBase['language']=='CN' %}"zh-CN"{% else -%}"en"{%- endif -%}>
-<head>
-    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <script>var IconList={{ IconList }};</script>
-    {{ blogBase['primer_css'] }}
-    {{ blogBase['all_head'] }}
-    <link rel="icon" href="{{ blogBase['favicon_url'] }}">
-    {%- if blogBase['theme_mode']=='manual' -%}
-    <script>
-        let theme = localStorage.getItem("internote_theme") || "light";
-        document.documentElement.setAttribute("data-color-mode", theme);
-    </script>
-    {%- endif -%}
-    {% block head %}{% endblock %}
-</head>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 45px;
+        font-size: 16px;
+        font-family: sans-serif;
+        line-height: 1.25;
+        min-height: 100vh;
+      }
 
-<style>
-body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
-#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
-#footer {margin-top:64px; text-align: center;font-size: small;}
-#footer2 {margin-top:8px;}
-.title-right{display:flex;margin:auto 0 0 auto;}
-.title-right .circle{padding:14px 16px;margin-right:8px;}
+      header {
+        display: flex;
+        padding-bottom: 8px;
+        border-bottom: 1px solid
+          var(--borderColor-muted, var(--color-border-muted));
+        margin-bottom: 16px;
+      }
 
-</style>
-{% block style %}{% endblock %}
+      footer {
+        margin-top: 64px;
+        text-align: center;
+        font-size: small;
+      }
+    </style>
+    <style></style>
+    <script></script>
+  </head>
+  <body>
+    <header>{% include '../components/header.j2.html' %}</header>
 
-<body>
-    <div id="header">{% block header %}{% endblock %}</div>
-    <div id="content">{% block content %}{% endblock %}</div>
-    <div id="footer">{% include 'footer.j2.html' %}</div>
-</body>
+    <main>{% block content %}{% endblock %}</main>
 
-<script>
-function giscusTheme(theme){
-    {%- if blogBase['need_comment'] %}
-    const iframe=document.getElementsByClassName('giscus-frame')[0];
-    if(iframe){
-        iframe.contentWindow.postMessage({giscus:{setConfig:{theme:theme}}},'https://giscus.app');
-    }
-    {%- endif %}
-}
-{%- if blogBase['theme_mode']=='manual' %}
-let themeSettings={
-    "dark": ["dark","moon","#00f0ff","dark"],
-    "light": ["light","sun","#ff5000","light"],
-    "auto": ["auto","sync","","preferred_color_scheme"]
-};
-function changeTheme(mode, icon, color, giscusThemeName){
-    document.documentElement.setAttribute("data-color-mode",mode);
-    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
-    document.getElementById("themeSwitch").parentNode.style.color=color;
-    giscusTheme(giscusThemeName);
-}
-function modeSwitch(){
-    let currentMode=document.documentElement.getAttribute('data-color-mode');
-    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
-    localStorage.setItem("internote_theme", newMode);
-    if(themeSettings[newMode]){
-        changeTheme(...themeSettings[newMode]);
-    }
-}
-if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
-{%- endif %}
-console.log("\n %c Internote {{ blogBase['version'] }} • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
-</script>
-{% block script %}{% endblock %}
+    <footer>{% include '../components/footer.j2.html' %}</footer>
+
+    <script></script>
+  </body>
 </html>
