@@ -1,5 +1,4 @@
 {% from 'components/buttons.j2.html' import icon_button with context %}
-<div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="{{ blogBase['home_url'] }}">{{ blogBase['title'] }}</a></div>
 <div id="footer2">
     {%- set gh_url = blogBase['post_source_url'] if (blogBase['post_source_url'] is defined and blogBase['post_source_url'] and blogBase['show_post_source']) else blogBase['blog_repo_url'] -%}
     <span id="footerIcons">
@@ -7,9 +6,10 @@
         {{ icon_button('pathGH', href=gh_url, title='GitHub', button_id='buttonGH', target='_blank') }}
     </span>
 </div>
+<div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="{{ blogBase['home_url'] }}">{{ blogBase['title'] }}</a></div>
 <div id="footer3">
     {%- if blogBase['filing_num']!='' -%}
-    <span id="filing_num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ blogBase['filing_num'] }}</a> • </span>
+    <span id="filing_num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ blogBase['filing_num'] }}</a></span><br />
     {%- endif %}
     <span id="runday"></span><span>Powered by <a href="https://github.com/interset-wq/InterNote">Internote</a> • Based on <a href="https://github.com/Meekdai/Gmeek" target="_blank">Gmeek</a></span>
     {%- if blogBase['visit_counter']=='vercount' -%}
