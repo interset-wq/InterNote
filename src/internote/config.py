@@ -7,11 +7,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-PRIMER_CSS_DEFAULT = (
-    "<link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/"
-    "Primer/21.0.7/primer.css' rel='stylesheet' />"
-)
-
 
 class SiteConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -101,7 +96,6 @@ class InternoteConfig(BaseModel):
             "giscus_category": self.giscus.category,
             "giscus_category_id": self.giscus.category_id,
             "visit_counter": self.features.visit_counter,
-            "primer_css": PRIMER_CSS_DEFAULT,
             "theme_mode": "manual",
             "day_theme": "light",
             "night_theme": "dark",
