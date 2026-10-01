@@ -4,6 +4,8 @@ nohup.out
 venv/
 .venv/
 dist/
+sources/
+internote.json
 build/
 *.egg-info/
 .pytest_cache/
