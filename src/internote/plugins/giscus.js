@@ -5,84 +5,59 @@
 (function () {
   'use strict';
 
-  var config = {
-    repo: '{{ site.giscus_repo }}',
-    repoId: '{{ site.giscus_repo_id }}',
-    category: '{{ site.giscus_category }}',
-    categoryId: '{{ site.giscus_category_id }}',
-    mapping: 'pathname',
-    strict: '0',
-    reactionsEnabled: '1',
-    emitMetadata: '0',
-    inputPosition: 'bottom',
-    theme: 'light',
-    lang: '{{ site.language | lower | replace("cn", "zh-CN") | replace("en", "en") }}',
-  };
+  function currentMode() {
+    return localStorage.getItem('internote_theme') || 'light';
+  }
 
-  function getTheme() {
-    var t = localStorage.getItem('internote_theme') || 'light';
-    if (t === 'dark') return 'dark';
-    if (t === 'auto') return 'preferred_color_scheme';
+  function resolveTheme(mode) {
+    if (mode === 'dark') return 'dark';
+    if (mode === 'auto') return 'preferred_color_scheme';
     return 'light';
   }
 
   function setTheme(theme) {
-    var iframe = document.getElementsByClassName('giscus-frame')[0];
-    if (iframe) {
-      iframe.contentWindow.postMessage(
-        { giscus: { setConfig: { theme: theme } } },
-        'https://giscus.app'
-      );
-    }
+    var frame = document.querySelector('.giscus-frame');
+    if (!frame) return;
+    frame.contentWindow.postMessage({ giscus: { setConfig: { theme: theme } } }, 'https://giscus.app');
   }
 
   function loadGiscus() {
-    var cm = document.getElementById('comments');
-    if (!cm) return;
+    var container = document.getElementById('comments');
+    var template = document.getElementById('giscusTemplate');
+    if (!container || !template) return;
 
-    var tpl = document.getElementById('giscusTemplate');
-    if (!tpl) return;
-
-    var script = tpl.content.firstElementChild.cloneNode(true);
-    script.setAttribute('data-theme', getTheme());
-    cm.appendChild(script);
+    var script = template.content.firstElementChild.cloneNode(true);
+    script.setAttribute('data-theme', resolveTheme(currentMode()));
+    container.appendChild(script);
 
     var timer = setInterval(function () {
-      var frame = document.getElementsByClassName('giscus-frame');
-      if (frame.length === 1 && frame[0].style.height !== '') {
-        clearInterval(timer);
-        var btn = document.getElementById('cmButton');
-        if (btn) btn.style.display = 'none';
-        setTheme(getTheme());
-        console.log('giscus Load OK');
-      }
+      var frames = document.getElementsByClassName('giscus-frame');
+      if (frames.length !== 1 || frames[0].style.height === '') return;
+      clearInterval(timer);
+      var button = document.getElementById('cmButton');
+      if (button) button.hidden = true;
+      setTheme(resolveTheme(currentMode()));
     }, 200);
   }
 
   function openComments() {
-    var btn = document.getElementById('cmButton');
-    if (!btn) return;
-    btn.disabled = true;
-    btn.innerHTML = 'loading<span class="animated-ellipsis"></span>';
+    var button = document.getElementById('cmButton');
+    if (!button) return;
+    button.disabled = true;
+    button.innerHTML = 'loading<span class="in-animated-ellipsis"></span>';
     loadGiscus();
   }
 
   function init() {
-    var btn = document.getElementById('cmButton');
-    if (btn) {
-      btn.addEventListener('click', openComments);
-    }
+    var button = document.getElementById('cmButton');
+    if (button) button.addEventListener('click', openComments);
 
-    var themeSwitch = document.getElementById('themeSwitch');
-    if (themeSwitch) {
-      var observer = new MutationObserver(function () {
-        setTheme(getTheme());
-      });
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-color-mode'],
-      });
-    }
+    new MutationObserver(function () {
+      setTheme(resolveTheme(currentMode()));
+    }).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-color-mode']
+    });
   }
 
   if (document.readyState === 'loading') {
@@ -92,5 +67,4 @@
   }
 
   window.giscusTheme = setTheme;
-  window.openComments = openComments;
 })();

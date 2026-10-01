@@ -10,6 +10,10 @@ I18N = {
         "Previous": "Previous",
         "Next": "Next",
         "updated": "updated",
+        "toc": "Contents",
+        "top": "Top",
+        "pageViews": "Page views",
+        "siteViews": "Site views",
     },
     "CN": {
         "Search": "搜索",
@@ -21,6 +25,10 @@ I18N = {
         "Previous": "上一页",
         "Next": "下一页",
         "updated": "更新",
+        "toc": "目录",
+        "top": "回到顶部",
+        "pageViews": "本文浏览",
+        "siteViews": "总浏览",
     },
 }
 

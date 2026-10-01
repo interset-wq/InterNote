@@ -13,29 +13,9 @@
 {% endblock %}
 
 {% block style %}
-  <style>
-    .in-post-title { font-size: 36px; font-weight: 700; margin: 0 0 16px; line-height: 1.2; }
-    .in-post-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 24px; }
-    .in-post-meta .Label a { color: inherit; text-decoration: none; }
-    .in-post-body { border-bottom: 1px solid var(--in-color-border); padding-bottom: 36px; }
-    .in-comments-section { margin-top: 48px; }
-    .g-emoji { font-size: 24px; }
-    .in-copy-feedback {
-      display: none;
-      position: absolute;
-      top: 10px;
-      right: 50px;
-      color: #fff;
-      background-color: var(--in-color-muted);
-      border-radius: 3px;
-      padding: 5px 8px;
-      font-size: 12px;
-    }
-    @media (max-width: 600px) {
-      .in-post-title { font-size: 24px; }
-    }
-  </style>
-  {{ post.style }}
+  {% if post.style %}
+  <style>{{ post.style }}</style>
+  {% endif %}
 {% endblock %}
 
 {% block header %}
@@ -63,6 +43,7 @@
       </span>
       {% endfor %}
     </div>
+    <nav class="in-toc" id="in-toc" data-toc-title="{{ i18n.toc }}" data-toc-top="{{ i18n.top }}" aria-label="{{ i18n.toc }}"></nav>
     <div class="in-post-body markdown-body">{{ post.body }}</div>
     {% if post.footer_text %}
     <div class="in-post-footer-text">{{ post.footer_text }}</div>
@@ -107,13 +88,14 @@
   {% if site.need_comment %}
   <script src="{{ site.home_url }}/plugins/giscus.js"></script>
   {% endif %}
-  <script src="{{ site.home_url }}/plugins/tocbot.js"></script>
+  <script src="{{ site.home_url }}/plugins/toc.js"></script>
+  <script src="{{ site.home_url }}/plugins/lightbox.js"></script>
   {% if post.highlight != 0 %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      var createClipboardHTML = function(codeContent, additionalClasses) {
+      var createClipboardHTML = function(codeContent) {
         return '<pre class="notranslate"><code class="notranslate">' + codeContent + '</code></pre>' +
-          '<div class="clipboard-container position-absolute right-0 top-0 ' + (additionalClasses || '') + '">' +
+          '<div class="clipboard-container position-absolute right-0 top-0">' +
           '<clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">' +
           '<svg height="16" width="16" class="octicon octicon-copy m-2"><path d="' + window.icons.copy + '"></path></svg>' +
           '<svg height="16" width="16" class="octicon octicon-check m-2 d-none"><path d="' + window.icons.check + '"></path></svg>' +
@@ -126,7 +108,7 @@
         document.querySelectorAll(selector).forEach(function(codeElement) {
           var codeContent = codeElement.innerHTML;
           var newStructure = document.createElement('div');
-          newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+          newStructure.className = 'in-code-block';
           newStructure.innerHTML = createClipboardHTML(codeContent);
 
           var parentElement = codeElement.parentElement;
@@ -145,7 +127,7 @@
       var currentFeedback = null;
       document.querySelectorAll('clipboard-copy').forEach(function(copyButton) {
         copyButton.addEventListener('click', function() {
-          var codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+          var codeContent = copyButton.closest('.in-code-block').innerText;
           var tempTextArea = document.createElement('textarea');
           tempTextArea.value = codeContent;
           document.body.appendChild(tempTextArea);
