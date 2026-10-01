@@ -241,30 +241,12 @@ class Generator:
             elif event.event == "unpinned":
                 entry["top"] = 0
 
-        try:
-            post_config = json.loads(
-                issue.body.split("\r\n")[-1:][0].split("##")[1]
-            )
-        except Exception:
-            post_config = {}
+        created = issue.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=datetime.timezone.utc)
+        entry["created_at"] = int(created.timestamp())
 
-        if "timestamp" in post_config:
-            created_at = int(post_config["timestamp"])
-        else:
-            created = issue.created_at
-            if created.tzinfo is None:
-                created = created.replace(tzinfo=datetime.timezone.utc)
-            created_at = int(created.timestamp())
-        entry["created_at"] = created_at
-
-        if "style" in post_config:
-            entry["style"] = self.ctx["style"] + str(post_config["style"])
-        if "script" in post_config:
-            entry["script"] = self.ctx["script"] + str(post_config["script"])
-        if "head" in post_config:
-            entry["head"] = self.ctx["head"] + str(post_config["head"])
-
-        this_time = datetime.datetime.fromtimestamp(created_at, tz=self.tz)
+        this_time = datetime.datetime.fromtimestamp(entry["created_at"], tz=self.tz)
         entry["created_date"] = this_time.strftime("%Y-%m-%d")
         year_colors = ["#bc4c00", "#0969da", "#1f883d", "#A333D0"]
         entry["date_label_color"] = year_colors[

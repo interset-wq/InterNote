@@ -75,11 +75,4 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 
 主题无需配置：明暗切换内置（亮 / 暗 / 跟随系统三态循环），Primer CSS 与站点样式随包内置并复制到 `dist/assets/`。
 
-### 文章内配置（Issue 正文最后一行）
-
-```text
-## {"timestamp": 1700000000, "style": "", "script": "", "head": ""}
-```
-
-- `timestamp`：覆盖文章时间（Unix 秒）
-- `style` / `script` / `head`：单篇注入的 HTML 片段（在全局配置基础上追加）
+文章时间取自 Issue 创建时间，`head` / `style` / `script` 注入片段在 `[layout]` 中全局配置。
