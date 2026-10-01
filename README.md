@@ -12,7 +12,7 @@
 - 文章 URL 使用 Issue 编号：`post/42.html`；单页 Label（如 `about`）生成 `about.html`
 - 评论：[giscus](https://giscus.app)（按 pathname 映射，`<template>` 懒加载，未配置时不渲染）
 - 文章目录（`toc.js`，自带滚动高亮）；可选访问计数（`vercount` / `busuanzi`）、RSS 订阅（`rss.xml`）
-- 站内搜索：可选接入 [Algolia](https://www.algolia.com/)（全文检索，`Ctrl/⌘ + K` 弹窗）；未启用时回退到标签页的标题过滤
+- 站内搜索：可选接入 [Algolia](https://www.algolia.com/)（全文检索，点击导航栏搜索图标弹出）；未启用时回退到标签页的标题过滤
 - TOML 配置，pydantic 严格校验（未知键报错），`config.sample.toml` 为完整示例
 - 每次构建更新仓库 `README.md` 的文章数 / 评论数 / 字数 / 时间统计（定时任务除外）
 
@@ -82,7 +82,9 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 ### 站内搜索（Algolia，可选）
 
 搜索覆盖**标题、标签与正文全文**。构建时由生成器把每篇文章推送进 Algolia 索引，
-浏览器端用一个 `Ctrl/⌘ + K` 弹窗查询，不依赖任何 JS SDK。
+浏览器端用点击导航栏图标打开的弹窗查询，不依赖任何 JS SDK。界面样式参考 Algolia
+DocSearch 的视觉语言（遮罩、内凹弹窗、卡片式结果行），但没有引入 `@docsearch/*`
+依赖：该包仅授权给符合条件的文档站使用，而本项目坚持零依赖、不走 CDN。
 
 1. 在 [Algolia](https://www.algolia.com/) 建应用，建一个索引（如 `posts`）
 2. 把 Search-only API key 填进 `config.toml` 的 `[search]`，并设 `[features] search = "algolia"`

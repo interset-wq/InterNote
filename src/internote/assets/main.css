@@ -12,8 +12,19 @@
   --in-color-accent: var(--color-accent-fg, #0969da);
   --in-color-muted: var(--color-fg-muted, #656d76);
   --in-color-subtle: var(--color-canvas-subtle, #f6f8fa);
-  --in-color-btn-bg: var(--color-btn-bg, #f6f8fa);
+--in-color-btn-bg:    var(--color-btn-bg, #f6f8fa);
   --in-color-btn-hover: var(--color-btn-hover-bg, #ebeef1);
+  --in-color-accent-contrast: var(--color-canvas-default, #ffffff);
+  --in-color-on-accent-soft:   rgba(255, 255, 255, 0.28);
+
+  /* Search dialog depth, following DocSearch's stacked-shadow approach.
+     These are literal rather than aliased because there is no Primer
+     equivalent - they describe the dialog's own layering. */
+  --in-color-scrim:          rgba(101, 108, 133, 0.8);
+  --in-color-scrim-shadow:   rgba(30, 35, 90, 0.2);
+  --in-color-inset-light:    var(--color-canvas-default, #ffffff);
+  --in-color-inset-dark:     rgba(215, 219, 229, 0.5);
+  --in-color-hit-shadow:     var(--color-shadow-small, rgba(212, 217, 225, 0.8));
 }
 
 /* ===== Reset & Base ===== */
@@ -367,13 +378,25 @@ a:hover { text-decoration: underline; }
   color: var(--in-color-muted);
 }
 
-.in-footer-tags {
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 1px solid var(--in-color-border);
-}
+/* ===== Search Dialog =====
+   Styled after Algolia DocSearch v5's visual language - the dimmed scrim,
+   the recessed modal, card-like hit rows with a soft drop shadow, the
+   keyboard-hint footer - so the dialog reads the way a doc site does.
 
-/* ===== Search Dialog ===== */
+   Deliberately not @docsearch/css: that package is only licensed for
+   eligible documentation sites and would add a bundled dependency to a
+   project that ships zero of them. Colours come from the --in-* tokens
+   rather than DocSearch's own --docsearch-* set, which keeps dark mode
+   automatic and stays inside the project palette.
+
+   Mapping: --docsearch-primary-color -> --in-color-accent,
+   --docsearch-muted-color -> --in-color-muted,
+   --docsearch-modal-background -> --in-color-subtle,
+   --docsearch-hit-background -> --in-color-bg.
+   Skipped: the breadcrumb. DocSearch assumes a lvl0..lvl6 heading tree;
+   records here are one per post with no hierarchy to show.
+*/
+
 /* Separate from .in-search-input above, which sizes the tag page form. */
 .in-search-overlay {
   position: fixed;
@@ -381,22 +404,25 @@ a:hover { text-decoration: underline; }
   z-index: 100;
   display: flex;
   justify-content: center;
-  padding: 10vh 16px 16px;
-  background-color: rgba(31, 35, 40, 0.5);
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  background-color: var(--in-color-scrim);
   overflow-y: auto;
 }
 
 .in-search-panel {
   width: 100%;
-  max-width: 640px;
-  max-height: 70vh;
+  max-width: 560px;
+  max-height: 76vh;
   display: flex;
   flex-direction: column;
-  align-self: flex-start;
-  background-color: var(--in-color-bg);
-  border: 1px solid var(--in-color-border);
-  border-radius: var(--in-radius);
-  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.2);
+  background-color: var(--in-color-subtle);
+  border-radius: 8px;
+  /* DocSearch layers an inner highlight over the outer drop shadow, which is
+     what gives the modal its recessed-then-lifted look. */
+  box-shadow:
+    inset 0 2px 0 0 var(--in-color-inset-light),
+    0 16px 32px 0 var(--in-color-scrim-shadow);
   overflow: hidden;
 }
 
@@ -404,14 +430,18 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--in-color-border);
+  margin: 12px 12px 0;
+  padding: 0 12px;
+  height: 44px;
+  background-color: var(--in-color-bg);
+  border-radius: 8px;
+  box-shadow: inset 0 2px 2px 0 var(--in-color-inset-dark);
 }
 
 .in-search-modal-input {
   flex: 1;
-  height: 32px;
-  padding: 4px 8px;
+  height: 100%;
+  min-width: 0;
   border: none;
   background-color: transparent;
   color: var(--in-color-text);
@@ -419,38 +449,59 @@ a:hover { text-decoration: underline; }
   outline: none;
 }
 
-.in-search-kbd {
+/* The magnifier drawn into the input's left edge, matching DocSearch's. */
+/* The magnifier is injected by search.js from window.icons.search, the same
+   way tag.j2.html builds its post glyph, so it is the Octicons path rather
+   than a hand-drawn ring. */
+.in-search-head-icon {
   flex: none;
-  padding: 2px 6px;
-  border: 1px solid var(--in-color-border);
-  border-radius: 4px;
-  background-color: var(--in-color-btn-bg);
   color: var(--in-color-muted);
-  font-family: var(--in-font-mono);
-  font-size: 11px;
 }
 
 .in-search-results {
   flex: 1;
   margin: 0;
-  padding: 0;
+  padding: 0 12px 12px;
   list-style: none;
   overflow-y: auto;
 }
 
 .in-search-hit {
-  border-bottom: 1px solid var(--in-color-border);
+  margin-top: 8px;
+  border-radius: 8px;
+  background-color: var(--in-color-bg);
+  box-shadow: 0 1px 3px 0 var(--in-color-hit-shadow);
 }
 
 .in-search-hit-link {
   display: block;
-  padding: 10px 12px;
+  padding: 12px 16px;
   color: inherit;
   text-decoration: none;
+  /* DocSearch inverts the active row to the primary colour. */
+  border-radius: 8px;
 }
 
-.in-search-hit.is-active .in-search-hit-link {
-  background-color: var(--in-color-btn-hover);
+.in-search-hit.is-active {
+  background-color: var(--in-color-accent);
+  box-shadow: none;
+}
+
+.in-search-hit.is-active .in-search-hit-link,
+.in-search-hit.is-active .in-search-hit-snippet {
+  color: var(--in-color-accent-contrast);
+}
+
+/* The active row is solid accent, so a label pill painted with the normal
+   surface token would be white-on-white and vanish. Needs its own
+   translucent-on-accent treatment. */
+.in-search-hit.is-active .in-search-hit-label {
+  color: var(--in-color-accent-contrast);
+  background-color: var(--in-color-on-accent-soft);
+}
+
+.in-search-hit.is-active .in-search-hit-mark {
+  color: inherit;
 }
 
 .in-search-hit-title {
@@ -469,6 +520,7 @@ a:hover { text-decoration: underline; }
 .in-search-hit-label {
   font-size: 11px;
   padding: 1px 6px;
+  border-radius: 4px;
   background-color: var(--in-color-btn-bg);
   color: var(--in-color-muted);
 }
@@ -486,10 +538,38 @@ a:hover { text-decoration: underline; }
 }
 
 .in-search-empty {
-  padding: 24px 12px;
+  margin-top: 8px;
+  padding: 24px 16px;
+  border-radius: 8px;
+  background-color: var(--in-color-bg);
+  box-shadow: 0 1px 3px 0 var(--in-color-hit-shadow);
   text-align: center;
   color: var(--in-color-muted);
   font-size: 14px;
+}
+
+.in-search-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  height: 44px;
+  padding: 0 16px;
+  background-color: var(--in-color-bg);
+  box-shadow: inset 0 1px 0 0 var(--in-color-border);
+  color: var(--in-color-muted);
+  font-size: 12px;
+}
+
+.in-search-credit {
+  color: var(--in-color-muted);
+  text-decoration: none;
+}
+
+.in-search-credit:hover {
+  color: var(--in-color-accent);
+  text-decoration: underline;
 }
 
 .in-search-foot {
@@ -748,7 +828,10 @@ a:hover { text-decoration: underline; }
 
   .in-post-title { font-size: 24px; }
   .in-page-title { display: none; }
-  .in-site-title { display: none; }
+  /* The site name stays on mobile - only the heading above it goes. It has to
+     shrink, since avatar + title + a four-icon nav will not fit one row on a
+     375px screen; the header wraps the nav when it cannot. */
+  .in-site-title { font-size: 20px; }
   .in-site-avatar { width: 40px; height: 40px; }
 
   .in-site-header { flex-wrap: wrap; }

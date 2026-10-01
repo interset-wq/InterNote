@@ -24,8 +24,7 @@
   }
 
   var labels = {
-    noResults: script.dataset.noResults || 'No results for',
-    hint: script.dataset.hint || ''
+    noResults: script.dataset.noResults || 'No results for'
   };
 
   var endpoint =
@@ -90,6 +89,19 @@
     panel.setAttribute('aria-label', script.dataset.placeholder || 'Search');
 
     var head = el('div', 'in-search-head');
+    // Same pattern tag.j2.html uses for its post glyph: draw the Octicons
+    // path from window.icons rather than inlining a second icon.
+    var glyph = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    glyph.setAttribute('class', 'octicon in-search-head-icon');
+    glyph.setAttribute('width', '16');
+    glyph.setAttribute('height', '16');
+    glyph.setAttribute('aria-hidden', 'true');
+    var glyphPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    glyphPath.setAttribute('d', (window.icons || {}).search || '');
+    glyphPath.setAttribute('fill-rule', 'evenodd');
+    glyph.appendChild(glyphPath);
+    head.appendChild(glyph);
+
     input = el('input', 'in-search-modal-input');
     input.type = 'search';
     input.autocomplete = 'off';
@@ -97,16 +109,14 @@
     input.placeholder = script.dataset.placeholder || '';
     input.setAttribute('aria-label', script.dataset.placeholder || 'Search');
     input.setAttribute('aria-controls', 'in-search-results');
-    var kbd = el('kbd', 'in-search-kbd', 'Esc');
     head.appendChild(input);
-    head.appendChild(kbd);
 
     list = el('ul', 'in-search-results');
     list.id = 'in-search-results';
     list.setAttribute('role', 'listbox');
 
     var foot = el('div', 'in-search-foot');
-    status = el('span', 'in-search-status', labels.hint);
+    status = el('span', 'in-search-status');
     // The Algolia logo is a condition of the free tier, so it is rendered
     // unconditionally rather than behind a flag.
     var credit = el('a', 'in-search-credit', 'Search by Algolia');
@@ -157,7 +167,7 @@
 
     if (!results.length) {
       renderEmpty(input.value ? labels.noResults + ' "' + input.value + '"' : '');
-      status.textContent = labels.hint;
+      status.textContent = '';
       return;
     }
 
@@ -259,7 +269,7 @@
           return;
         }
         renderEmpty(String(error && error.message ? error.message : error));
-        status.textContent = labels.hint;
+        status.textContent = '';
       });
   }
 
@@ -269,7 +279,7 @@
     if (!term) {
       seq++;
       renderEmpty('');
-      status.textContent = labels.hint;
+      status.textContent = '';
       return;
     }
     debounce = window.setTimeout(function () {
@@ -303,17 +313,9 @@
   }
 
   function onKeydown(event) {
-    if (event.key === 'k' || event.key === 'K') {
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        if (isOpen()) {
-          close();
-        } else {
-          open();
-        }
-        return;
-      }
-    }
+    // Escape, arrows and Enter stay: they operate the dialog once it is open
+    // and are never advertised. There is deliberately no global shortcut, so
+    // the handler returns immediately while the dialog is closed.
     if (!isOpen()) {
       return;
     }
