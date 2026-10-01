@@ -34,9 +34,12 @@
     var pageLabel = script.dataset.pageLabel || 'Page views';
     var siteLabel = script.dataset.siteLabel || 'Site views';
 
+    // No `hidden` attribute here: busuanzi and vercount both reveal the
+    // counter by assigning element.style.display, and the UA [hidden] rule
+    // would win over that.
     insert(
       document.querySelector('.in-post-body'),
-      '<span class="in-counter" id="busuanzi_container_page_pv" hidden>' +
+      '<span class="in-counter" id="busuanzi_container_page_pv">' +
         pageLabel +
         ' <span id="busuanzi_value_page_pv"></span></span>',
       'afterend'
@@ -44,7 +47,7 @@
 
     insert(
       document.getElementById('run-days'),
-      '<span class="in-counter" id="busuanzi_container_site_pv" hidden>' +
+      '<span class="in-counter" id="busuanzi_container_site_pv">' +
         siteLabel +
         ' <span id="busuanzi_value_site_pv"></span></span>',
       'afterend'

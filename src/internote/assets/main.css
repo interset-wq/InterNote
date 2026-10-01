@@ -405,10 +405,6 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 
-.in-counter[hidden] {
-  display: none;
-}
-
 /* ===== Table of Contents ===== */
 .in-toc {
   position: fixed;
