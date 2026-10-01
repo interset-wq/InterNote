@@ -43,7 +43,22 @@ POST_LIST_FIELDS = {
     "labels",
     "created_date",
     "date_label_color",
+    "comment_num",
+    "top",
 }
+
+
+def _list_item(entry: dict) -> dict:
+    """Convert a stored entry to the template's list-item shape."""
+    return {
+        "title": entry["post_title"],
+        "url": entry["post_url"],
+        "labels": entry["labels"],
+        "created_date": entry["created_date"],
+        "date_label_color": entry["date_label_color"],
+        "comment_num": entry.get("comment_num", 0),
+        "top": entry.get("top", 0),
+    }
 
 
 class Generator:
@@ -178,7 +193,7 @@ class Generator:
             return None
         labels = [label.name for label in issue.labels]
 
-        if labels[0] in self.ctx["single_page"]:
+        if labels[0] in self.ctx["single_labels"]:
             list_name = "single_list"
             file_name = re.sub(r'[<>:/\\|?*\"]|[\0-\31]', "-", labels[0])
             html_dir = self.dist_dir / f"{file_name}.html"
@@ -203,14 +218,10 @@ class Generator:
             "style": self.ctx["style"],
             "script": self.ctx["script"],
             "head": self.ctx["head"],
-            "og_image": self.ctx["og_image"],
         }
 
         if issue.body:
-            if self.ctx["rss_split"] == "sentence":
-                period = "。" if self.ctx["language"] == "CN" else "."
-            else:
-                period = self.ctx["rss_split"]
+            period = "。" if self.ctx["language"] == "CN" else "."
             entry["description"] = (
                 issue.body.split(period)[0].replace('"', "'") + period
             )
@@ -245,12 +256,10 @@ class Generator:
             entry["script"] = self.ctx["script"] + str(post_config["script"])
         if "head" in post_config:
             entry["head"] = self.ctx["head"] + str(post_config["head"])
-        if "ogImage" in post_config:
-            entry["og_image"] = post_config["ogImage"]
 
         this_time = datetime.datetime.fromtimestamp(created_at, tz=self.tz)
         entry["created_date"] = this_time.strftime("%Y-%m-%d")
-        year_colors = self.ctx["year_color_list"]
+        year_colors = ["#bc4c00", "#0969da", "#1f883d", "#A333D0"]
         entry["date_label_color"] = year_colors[
             this_time.year % len(year_colors)
         ]
@@ -305,41 +314,45 @@ class Generator:
             )
 
         page = dict(self.ctx)
-        page["post_title"] = entry["post_title"]
-        page["post_url"] = self.ctx["home_url"] + "/" + entry["post_url"]
-        page["description"] = entry["description"]
-        page["og_image"] = entry["og_image"]
-        page["post_body"] = post_body
-        page["comment_num"] = entry["comment_num"]
-        page["style"] = entry["style"]
-        page["script"] = entry["script"]
-        page["head"] = entry["head"]
-        page["top"] = entry["top"]
-        page["post_source_url"] = entry["source_url"]
-        page["created_date"] = entry["created_date"]
-        page["date_label_color"] = entry["date_label_color"]
-        page["updated_date"] = entry["updated_date"]
-        page["labels"] = entry["labels"]
+        page["post"] = {
+            "title": entry["post_title"],
+            "url": self.ctx["home_url"] + "/" + entry["post_url"],
+            "description": entry["description"],
+            "body": post_body,
+            "comment_num": entry["comment_num"],
+            "style": entry["style"],
+            "script": entry["script"],
+            "head": entry["head"],
+            "top": entry["top"],
+            "source_url": entry["source_url"],
+            "created_date": entry["created_date"],
+            "date_label_color": entry["date_label_color"],
+            "updated_date": entry["updated_date"],
+            "labels": entry["labels"],
+            "footer_text": self.ctx["footer_text"],
+            "highlight": 0,
+        }
 
-        if entry["labels"][0] in self.ctx["single_page"]:
-            page["bottom_text"] = ""
+        if entry["labels"][0] in self.ctx["single_labels"]:
+            page["post"]["footer_text"] = ""
 
         if '<pre class="notranslate">' in post_body:
             if '<div class="highlight' in post_body:
-                page["highlight"] = 1
+                page["post"]["highlight"] = 1
             else:
-                page["highlight"] = 2
+                page["post"]["highlight"] = 2
             keys = ["sun", "moon", "sync", "home", "github", "rss", "copy", "check"]
         else:
-            page["highlight"] = 0
+            page["post"]["highlight"] = 0
             keys = ["sun", "moon", "sync", "home", "github", "rss"]
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
-            "blogBase": page,
+            "site": page,
+            "post": page["post"],
             "post_list": {},
             "i18n": self.i18n,
-            "IconList": icon_list,
+            "icons": icon_list,
         }
         self.renderer.render_to("post", context, entry["html_dir"])
         print(
@@ -357,16 +370,15 @@ class Generator:
         )
         plist_keys = ["sun", "moon", "sync", "search", "rss", "github", "upload", "post"]
         plist_keys = list(
-            dict.fromkeys(plist_keys + self.ctx["single_page"])
+            dict.fromkeys(plist_keys + self.ctx["single_labels"])
         )
         plist_icon = {key: ICONS.get(key) for key in plist_keys}
-        plist_icon.update(self.ctx["icon_list"])
         tag_icon = {
             key: ICONS.get(key)
             for key in ["sun", "moon", "sync", "home", "search", "post", "rss", "github"]
         }
 
-        page_size = self.ctx["one_page_list_num"]
+        page_size = self.ctx["posts_per_page"]
         post_num = len(posts)
         page_flag = 0
         while True:
@@ -412,22 +424,22 @@ class Generator:
             page_flag = page_flag + 1
 
         tag_context = {
-            "blogBase": self.ctx,
-            "post_list": one_page,
+            "site": self.ctx,
+            "posts": {k: _list_item(v) for k, v in one_page.items()},
             "i18n": self.i18n,
-            "IconList": tag_icon,
+            "icons": tag_icon,
         }
         self.renderer.render_to("tag", tag_context, self.dist_dir / "tag.html")
         print("create tag.html")
 
     def _render_list(self, one_page, html_dir, plist_icon):
         context = {
-            "blogBase": self.ctx,
-            "post_list": one_page,
+            "site": self.ctx,
+            "posts": {k: _list_item(v) for k, v in one_page.items()},
             "i18n": self.i18n,
-            "IconList": plist_icon,
+            "icons": plist_icon,
         }
-        self.renderer.render_to("plist", context, html_dir)
+        self.renderer.render_to("post-list", context, html_dir)
         print("create " + str(html_dir))
 
     # ----------------------------------------------------------------- feed

@@ -2,11 +2,6 @@
 <a class="in-nav-btn" href="{{ site.home_url }}/tag.html" title="{{ i18n.Search }}" aria-label="Search">
   <svg class="octicon" width="16" height="16"><path id="icon-search" fill-rule="evenodd"></path></svg>
 </a>
-{% for name, url in site.exlink.items() %}
-<a class="in-nav-btn" href="{{ url }}" title="{{ name }}" target="_blank" aria-label="{{ name }}">
-  <svg class="octicon" width="16" height="16"><path id="icon-{{ name }}" fill-rule="evenodd"></path></svg>
-</a>
-{% endfor %}
 {% for key, item in site.single_list.items() %}
 <a class="in-nav-btn" href="{{ site.home_url }}/{{ item.labels[0] }}.html" title="{{ item.title }}" aria-label="{{ item.title }}">
   <svg class="octicon" width="16" height="16"><path id="icon-{{ item.title }}" fill-rule="evenodd"></path></svg>

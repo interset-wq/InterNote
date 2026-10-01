@@ -42,17 +42,12 @@
 {% block header %}
   <div class="in-site-branding">
     <img src="{{ site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
-    <a class="in-site-title" href="{{ site.home_url }}">{{ site.display_title }}</a>
+    <a class="in-site-title" href="{{ site.home_url }}">{{ site.title }}</a>
   </div>
   <nav class="in-site-nav" aria-label="Site navigation">
     <a class="in-nav-btn" href="{{ site.home_url }}/tag.html" title="{{ i18n.Search }}" aria-label="Search">
       <svg class="octicon" width="16" height="16"><path id="icon-search" fill-rule="evenodd"></path></svg>
     </a>
-    {% for name, url in site.exlink.items() %}
-    <a class="in-nav-btn" href="{{ url }}" title="{{ name }}" target="_blank" aria-label="{{ name }}">
-      <svg class="octicon" width="16" height="16"><path id="icon-{{ name }}" fill-rule="evenodd"></path></svg>
-    </a>
-    {% endfor %}
     {% for key, item in site.single_list.items() %}
     <a class="in-nav-btn" href="{{ site.home_url }}/{{ item.labels[0] }}.html" title="{{ item.title }}" aria-label="{{ item.title }}">
       <svg class="octicon" width="16" height="16"><path id="icon-{{ item.title }}" fill-rule="evenodd"></path></svg>
@@ -120,10 +115,6 @@
       for (var i = 0; i < iconPost.length; i++) {
         iconPost[i].setAttribute('d', window.icons.post);
       }
-      {% for name, url in site.exlink.items() %}
-      var el = document.getElementById('icon-{{ name }}');
-      if (el) el.setAttribute('d', window.icons['{{ name }}']);
-      {% endfor %}
       {% for key, item in site.single_list.items() %}
       var el = document.getElementById('icon-{{ item.title }}');
       if (el) el.setAttribute('d', window.icons['{{ item.labels[0] }}']);

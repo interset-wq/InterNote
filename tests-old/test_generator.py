@@ -20,12 +20,11 @@ avatar_url = "https://example.com/a.png"
 language = "CN"
 
 [layout]
-one_page_list_num = 15
-single_page = ["about"]
-bottom_text = "BOTTOM"
+posts_per_page = 15
+single_labels = ["about"]
+footer_text = "BOTTOM"
 
 [features]
-toc = true
 visit_counter = "vercount"
 """
 
@@ -164,7 +163,7 @@ def test_state_keeps_full_entries(workspace: Path):
 def test_pagination(workspace: Path):
     cfg_path = workspace / "config.toml"
     cfg_path.write_text(
-        CONFIG_TOML.replace("one_page_list_num = 15", "one_page_list_num = 1"),
+        CONFIG_TOML.replace("posts_per_page = 15", "posts_per_page = 1"),
         encoding="utf-8",
     )
     repo = FakeRepo(
@@ -370,11 +369,11 @@ def test_footer_icon_keys_and_blog_repo_url(workspace: Path):
     post = (workspace / "dist" / "post" / "3.html").read_text(encoding="utf-8")
     tag = (workspace / "dist" / "tag.html").read_text(encoding="utf-8")
 
-    assert 'id="buttonGH"' in index
-    assert 'id="buttonRSS"' in index
-    assert "'github'" in index
-    assert "'rss'" in post
-    assert "'rss'" in tag and "'github'" in tag
+    assert 'id="icon-github"' in index
+    assert 'id="icon-rss"' in index
+    assert "window.icons" in index
+    assert "window.icons" in post
+    assert "window.icons" in tag
 
 
 def test_tocbot_placeholder_not_full_viewport():

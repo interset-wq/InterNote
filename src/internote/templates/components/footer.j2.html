@@ -12,8 +12,8 @@
   <a href="{{ site.home_url }}">{{ site.title }}</a>
 </div>
 <div class="in-footer-powered" id="footer-powered">
-  {% if site.filing_num %}
-  <span id="filing-num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ site.filing_num }}</a></span>
+  {% if site.icp %}
+  <span id="filing-num"><a href="https://beian.miit.gov.cn/" target="_blank">{{ site.icp }}</a></span>
   {% endif %}
   <span id="run-days"></span>
   <span>Powered by <a href="https://github.com/interset-wq/InterNote">Internote</a></span>
@@ -29,8 +29,8 @@
     document.getElementById('copyright-year').textContent = now.getFullYear();
     document.getElementById('icon-rss').setAttribute('d', window.icons.rss);
     document.getElementById('icon-github').setAttribute('d', window.icons.github);
-    {% if site.start_site %}
-    var startSite = new Date('{{ site.start_site }}');
+    {% if site.start_date %}
+    var startSite = new Date('{{ site.start_date }}');
     var diffDay = Math.floor((now.getTime() - startSite.getTime()) / (1000 * 60 * 60 * 24));
     document.getElementById('run-days').textContent = '{{ i18n.run }}' + diffDay + '{{ i18n.days }}' + ' \u2022 ';
     {% endif %}

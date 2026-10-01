@@ -8,7 +8,7 @@
   {{ site.primer_css }}
   {{ site.all_head }}
   <link rel="stylesheet" href="{{ site.home_url }}/templates/assets/main.css">
-  <link rel="icon" href="{{ site.favicon_url }}">
+  <link rel="icon" href="{{ site.avatar_url }}">
   {% if site.theme_mode == 'manual' %}
   <script>
     (function() {
@@ -48,7 +48,6 @@
     }
     if (themeSettings[theme]) { changeTheme.apply(null, themeSettings[theme]); }
     {% endif %}
-    console.log('\n %c Internote {{ site.version }}\n', 'padding:5px 0;background:#02d81d;color:#fff');
   </script>
   {% block script %}{% endblock %}
 </body>

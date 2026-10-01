@@ -66,8 +66,8 @@
       {% endfor %}
     </div>
     <div class="in-post-body">{{ post.body }}</div>
-    {% if post.bottom_text %}
-    <div class="in-post-footer-text">{{ post.bottom_text }}</div>
+    {% if post.footer_text %}
+    <div class="in-post-footer-text">{{ post.footer_text }}</div>
     {% endif %}
   </article>
   {% if site.need_comment %}
@@ -109,9 +109,7 @@
   {% if site.need_comment %}
   <script src="{{ site.home_url }}/plugins/giscus.js"></script>
   {% endif %}
-  {% if site.toc %}
   <script src="{{ site.home_url }}/plugins/tocbot.js"></script>
-  {% endif %}
   {% if post.highlight != 0 %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {

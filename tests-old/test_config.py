@@ -22,16 +22,13 @@ def test_minimal_config_loads_with_defaults(tmp_path: Path):
     cfg = load_config(path)
 
     assert cfg.site.title == "My Blog"
-    assert cfg.features.toc is False
     assert cfg.features.visit_counter == "off"
     assert cfg.comments.enabled is True
     assert cfg.site.language == "CN"
     assert cfg.site.utc == 8
-    assert cfg.site.version == "last"
-    assert cfg.layout.one_page_list_num == 15
-    assert cfg.layout.show_post_source is True
+    assert cfg.layout.posts_per_page == 15
+    assert cfg.layout.show_source is True
     assert cfg.giscus.repo == ""
-    assert cfg.feed.split == "sentence"
 
 
 def test_title_is_required(tmp_path: Path):
@@ -86,16 +83,13 @@ def test_flat_context_uses_snake_case(tmp_path: Path):
     assert ctx["theme_mode"] == "manual"
     assert ctx["day_theme"] == "light"
     assert ctx["night_theme"] == "dark"
-    assert ctx["year_color_list"][0] == "#bc4c00"
     assert ctx["need_comment"] is True
     assert ctx["comment_label_color"] == "#006b75"
     assert ctx["giscus_repo"] == ""
     assert ctx["giscus_repo_id"] == ""
     assert ctx["giscus_category"] == ""
     assert ctx["giscus_category_id"] == ""
-    assert ctx["toc"] is False
     assert ctx["visit_counter"] == "off"
-    assert ctx["rss_split"] == "sentence"
     assert ctx["single_list"] == {}
     assert ctx["post_list"] == {}
     assert ctx["label_color_dict"] == {}
