@@ -107,6 +107,8 @@ class Generator:
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
         self.i18n = get_i18n(self.ctx["language"])
         self.renderer = Renderer(Path(__file__).resolve().parent / "templates")
+        # static assets shipped inside the package (e.g. templates/assets/)
+        self.pkg_templates_dir = Path(__file__).resolve().parent / "templates"
 
         self.old_feed = ""
         rss_path = self.dist_dir / "rss.xml"
@@ -175,6 +177,14 @@ class Generator:
                     shutil.copy2(item, target)
         else:
             print("static does not exist")
+
+        # ship package template assets (css) so pages can reference them
+        pkg_assets = self.pkg_templates_dir / "assets"
+        if pkg_assets.exists():
+            shutil.copytree(
+                pkg_assets, self.dist_dir / "templates" / "assets",
+                dirs_exist_ok=True,
+            )
 
         if self.plugins_dir.exists():
             shutil.copytree(
