@@ -280,3 +280,72 @@ class TestIncrementalKeepsOthers:
         build(tmp_path, [issue(number=1), issue(number=2)], incremental="1")
         assert sorted(state_of(tmp_path)["post_list"]) == ["P1", "P2"]
         assert (tmp_path / "dist" / "post" / "2.html").exists()
+
+
+SEARCH_ON = (
+    '\n[features]\nsearch = "algolia"\n\n'
+    '[search]\napp_id = "A"\napi_key = "K"\nindex_name = "i"\n'
+)
+
+
+class TestSearchIntegration:
+    """_sync_search is the only gate between a build and the hosted index."""
+
+    def test_search_off_never_calls_sync(self, tmp_path, monkeypatch):
+        from internote import generator as generator_module
+
+        def explode(*args, **kwargs):
+            raise AssertionError("sync must not run while features.search is off")
+
+        monkeypatch.setattr(generator_module, "sync_search", explode)
+        build(tmp_path, [issue()])
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+
+    def _search_build(self, tmp_path, monkeypatch, recorder):
+        cfg_path = write_config(tmp_path, extra=SEARCH_ON)
+        repo, markdown = make_repo(
+            tmp_path, [issue(), issue(number=4, labels=("about",))]
+        )
+        gen = Generator(
+            load_config(cfg_path),
+            repo,
+            repo_name="owner/blog",
+            markdown=markdown,
+            root=tmp_path,
+        )
+        from internote import search as search_module
+
+        monkeypatch.setattr(search_module.urllib.request, "urlopen", recorder)
+        gen.run_all()
+        return gen
+
+    def test_search_on_without_admin_key_does_no_network(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("ALGOLIA_ADMIN_KEY", raising=False)
+
+        def explode(*args, **kwargs):
+            raise AssertionError("urlopen must not be called without an admin key")
+
+        self._search_build(tmp_path, monkeypatch, explode)
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+
+    def test_search_on_with_key_pushes_both_lists(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
+        from conftest import RecordingUrlopen
+
+        recorder = RecordingUrlopen()
+        self._search_build(tmp_path, monkeypatch, recorder)
+
+        ids = sorted(item["body"]["objectID"] for item in recorder.batch())
+        # about.html is searchable for the first time; post-list.json only
+        # ever carried P1.
+        assert ids == ["page-about", "post-1"]
+
+    def test_record_body_comes_from_the_markdown_source(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
+        from conftest import RecordingUrlopen
+
+        recorder = RecordingUrlopen()
+        self._search_build(tmp_path, monkeypatch, recorder)
+
+        bodies = [item["body"]["body"] for item in recorder.batch()]
+        assert any("Body text" in body for body in bodies)
