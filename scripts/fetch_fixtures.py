@@ -20,7 +20,14 @@ from pathlib import Path
 
 def _gh(*args: str, stdin: str | None = None) -> str:
     result = subprocess.run(
-        ("gh", *args), input=stdin, capture_output=True, text=True
+        ("gh", *args),
+        input=stdin,
+        capture_output=True,
+        text=True,
+        # gh always emits UTF-8; without this the locale codec (GBK on a
+        # Chinese Windows) mangles non-ASCII issue bodies and crashes.
+        encoding="utf-8",
+        errors="replace",
     )
     if result.returncode != 0:
         raise SystemExit(
