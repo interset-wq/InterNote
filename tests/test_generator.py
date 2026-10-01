@@ -187,6 +187,92 @@ class TestWithdrawal:
         assert (tmp_path / "dist" / "post" / "1.html").exists()
 
 
+class TestRenderCache:
+    """Rendering is the only network call in a build; unchanged posts must
+    not be re-rendered."""
+
+    def _counting_build(self, tmp_path, issues, root=None):
+        calls = []
+
+        def markdown(text):
+            calls.append(text)
+            return "<p>{}</p>".format(text)
+
+        repo, _ = make_repo(tmp_path, issues)
+        cfg = load_config(write_config(tmp_path))
+        gen = Generator(
+            cfg, repo, repo_name="owner/blog", markdown=markdown, root=root or tmp_path
+        )
+        return gen, calls
+
+    def test_second_full_build_renders_nothing(self, tmp_path):
+        issues = [issue(number=1, body="one"), issue(number=2, body="two")]
+        gen, calls = self._counting_build(tmp_path, issues)
+        gen.run_all()
+        assert len(calls) == 2
+
+        # same bodies, brand new Generator as a fresh process would have
+        gen2, calls2 = self._counting_build(tmp_path, issues)
+        gen2.run_all()
+        assert calls2 == []
+
+    def test_identical_bodies_render_once(self, tmp_path):
+        gen, calls = self._counting_build(
+            tmp_path, [issue(number=1, body="same"), issue(number=2, body="same")]
+        )
+        gen.run_all()
+        assert calls == ["same"]
+
+    def test_edited_body_is_re_rendered(self, tmp_path):
+        self._counting_build(tmp_path, [issue(number=1, body="first")])[0].run_all()
+        gen, calls = self._counting_build(tmp_path, [issue(number=1, body="second")])
+        gen.run_all()
+        assert calls == ["second"]
+
+    def test_front_matter_change_does_not_re_render(self, tmp_path):
+        # The key is a hash of the *stripped* body, and rendering only ever
+        # sees the prose - head/style/script are applied from the entry
+        # afterwards. So editing front matter costs no API call.
+        plain = [issue(number=1, body="Same prose.")]
+        self._counting_build(tmp_path, plain)[0].run_all()
+
+        styled = [issue(number=1, body='+++\nstyle = ".x{}"\n+++\nSame prose.')]
+        gen, calls = self._counting_build(tmp_path, styled)
+        gen.run_all()
+        assert calls == []
+        # and the injection still applied
+        assert ".x{}" in (tmp_path / "dist" / "post" / "1.html").read_text(
+            encoding="utf-8"
+        )
+
+    def test_cache_is_pruned_to_entries_used_this_run(self, tmp_path):
+        self._counting_build(
+            tmp_path, [issue(number=1, body="one"), issue(number=2, body="two")]
+        )[0].run_all()
+        assert len(state_of(tmp_path)["render_cache"]) == 2
+
+        # post 2 removed, so its cached html must not linger
+        self._counting_build(tmp_path, [issue(number=1, body="one")])[0].run_all()
+        assert len(state_of(tmp_path)["render_cache"]) == 1
+
+    def test_withdrawn_post_drops_its_cache_entry(self, tmp_path):
+        self._counting_build(tmp_path, [issue(number=1, body="one")])[0].run_all()
+        assert len(state_of(tmp_path)["render_cache"]) == 1
+        self._counting_build(
+            tmp_path, [issue(number=1, body="+++\ndraft = true\n+++\none")]
+        )[0].run_all()
+        assert state_of(tmp_path)["render_cache"] == {}
+
+    def test_corrupt_state_does_not_break_the_build(self, tmp_path):
+        self._counting_build(tmp_path, [issue(number=1, body="one")])[0].run_all()
+        (tmp_path / "internote.json").write_text("{ not json", encoding="utf-8")
+        gen, _ = self._counting_build(tmp_path, [issue(number=1, body="one")])
+        gen.run_all()
+        # the cache is discarded rather than crashing, and the page is built
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+        assert "P1" in state_of(tmp_path)["post_list"]
+
+
 class TestIncrementalKeepsOthers:
     def test_other_posts_survive_an_incremental_rebuild(self, tmp_path):
         build(tmp_path, [issue(number=1), issue(number=2)])

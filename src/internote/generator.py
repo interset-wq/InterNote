@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -114,6 +115,19 @@ class Generator:
         rss_path = self.dist_dir / "rss.xml"
         if rss_path.exists():
             self.old_feed = rss_path.read_text(encoding="utf-8")
+
+        # Rendered markdown, keyed on a hash of the body. Loaded
+        # independently of the entry state: run_all rebuilds every post
+        # from scratch but can still reuse the HTML.
+        self.render_cache: dict[str, str] = {}
+        self.render_cache_used: set[str] = set()
+        if self.state_path.exists():
+            try:
+                cached = json.loads(self.state_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                cached = {}
+            if isinstance(cached.get("render_cache"), dict):
+                self.render_cache = cached["render_cache"]
 
     # ------------------------------------------------------------------ run
 
@@ -310,11 +324,30 @@ class Generator:
         self.ctx[list_name][f"P{issue.number}"] = entry
         return entry
 
+    def _render_body(self, body: str) -> str:
+        """Render markdown to HTML, reusing the previous build's result.
+
+        The key is a hash of the *stripped* body, so editing front matter
+        invalidates the entry even though the prose is untouched, and the
+        cache is safe to keep across full rebuilds. Without this, a full
+        build spends one GitHub /markdown call per post even when nothing
+        changed - which is every scheduled run.
+        """
+        key = hashlib.sha256(body.encode("utf-8")).hexdigest()
+        cached = self.render_cache.get(key)
+        if cached is not None:
+            self.render_cache_used.add(key)
+            return cached
+        html = self.markdown(body)
+        self.render_cache[key] = html
+        self.render_cache_used.add(key)
+        return html
+
     # ---------------------------------------------------------------- pages
 
     def _create_post(self, entry):
         md_path = self.sources_dir / f"{entry['number']}.md"
-        post_body = self.markdown(md_path.read_text(encoding="utf-8"))
+        post_body = self._render_body(md_path.read_text(encoding="utf-8"))
 
         if "<math-renderer" in post_body:
             post_body = re.sub(r"<math-renderer.*?>", "", post_body)
@@ -494,9 +527,14 @@ class Generator:
     # --------------------------------------------------------------- output
 
     def _finalize(self):
+        # Drop cache entries for bodies that were not rendered this run, so
+        # it cannot grow without bound as posts are edited or removed.
+        pruned = {k: v for k, v in self.render_cache.items() if k in self.render_cache_used}
+        self.render_cache = pruned
         state = {
             "post_list": self.ctx["post_list"],
             "single_list": self.ctx["single_list"],
+            "render_cache": pruned,
         }
         self.state_path.write_text(
             json.dumps(state, ensure_ascii=False), encoding="utf-8"
