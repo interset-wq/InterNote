@@ -10,7 +10,8 @@ from feedgen.feed import FeedGenerator
 def build_feed(site: dict, entries: list[dict]) -> str:
     feed = FeedGenerator()
     feed.title(site["title"])
-    feed.description(site["sub_title"])
+    # feedgen rejects an empty description, and sub_title defaults to "".
+    feed.description(site["sub_title"] or site["title"])
     feed.link(href=site["home_url"])
     feed.image(url=site["avatar_url"], title="avatar", link=site["home_url"])
     feed.copyright(site["title"])
