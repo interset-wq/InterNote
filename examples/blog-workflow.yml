@@ -10,7 +10,6 @@
 #
 # 触发方式：
 #   - Issue opened / edited   -> 增量重建该篇文章
-#   - schedule（每天）         -> 全局重建
 #   - workflow_dispatch        -> 手动全局重建（修改 config.toml 后执行一次）
 name: build Internote
 
@@ -18,14 +17,12 @@ on:
   workflow_dispatch:
   issues:
     types: [opened, edited]
-  schedule:
-    - cron: "0 16 * * *"
 
 jobs:
   build:
     name: Generate blog
     runs-on: ubuntu-latest
-    if: ${{ github.event.repository.owner.id == github.event.sender.id || github.event_name == 'schedule' }}
+    if: ${{ github.event.repository.owner.id == github.event.sender.id }}
     permissions:
       contents: write
       pages: write
