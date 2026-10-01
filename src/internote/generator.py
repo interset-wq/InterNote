@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import datetime
-import html
 import json
 import os
 import re
@@ -314,14 +313,6 @@ class Generator:
                         f"color: var(--fgColor-{style},"
                         f"var(--color-{style}-fg));}}</style>"
                     )
-
-        if '<code class="notranslate">Gmeek-html' in post_body:
-            post_body = re.sub(
-                r'<code class="notranslate">Gmeek-html(.*?)</code>',
-                lambda match: html.unescape(match.group(1)),
-                post_body,
-                flags=re.DOTALL,
-            )
 
         page = dict(self.ctx)
         page["post"] = {
