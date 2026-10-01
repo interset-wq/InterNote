@@ -525,8 +525,7 @@ class Generator:
             f"### :hibiscus: {words} \r\n",
             f"### :alarm_clock: {now} \r\n",
             "### Powered by :heart: [Internote]"
-            "(https://github.com/interset-wq/InterNote)"
-            " • Based on [Gmeek](https://github.com/Meekdai/Gmeek)\r\n",
+            "(https://github.com/interset-wq/InterNote)\r\n",
         ]
         (Path(workspace) / "README.md").write_text(
             "".join(lines), encoding="utf-8"

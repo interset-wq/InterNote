@@ -12,5 +12,5 @@ document.addEventListener("DOMContentLoaded", function() {
     var element = document.createElement('script');
     element.src = 'https://vercount.one/js';
     document.head.appendChild(element);
-    console.log("\n %c Internote vercount plugin • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#bc4c00;color:#fff");
+    console.log("\n %c Internote vercount plugin \n","padding:5px 0;background:#bc4c00;color:#fff");
 });

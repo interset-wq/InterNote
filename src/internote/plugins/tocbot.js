@@ -64,5 +64,5 @@ document.addEventListener("DOMContentLoaded", function() {
             document.body.appendChild(footerPlaceholder);
         }
     }
-    console.log("\n %c Internote tocbot plugin • Based on Gmeek https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#C333D0;color:#fff");
+    console.log("\n %c Internote tocbot plugin \n","padding:5px 0;background:#C333D0;color:#fff");
 });
