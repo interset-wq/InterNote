@@ -11,6 +11,8 @@ README is Chinese — keep new user-facing docs consistent.
 - `uv sync` — install deps (Python pinned in `.python-version`, requires `>=3.14`)
 - `uv run pytest -q` — what CI (`.github/workflows/test.yml`) runs on every push/PR. **Currently red**: the old suite is quarantined in `tests-old/` (it asserts the pre-refactor schema/templates) and awaits rewrite against the new ctx shape (`site.*`, `post.*`, `posts.*`, `icons`); restore a `tests/` dir to go green again.
 - `uv run internote <token> <owner/repo> [--issue-number N]` — build a site. Needs a GitHub token and `config.toml` in cwd; writes `dist/`, `sources/`, `internote.json` and rewrites README stats. Do not run casually.
+- `uv run python scripts/fetch_fixtures.py <owner/repo> -o tests/fixtures/<owner>__<name>.json` — capture issues + pre-rendered markdown via `gh api` into a fixture JSON (uses your gh login, no token args).
+- `uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json` — offline build from a fixture (`src/internote/fixtures.py` provides a duck-typed repo + markdown). Use this for local previews and unit tests instead of pushing to verify; the committed fixture in `tests/fixtures/` is the shared test data.
 - `uv build` — wheel; `src/internote/templates/` and `src/internote/plugins/` ship automatically (hatchling `packages = ["src/internote"]`), no pyproject change needed when adding files there.
 
 ## Layout & architecture

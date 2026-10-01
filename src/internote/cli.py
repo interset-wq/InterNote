@@ -15,7 +15,9 @@ app = typer.Typer(
 
 @app.command()
 def main(
-    token: str = typer.Argument(..., help="GitHub personal access token"),
+    token: str = typer.Argument(
+        None, help="GitHub personal access token (not needed with --fixtures)"
+    ),
     repo: str = typer.Argument(..., help="Repository in owner/name form"),
     issue_number: str = typer.Option(
         None,
@@ -25,6 +27,11 @@ def main(
     ),
     config: str = typer.Option(
         "config.toml", "--config", "-c", help="Path to the config file"
+    ),
+    fixtures: str = typer.Option(
+        None,
+        "--fixtures",
+        help="Build offline from a fixture JSON (scripts/fetch_fixtures.py)",
     ),
 ) -> None:
     """Build the static site from GitHub Issues."""
@@ -38,13 +45,19 @@ def main(
         )
 
     cfg = load_config(config)
-    client = GithubClient(token, repo)
-    generator = Generator(
-        cfg,
-        client.repo,
-        repo_name=repo,
-        markdown=client.markdown_to_html,
-    )
+    if fixtures:
+        from .fixtures import load_repo
+
+        repo_obj, markdown = load_repo(fixtures)
+    else:
+        if not token:
+            raise typer.BadParameter(
+                "token is required unless --fixtures is given"
+            )
+        client = GithubClient(token, repo)
+        repo_obj = client.repo
+        markdown = client.markdown_to_html
+    generator = Generator(cfg, repo_obj, repo_name=repo, markdown=markdown)
     if issue_number is None:
         generator.run_all()
     else:

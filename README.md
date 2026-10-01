@@ -49,6 +49,15 @@ uv run internote <token> <owner/repo>           # 全局生成
 uv run internote <token> <owner/repo> --issue-number 42   # 单篇重建
 ```
 
+### 离线本地构建（fixture）
+
+抓取一次线上数据（通过已登录的 `gh` CLI，同时预渲染 markdown），之后本地构建/单测零网络：
+
+```bash
+uv run python scripts/fetch_fixtures.py <owner/repo> -o tests/fixtures/<owner>__<name>.json
+uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json   # 无需 token
+```
+
 输出：`dist/`（静态站点）、`sources/*.md`（源码备份）、`internote.json`（状态）、
 `post-list.json`（搜索/列表数据，位于 `dist/` 内）。
 
