@@ -16,9 +16,9 @@
     .in-site-nav .in-nav-btn { padding: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
     .in-site-nav .in-nav-btn:hover { background-color: var(--in-color-subtle); }
 
-    .in-post-list { border: 1px solid var(--in-color-border); border-radius: 6px; overflow: hidden; }
+    .in-post-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--in-color-border); border-radius: 6px; overflow: hidden; }
     .in-post-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--in-color-border); text-decoration: none; color: inherit; transition: background-color 0.15s; gap: 12px; }
-    .in-post-list-item:last-child { border-bottom: none; }
+    .in-post-list li:last-child .in-post-list-item { border-bottom: none; }
     .in-post-list-item:hover { background-color: var(--in-color-subtle); }
     .in-post-list-title { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
     .in-post-list-title span { word-break: break-word; }
@@ -63,29 +63,31 @@
   {% if site.sub_title %}
   <p class="in-site-subtitle">{{ site.sub_title }}</p>
   {% endif %}
-  <nav class="in-post-list" aria-label="Post list">
+  <ul class="in-post-list">
     {% for key, item in posts.items() %}
-    <a class="in-post-list-item" href="{{ item.url }}">
-      <div class="in-post-list-title">
-        <svg class="octicon" width="16" height="16" style="flex-shrink:0;margin-top:3px;color:var(--in-color-muted)">
-          <path class="in-post-icon-{{ item.top }}" fill-rule="evenodd"></path>
-        </svg>
-        <span>{{ item.title }}</span>
-      </div>
-      <div class="in-post-list-badges">
-        {% if item.comment_num > 0 %}
-        <span class="in-badge" style="background-color:{{ site.comment_label_color }}">{{ item.comment_num }}</span>
-        {% endif %}
-        {% for label in item.labels %}
-        <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">
-          <a href="{{ site.home_url }}/tag.html#{{ label }}">{{ label }}</a>
-        </span>
-        {% endfor %}
-        <span class="in-badge" style="background-color:{{ item.date_label_color }}">{{ item.created_date }}</span>
-      </div>
-    </a>
+    <li>
+      <a class="in-post-list-item" href="{{ item.url }}">
+        <div class="in-post-list-title">
+          <svg class="octicon" width="16" height="16" style="flex-shrink:0;margin-top:3px;color:var(--in-color-muted)">
+            <path class="in-post-icon-{{ item.top }}" fill-rule="evenodd"></path>
+          </svg>
+          <span>{{ item.title }}</span>
+        </div>
+        <div class="in-post-list-badges">
+          {% if item.comment_num > 0 %}
+          <span class="in-badge" style="background-color:{{ site.comment_label_color }}">{{ item.comment_num }}</span>
+          {% endif %}
+          {% for label in item.labels %}
+          <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">
+            <a href="{{ site.home_url }}/tag.html#{{ label }}">{{ label }}</a>
+          </span>
+          {% endfor %}
+          <span class="in-badge" style="background-color:{{ item.date_label_color }}">{{ item.created_date }}</span>
+        </div>
+      </a>
+    </li>
     {% endfor %}
-  </nav>
+  </ul>
   {% if site.prev_url != 'disabled' or site.next_url != 'disabled' %}
   <nav class="in-pagination" aria-label="Pagination">
     {% if site.prev_url == 'disabled' %}
