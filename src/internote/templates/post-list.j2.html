@@ -20,9 +20,9 @@
     .in-post-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--in-color-border); text-decoration: none; color: inherit; transition: background-color 0.15s; gap: 12px; }
     .in-post-list-item:last-child { border-bottom: none; }
     .in-post-list-item:hover { background-color: var(--in-color-subtle); }
-    .in-post-list-title { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-    .in-post-list-title span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .in-post-list-badges { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .in-post-list-title { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+    .in-post-list-title span { word-break: break-word; }
+    .in-post-list-badges { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
 
     .in-pagination { margin-top: 24px; display: flex; justify-content: center; gap: 8px; }
     .in-pagination a, .in-pagination span { padding: 8px 16px; border: 1px solid var(--in-color-border); border-radius: 6px; text-decoration: none; color: var(--in-color-accent); font-size: 14px; }
@@ -67,7 +67,7 @@
     {% for key, item in posts.items() %}
     <a class="in-post-list-item" href="{{ item.url }}">
       <div class="in-post-list-title">
-        <svg class="octicon" width="16" height="16" style="flex-shrink:0;color:var(--in-color-muted)">
+        <svg class="octicon" width="16" height="16" style="flex-shrink:0;margin-top:3px;color:var(--in-color-muted)">
           <path class="in-post-icon-{{ item.top }}" fill-rule="evenodd"></path>
         </svg>
         <span>{{ item.title }}</span>
