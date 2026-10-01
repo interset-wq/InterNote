@@ -1,5 +1,5 @@
 {% extends 'base.j2.html' %}
-{% from 'components/macros.j2.html' import head_meta, nav_link, site_nav with context %}
+{% from 'components/macros.j2.html' import head_meta, nav_link, search_button, site_nav with context %}
 
 {% block head %}
   {{ head_meta(site.title ~ ' search page') }}
@@ -8,10 +8,17 @@
 {% block header %}
   <h1 class="in-page-title"><span>Loading</span><span class="in-animated-ellipsis"></span></h1>
   {% call site_nav('Tag navigation') %}
+    {# With Algolia on, search lives in the modal and this page is a pure tag
+       browser, so the inline form is redundant. Configs without it keep the
+       form, because tag.html#free-text is still the only way to search. #}
+    {% if site.search == 'algolia' %}
+    {{ search_button() }}
+    {% else %}
     <form class="in-search-form" id="search-form">
       <input type="search" class="in-search-input" aria-label="Search site" value="">
       <button class="in-search-btn" type="submit">{{ i18n.Search }}</button>
     </form>
+    {% endif %}
     {{ nav_link('home', site.home_url, i18n.home) }}
   {% endcall %}
 {% endblock %}
@@ -150,29 +157,12 @@
         filter(label);
       }
 
-      function filter(label) {
-        var all = rows();
-        searchInput.value = '';
-        emptyState.hidden = true;
-
-        if (label === 'All') {
-          all.forEach(function (row) {
-            setVisible(row, true);
-          });
-          setHeading('Tag #' + label, label + ' - ' + pageTitle);
-          return;
-        }
-
-        if (knownLabels.indexOf(label) === -1) {
-          searchInput.value = label;
-          search();
-          return;
-        }
-
-        all.forEach(function (row) {
-          setVisible(row, row.dataset.labels.split(' ').indexOf(label) !== -1);
+      function showEmpty(message) {
+        rows().forEach(function (row) {
+          setVisible(row, false);
         });
-        setHeading('Tag #' + label, label + ' - ' + pageTitle);
+        emptyState.textContent = message;
+        emptyState.hidden = false;
       }
 
       function search() {
@@ -192,10 +182,47 @@
         emptyState.textContent = 'Not Find "' + needle + '"';
       }
 
-      document.getElementById('search-form').addEventListener('submit', function (event) {
-        event.preventDefault();
-        search();
-      });
+      function filter(label) {
+        var all = rows();
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        emptyState.hidden = true;
+
+        if (label === 'All') {
+          all.forEach(function (row) {
+            setVisible(row, true);
+          });
+          setHeading('Tag #' + label, label + ' - ' + pageTitle);
+          return;
+        }
+
+        if (knownLabels.indexOf(label) === -1) {
+          // An unrecognised hash is free text rather than a tag.
+          if (searchInput) {
+            searchInput.value = label;
+            search();
+            return;
+          }
+          // No inline form: free text is the modal's job now.
+          setHeading('#' + label, label + ' - ' + pageTitle);
+          showEmpty('Not Find "' + label + '"');
+          return;
+        }
+
+        all.forEach(function (row) {
+          setVisible(row, row.dataset.labels.split(' ').indexOf(label) !== -1);
+        });
+        setHeading('Tag #' + label, label + ' - ' + pageTitle);
+      }
+
+      var form = document.getElementById('search-form');
+      if (form) {
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          search();
+        });
+      }
 
       var request = new XMLHttpRequest();
       request.open('GET', 'post-list.json');

@@ -14,6 +14,9 @@ I18N = {
         "top": "Top",
         "pageViews": "Page views",
         "siteViews": "Site views",
+        "noResults": "No results for",
+        "searchHint": "to open search",
+        "tags": "Tags",
     },
     "CN": {
         "Search": "搜索",
@@ -29,6 +32,9 @@ I18N = {
         "top": "回到顶部",
         "pageViews": "本文浏览",
         "siteViews": "总浏览",
+        "noResults": "未找到结果",
+        "searchHint": "打开搜索",
+        "tags": "标签",
     },
 }
 

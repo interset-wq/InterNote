@@ -1,5 +1,5 @@
 {% extends 'base.j2.html' %}
-{% from 'components/macros.j2.html' import head_meta, nav_link, site_nav with context %}
+{% from 'components/macros.j2.html' import head_meta, nav_link, search_button, site_nav with context %}
 
 {% block head %}
   {{ head_meta(post.title, post.description, 'article', post.url) }}
@@ -15,6 +15,7 @@
   <h1 class="in-post-title">{{ post.title }}</h1>
   {% call site_nav('Post navigation') %}
     {{ nav_link('home', site.home_url, i18n.home) }}
+    {% if site.search == 'algolia' %}{{ search_button() }}{% endif %}
   {% endcall %}
 {% endblock %}
 

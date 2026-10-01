@@ -11,8 +11,8 @@
 
 - 文章 URL 使用 Issue 编号：`post/42.html`；单页 Label（如 `about`）生成 `about.html`
 - 评论：[giscus](https://giscus.app)（按 pathname 映射，`<template>` 懒加载，未配置时不渲染）
-- 文章目录（tocbot）默认开启；可选访问计数（`vercount` / `busuanzi`）、RSS 订阅（`rss.xml`）
-- 站内搜索（按标题过滤 `post-list.json`）
+- 文章目录（`toc.js`，自带滚动高亮）；可选访问计数（`vercount` / `busuanzi`）、RSS 订阅（`rss.xml`）
+- 站内搜索：可选接入 [Algolia](https://www.algolia.com/)（全文检索，`Ctrl/⌘ + K` 弹窗）；未启用时回退到标签页的标题过滤
 - TOML 配置，pydantic 严格校验（未知键报错），`config.sample.toml` 为完整示例
 - 每次构建更新仓库 `README.md` 的文章数 / 评论数 / 字数 / 时间统计（定时任务除外）
 
@@ -36,7 +36,6 @@
 | 触发 | 行为 |
 | --- | --- |
 | Issue `opened` / `edited` | 增量重建该篇文章及列表页 |
-| `schedule`（每天 0 16:00 UTC） | 全局重建 |
 | `workflow_dispatch` | 手动全局重建（修改 `config.toml` 后执行一次） |
 
 > blog workflow 总是检出 InterNote `main` 分支最新提交，本仓库的推送会影响线上博客的下一次构建。
@@ -71,9 +70,42 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 | `[layout]` | 每页文章数 `posts_per_page`、单页标签 `single_labels`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、注入的 `head/style/script/index_script/index_style/all_head` |
 | `[comments]` | 评论开关 `enabled`（还需配置 giscus 才会渲染评论区） |
 | `[giscus]` | giscus 四项参数（在 [giscus.app](https://giscus.app) 生成；留空则不渲染评论区） |
-| `[features]` | `visit_counter` 访问计数（`off` / `vercount` / `busuanzi`） |
+| `[search]` | Algolia 三项参数 `app_id` / `api_key` / `index_name`（需同时把 `[features] search` 设为 `algolia`） |
+| `[features]` | `visit_counter` 访问计数（`off` / `vercount` / `busuanzi`）；`search` 搜索后端（`off` / `algolia`） |
 
 主题无需配置：明暗切换内置（亮 / 暗 / 跟随系统三态循环），Primer CSS 与站点样式随包内置并复制到 `dist/assets/`。
+
+### 站内搜索（Algolia，可选）
+
+搜索覆盖**标题、标签与正文全文**。构建时由生成器把每篇文章推送进 Algolia 索引，
+浏览器端用一个 `Ctrl/⌘ + K` 弹窗查询，不依赖任何 JS SDK。
+
+1. 在 [Algolia](https://www.algolia.com/) 建应用，建一个索引（如 `posts`）
+2. 把 Search-only API key 填进 `config.toml` 的 `[search]`，并设 `[features] search = "algolia"`
+3. 把 Admin API key 配成构建环境的**机密** `ALGOLIA_ADMIN_KEY`
+
+```toml
+[search]
+app_id = "ABCD1234"
+api_key = "<Search-only key>"
+index_name = "posts"
+
+[features]
+search = "algolia"
+```
+
+说明：
+
+- `api_key` 只能是 **Search-only** key。它本来就要暴露给浏览器，提交到仓库是安全的。
+- **Admin key 不写进 `config.toml`**，只通过环境变量 `ALGOLIA_ADMIN_KEY` 传入。
+- 未设置 `ALGOLIA_ADMIN_KEY` 时构建会跳过索引写入并在日志里说明，因此本地 fixture
+  构建和单测都不会联网。
+- 索引写入失败只告警、不中断构建：搜索挂了不该挡住文章发布，代价是那次构建之后
+  搜索结果是旧的，直到下一次构建成功。
+- 索引采用「写临时索引再整体改名」，避免推送过程中搜索短暂无结果。
+- 免费额度要求在搜索界面显示 Algolia 标识。
+- `features.search` 保持 `off`（默认）时，导航栏搜索按钮仍指向 `tag.html`，
+  行为与之前一致。
 
 ### 文章 front matter（可选）
 
