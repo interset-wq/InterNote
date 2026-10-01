@@ -1,3 +1,8 @@
+/**
+ * busuanzi
+ */
+
+
 function createBSZ() {
     var postBody = document.getElementById('postBody');
     if (postBody){

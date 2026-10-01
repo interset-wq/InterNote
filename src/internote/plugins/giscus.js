@@ -1,3 +1,7 @@
+/**
+ * giscus
+ */
+
 (function () {
   'use strict';
 
@@ -16,14 +20,10 @@
   };
 
   function getTheme() {
-    {% if site.theme_mode == 'manual' %}
     var t = localStorage.getItem('internote_theme') || 'light';
     if (t === 'dark') return 'dark';
     if (t === 'auto') return 'preferred_color_scheme';
     return 'light';
-    {% else %}
-    return '{{ site.night_theme }}';
-    {% endif %}
   }
 
   function setTheme(theme) {

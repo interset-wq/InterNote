@@ -9,7 +9,6 @@
   {{ site.all_head }}
   <link rel="stylesheet" href="{{ site.home_url }}/templates/assets/main.css">
   <link rel="icon" href="{{ site.avatar_url }}">
-  {% if site.theme_mode == 'manual' %}
   <script>
     (function() {
       var theme = localStorage.getItem('internote_theme') || 'light';
@@ -19,7 +18,6 @@
       document.documentElement.setAttribute('data-color-mode', theme);
     })();
   </script>
-  {% endif %}
   {% block head %}{% endblock %}
   {% block style %}{% endblock %}
 </head>
@@ -29,7 +27,6 @@
   <footer class="in-site-footer" id="footer">{% include 'components/footer.j2.html' %}</footer>
 
   <script>
-    {% if site.theme_mode == 'manual' %}
     var themeSettings = {
       dark: ['dark', 'moon', '#00f0ff', 'dark'],
       light: ['light', 'sun', '#ff5000', 'light'],
@@ -59,7 +56,6 @@
     }
     var theme = localStorage.getItem('internote_theme') || 'light';
     if (themeSettings[theme]) { changeTheme.apply(null, themeSettings[theme]); }
-    {% endif %}
   </script>
   {% block script %}{% endblock %}
 </body>

@@ -97,14 +97,10 @@ document.getElementById("pathHome").setAttribute("d",IconList["home"]);
 
 {% if blogBase['need_comment'] %}
 function currentGiscusTheme(){
-    {%- if blogBase['theme_mode']=='manual' %}
     var t=localStorage.getItem("internote_theme")||"light";
     if(t=="dark"){return "dark";}
     if(t=="auto"){return "preferred_color_scheme";}
     return "light";
-    {%- else %}
-    return "{{ blogBase['night_theme'] }}";
-    {%- endif %}
 }
 
 function openComments(){

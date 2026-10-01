@@ -11,12 +11,10 @@
     {{ blogBase['primer_css'] }}
     {{ blogBase['all_head'] }}
     <link rel="icon" href="{{ blogBase['favicon_url'] }}">
-    {%- if blogBase['theme_mode']=='manual' -%}
     <script>
         let theme = localStorage.getItem("internote_theme") || "light";
         document.documentElement.setAttribute("data-color-mode", theme);
     </script>
-    {%- endif -%}
     {% block head %}{% endblock %}
 </head>
 
@@ -77,7 +75,6 @@
         }
         {% - endif %}
     }
-    {% - if blogBase['theme_mode'] == 'manual' %}
     let themeSettings = {
         "dark": ["dark", "moon", "#00f0ff", "dark"],
         "light": ["light", "sun", "#ff5000", "light"],
@@ -98,8 +95,6 @@
         }
     }
     if (themeSettings[theme]) { changeTheme(...themeSettings[theme]); }
-    {% - endif %}
-    console.log("\n %c Internote {{ blogBase['version'] }} • Based on Gmeek https://github.com/Meekdai/Gmeek \n", "padding:5px 0;background:#02d81d;color:#fff");
 </script>
 {% block script %}{% endblock %}
 
