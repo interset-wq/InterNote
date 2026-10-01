@@ -1,37 +1,22 @@
 {% extends 'base.j2.html' %}
+{% from 'components/macros.j2.html' import branding, head_meta, icon, nav_link, site_nav with context %}
 
 {% block head %}
-  {% set meta_title = site.title %}
-  {% set meta_description = site.sub_title %}
-  {% set meta_type = 'blog' %}
-  {% set meta_url = site.home_url %}
-  {% include 'components/head-meta.j2.html' %}
+  {{ head_meta(site.title, site.sub_title, 'blog', site.home_url) }}
 {% endblock %}
 
-{% block style %}
-  {% if site.index_style %}
-  <style>{{ site.index_style }}</style>
-  {% endif %}
-{% endblock %}
+{% block style %}{{ site.index_style }}{% endblock %}
 
 {% block header %}
-  <div class="in-site-branding">
-    <img src="{{ site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
-    <a class="in-site-title" href="{{ site.home_url }}">{{ site.title }}</a>
-  </div>
-  <nav class="in-site-nav" aria-label="Site navigation">
-    <a class="in-nav-btn" href="{{ site.home_url }}/tag.html" title="{{ i18n.Search }}" aria-label="Search">
-      <svg class="octicon" width="16" height="16"><path id="icon-search" fill-rule="evenodd"></path></svg>
-    </a>
-    {% for key, item in site.single_list.items() %}
-    <a class="in-nav-btn" href="{{ site.home_url }}/{{ item.labels[0] }}.html" title="{{ item.title }}" aria-label="{{ item.title }}">
-      <svg class="octicon" width="16" height="16"><path id="icon-{{ item.title }}" fill-rule="evenodd"></path></svg>
-    </a>
+  {{ branding() }}
+  {% call site_nav('Site navigation') %}
+    {{ nav_link('search', site.home_url ~ '/tag.html', i18n.Search) }}
+    {% for item in site.single_list.values() %}
+    {# single-page entries carry no title, so fall back to the label name #}
+    {% set page_title = item.title or item.labels[0] %}
+    {{ nav_link(item.labels[0], site.home_url ~ '/' ~ item.labels[0] ~ '.html', page_title) }}
     {% endfor %}
-    <button class="in-nav-btn" type="button" onclick="modeSwitch()" title="{{ i18n.switchTheme }}" aria-label="Switch theme" {% if site.theme_mode == 'fix' %}style="display:none;"{% endif %}>
-      <svg class="octicon" width="16" height="16"><path id="themeSwitch" fill-rule="evenodd"></path></svg>
-    </button>
-  </nav>
+  {% endcall %}
 {% endblock %}
 
 {% block content %}
@@ -39,13 +24,11 @@
   <p class="in-site-subtitle">{{ site.sub_title }}</p>
   {% endif %}
   <ul class="in-post-list">
-    {% for key, item in posts.items() %}
+    {% for item in posts.values() %}
     <li>
       <a class="in-post-list-item" href="{{ item.url }}">
         <div class="in-post-list-title">
-          <svg class="octicon{% if item.top %} in-post-icon-top{% endif %}" width="16" height="16">
-            <path fill-rule="evenodd"></path>
-          </svg>
+          {{ icon('upload' if item.top else 'post', 'in-post-icon-top' if item.top else '') }}
           <span>{{ item.title }}</span>
         </div>
         <div class="in-post-list-badges">
@@ -78,21 +61,5 @@
 {% endblock %}
 
 {% block script %}
-  <script>
-    (function() {
-      document.getElementById('icon-search').setAttribute('d', window.icons.search);
-      document.querySelectorAll('.in-post-list-title svg path').forEach(function(path) {
-        path.setAttribute('d', window.icons.post);
-      });
-      document.querySelectorAll('.in-post-icon-top path').forEach(function(path) {
-        path.setAttribute('d', window.icons.upload);
-        path.parentNode.style.color = 'var(--color-danger-fg, #cf222e)';
-      });
-      {% for key, item in site.single_list.items() %}
-      var el = document.getElementById('icon-{{ item.title }}');
-      if (el) el.setAttribute('d', window.icons['{{ item.labels[0] }}']);
-      {% endfor %}
-    })();
-  </script>
   {{ site.index_script }}
 {% endblock %}

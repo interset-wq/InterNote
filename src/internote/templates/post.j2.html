@@ -1,33 +1,21 @@
 {% extends 'base.j2.html' %}
+{% from 'components/macros.j2.html' import head_meta, nav_link, site_nav with context %}
 
 {% block head %}
-  {% set meta_title = post.title %}
-  {% set meta_description = post.description %}
-  {% set meta_type = 'article' %}
-  {% set meta_url = post.url %}
-  {% include 'components/head-meta.j2.html' %}
+  {{ head_meta(post.title, post.description, 'article', post.url) }}
   {% if post.highlight == 1 %}
   <link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet">
   {% endif %}
   {{ post.head }}
 {% endblock %}
 
-{% block style %}
-  {% if post.style %}
-  <style>{{ post.style }}</style>
-  {% endif %}
-{% endblock %}
+{% block style %}{{ post.style }}{% endblock %}
 
 {% block header %}
   <h1 class="in-post-title">{{ post.title }}</h1>
-  <nav class="in-site-nav" aria-label="Post navigation">
-    <a class="in-nav-btn" href="{{ site.home_url }}" title="{{ i18n.home }}" aria-label="Home">
-      <svg class="octicon" width="16" height="16"><path id="icon-home" fill-rule="evenodd"></path></svg>
-    </a>
-    <button class="in-nav-btn" type="button" onclick="modeSwitch()" title="{{ i18n.switchTheme }}" aria-label="Switch theme" {% if site.theme_mode == 'fix' %}style="display:none;"{% endif %}>
-      <svg class="octicon" width="16" height="16"><path id="themeSwitch" fill-rule="evenodd"></path></svg>
-    </button>
-  </nav>
+  {% call site_nav('Post navigation') %}
+    {{ nav_link('home', site.home_url, i18n.home) }}
+  {% endcall %}
 {% endblock %}
 
 {% block content %}
@@ -50,40 +38,21 @@
     {% endif %}
   </article>
   {% if site.need_comment %}
-  <section class="in-comments-section">
-    <button class="in-comments-toggle" type="button" id="cmButton">{{ i18n.comments }}</button>
-    <div class="in-comments-container" id="comments"></div>
-    <template id="giscusTemplate">
-      <script src="https://giscus.app/client.js"
-        data-repo="{{ site.giscus_repo }}"
-        data-repo-id="{{ site.giscus_repo_id }}"
-        data-category="{{ site.giscus_category }}"
-        data-category-id="{{ site.giscus_category_id }}"
-        data-mapping="pathname"
-        data-strict="0"
-        data-reactions-enabled="1"
-        data-emit-metadata="0"
-        data-input-position="bottom"
-        data-theme="light"
-        data-lang="{{ site.language | lower | replace('cn', 'zh-CN') | replace('en', 'en') }}"
-        crossorigin="anonymous"
-        async></script>
-    </template>
-  </section>
+  {% include 'components/comments.j2.html' %}
   {% endif %}
 {% endblock %}
 
 {% block script %}
   <script>
-    document.getElementById('icon-home').setAttribute('d', window.icons.home);
-    {% if post.comment_num > 0 %}
-    var cmButton = document.getElementById('cmButton');
-    var span = document.createElement('span');
-    span.className = 'in-badge';
-    span.style.background = 'rgba(234, 238, 242, 0.5)';
-    span.textContent = '{{ post.comment_num }}';
-    cmButton.appendChild(span);
-    {% endif %}
+    (function () {
+      {% if post.comment_num > 0 %}
+      var badge = document.createElement('span');
+      badge.className = 'in-badge';
+      badge.style.background = 'rgba(234, 238, 242, 0.5)';
+      badge.textContent = '{{ post.comment_num }}';
+      document.getElementById('cmButton').appendChild(badge);
+      {% endif %}
+    })();
   </script>
   {% if site.need_comment %}
   <script src="{{ site.home_url }}/plugins/giscus.js"></script>
@@ -91,74 +60,7 @@
   <script src="{{ site.home_url }}/plugins/toc.js"></script>
   <script src="{{ site.home_url }}/plugins/lightbox.js"></script>
   {% if post.highlight != 0 %}
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var createClipboardHTML = function(codeContent) {
-        return '<pre class="notranslate"><code class="notranslate">' + codeContent + '</code></pre>' +
-          '<div class="clipboard-container position-absolute right-0 top-0">' +
-          '<clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">' +
-          '<svg height="16" width="16" class="octicon octicon-copy m-2"><path d="' + window.icons.copy + '"></path></svg>' +
-          '<svg height="16" width="16" class="octicon octicon-check m-2 d-none"><path d="' + window.icons.check + '"></path></svg>' +
-          '</clipboard-copy>' +
-          '<div class="in-copy-feedback">Copied!</div>' +
-          '</div>';
-      };
-
-      var handleCodeElements = function(selector) {
-        document.querySelectorAll(selector).forEach(function(codeElement) {
-          var codeContent = codeElement.innerHTML;
-          var newStructure = document.createElement('div');
-          newStructure.className = 'in-code-block';
-          newStructure.innerHTML = createClipboardHTML(codeContent);
-
-          var parentElement = codeElement.parentElement;
-          if (selector.indexOf('highlight') !== -1) {
-            parentElement.insertBefore(newStructure, codeElement.nextSibling);
-            parentElement.removeChild(codeElement);
-          } else {
-            parentElement.parentElement.replaceChild(newStructure, parentElement);
-          }
-        });
-      };
-
-      handleCodeElements('pre.notranslate > code.notranslate');
-      handleCodeElements('div.highlight > pre.notranslate');
-
-      var currentFeedback = null;
-      document.querySelectorAll('clipboard-copy').forEach(function(copyButton) {
-        copyButton.addEventListener('click', function() {
-          var codeContent = copyButton.closest('.in-code-block').innerText;
-          var tempTextArea = document.createElement('textarea');
-          tempTextArea.value = codeContent;
-          document.body.appendChild(tempTextArea);
-          tempTextArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(tempTextArea);
-
-          var copyIcon = copyButton.querySelector('.octicon-copy');
-          var checkIcon = copyButton.querySelector('.octicon-check');
-          var copyFeedback = copyButton.nextElementSibling;
-
-          if (currentFeedback && currentFeedback !== copyFeedback) {
-            currentFeedback.style.display = 'none';
-          }
-          currentFeedback = copyFeedback;
-
-          copyIcon.classList.add('d-none');
-          checkIcon.classList.remove('d-none');
-          copyFeedback.style.display = 'block';
-          copyButton.style.borderColor = 'var(--color-success-fg)';
-
-          setTimeout(function() {
-            copyIcon.classList.remove('d-none');
-            checkIcon.classList.add('d-none');
-            copyFeedback.style.display = 'none';
-            copyButton.style.borderColor = '';
-          }, 2000);
-        });
-      });
-    });
-  </script>
+  <script src="{{ site.home_url }}/plugins/code-copy.js"></script>
   {% endif %}
   {{ post.script }}
 {% endblock %}

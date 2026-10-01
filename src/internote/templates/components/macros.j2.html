@@ -1,0 +1,60 @@
+{#
+  Shared UI macros. Imported with `with context` so they can read the
+  per-page `icons` and `i18n` that the generator crops for each page.
+#}
+
+{# Renders an octicon straight from the icons dict - no JS round-trip. #}
+{% macro icon(name, cls='') -%}
+<svg class="octicon {{ cls }}" width="16" height="16" aria-hidden="true"><path d="{{ icons[name] }}" fill-rule="evenodd"></path></svg>
+{%- endmacro %}
+
+{# A nav button whose glyph is chosen server-side. #}
+{% macro nav_link(name, href, title, label='', target='') -%}
+<a class="in-nav-btn" href="{{ href }}" title="{{ title }}"{% if target %} target="{{ target }}"{% endif %} aria-label="{{ label or title }}">{{ icon(name) }}</a>
+{%- endmacro %}
+
+{#
+  Keeps id="themeSwitch" so theme.js can swap the glyph between states.
+  The active icon depends on localStorage, so `sun` is rendered as the
+  initial value (the default when nothing is stored) and theme.js corrects
+  it on load.
+#}
+{% macro theme_button() -%}
+<button class="in-nav-btn" type="button" title="{{ i18n.switchTheme }}" aria-label="{{ i18n.switchTheme }}">
+  <svg class="octicon" width="16" height="16"><path id="themeSwitch" d="{{ icons.sun }}" fill-rule="evenodd"></path></svg>
+</button>
+{%- endmacro %}
+
+{#
+  Wraps the caller-supplied nav buttons and appends the theme toggle.
+  Usage: {% call site_nav('Some label') %} ...buttons... {% endcall %}
+#}
+{% macro site_nav(label) -%}
+<nav class="in-site-nav" aria-label="{{ label }}">
+  {{- caller() }}
+  {{ theme_button() }}
+</nav>
+{%- endmacro %}
+
+{# Site branding block for pages that lead with the site identity. #}
+{% macro branding() -%}
+<div class="in-site-branding">
+  <img src="{{ site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
+  <a class="in-site-title" href="{{ site.home_url }}">{{ site.title }}</a>
+</div>
+{%- endmacro %}
+
+{#
+  Meta + Open Graph block. All four arguments are optional; anything
+  omitted falls back to the site defaults so a page can pass only what
+  differs.
+#}
+{% macro head_meta(title='', description='', type='website', url='') -%}
+<meta name="description" content="{{ description or site.sub_title or site.title }}">
+<meta property="og:title" content="{{ title or site.title }}">
+<meta property="og:description" content="{{ description or site.sub_title or site.title }}">
+<meta property="og:type" content="{{ type }}">
+<meta property="og:url" content="{{ url or site.home_url }}">
+<meta property="og:image" content="{{ site.avatar_url }}">
+<title>{{ title or site.title }}</title>
+{%- endmacro %}

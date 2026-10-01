@@ -1,95 +1,109 @@
 {% extends 'base.j2.html' %}
+{% from 'components/macros.j2.html' import head_meta, nav_link, site_nav with context %}
 
 {% block head %}
-  <meta name="description" content="{{ site.title }} search page">
-  <title>{{ site.title }} - Tag</title>
+  {{ head_meta(site.title ~ ' search page') }}
 {% endblock %}
-
-{% block style %}{% endblock %}
 
 {% block header %}
   <h1 class="in-page-title"><span>Loading</span><span class="in-animated-ellipsis"></span></h1>
-  <nav class="in-site-nav" aria-label="Tag navigation">
+  {% call site_nav('Tag navigation') %}
     <form class="in-search-form" id="search-form">
       <input type="search" class="in-search-input" aria-label="Search site" value="">
       <button class="in-search-btn" type="submit">{{ i18n.Search }}</button>
     </form>
-    <a class="in-nav-btn" href="{{ site.home_url }}" title="{{ i18n.home }}" aria-label="Home">
-      <svg class="octicon" width="16" height="16"><path id="icon-home" fill-rule="evenodd"></path></svg>
-    </a>
-    <button class="in-nav-btn" type="button" onclick="modeSwitch()" title="{{ i18n.switchTheme }}" aria-label="Switch theme" {% if site.theme_mode == 'fix' %}style="display:none;"{% endif %}>
-      <svg class="octicon" width="16" height="16"><path id="themeSwitch" fill-rule="evenodd"></path></svg>
-    </button>
-  </nav>
+    {{ nav_link('home', site.home_url, i18n.home) }}
+  {% endcall %}
 {% endblock %}
 
 {% block content %}
   <div class="in-tag-cloud" id="tag-cloud"></div>
   <ul class="in-post-list" id="post-list" aria-label="Filtered posts"></ul>
-  <div class="in-empty-state" id="empty-state" style="display:none;">Not Find</div>
+  <div class="in-empty-state" id="empty-state" hidden>Not Find</div>
 {% endblock %}
 
 {% block script %}
   <script>
-    (function() {
-      document.getElementById('icon-home').setAttribute('d', window.icons.home);
+    (function () {
+      var pageTitle = {{ site.title | tojson }};
+      var list = document.getElementById('post-list');
+      var cloud = document.getElementById('tag-cloud');
+      var emptyState = document.getElementById('empty-state');
+      var heading = document.querySelector('.in-page-title');
+      var searchInput = document.querySelector('.in-search-input');
+      var knownLabels = [];
 
-      var tagList = [];
-      var labelsCount = {};
-      var jsonData = null;
+      function rows() {
+        return list.querySelectorAll('.in-post-list-item-wrapper');
+      }
 
-      var request = new XMLHttpRequest();
-      request.open('GET', 'post-list.json');
-      request.responseType = 'text';
-      request.send();
-      request.onload = function() {
-        jsonData = JSON.parse(request.response);
-        showList();
-        setClassDisplay(decodeURI(window.location.hash.slice(1)));
-      };
+      function badge(text, color) {
+        var node = document.createElement('span');
+        node.className = 'in-badge';
+        node.style.backgroundColor = color;
+        node.textContent = text;
+        return node;
+      }
 
-      document.getElementById('search-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        searchShow();
-      });
+      function postIcon() {
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'octicon');
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', window.icons.post);
+        svg.appendChild(path);
+        return svg;
+      }
 
-      function showList() {
-        var postList = document.getElementById('post-list');
-        var tagCloud = document.getElementById('tag-cloud');
-
-        jsonData.label_color_dict.All = '#000';
-        labelsCount.All = 0;
-        for (var key in jsonData) {
-          if (key !== 'label_color_dict' && Array.isArray(jsonData[key].labels)) {
-            labelsCount.All++;
-            jsonData[key].labels.forEach(function(label) {
-              labelsCount[label] = (labelsCount[label] || 0) + 1;
-            });
+      function countLabels(data) {
+        var counts = { All: 0 };
+        Object.keys(data).forEach(function (key) {
+          if (key === 'label_color_dict' || !Array.isArray(data[key].labels)) {
+            return;
           }
-        }
-
-        var sortedLabels = Object.keys(labelsCount).sort(function(a, b) {
-          return labelsCount[b] - labelsCount[a];
+          counts.All += 1;
+          data[key].labels.forEach(function (label) {
+            counts[label] = (counts[label] || 0) + 1;
+          });
         });
+        return counts;
+      }
 
-        sortedLabels.forEach(function(label) {
-          tagList.push(label);
-          var btn = document.createElement('button');
-          btn.className = 'in-badge in-tag-cloud-item';
-          btn.style.backgroundColor = jsonData.label_color_dict[label];
-          btn.onclick = function() { updateShowTag(label); };
-          btn.appendChild(document.createTextNode(label));
+      function renderCloud(data, counts) {
+        var colors = data.label_color_dict;
+        colors.All = '#000';
+        Object.keys(counts)
+          .sort(function (a, b) {
+            return counts[b] - counts[a];
+          })
+          .forEach(function (label) {
+            var button = document.createElement('button');
+            button.className = 'in-badge in-tag-cloud-item';
+            button.style.backgroundColor = colors[label];
+            button.appendChild(document.createTextNode(label));
 
-          var count = document.createElement('span');
-          count.className = 'in-badge-count';
-          count.textContent = labelsCount[label];
-          btn.appendChild(count);
-          tagCloud.appendChild(btn);
-        });
+            var count = document.createElement('span');
+            count.className = 'in-badge-count';
+            count.textContent = counts[label];
+            button.appendChild(count);
 
-        for (var key in jsonData) {
-          if (key === 'label_color_dict') continue;
-          var item = jsonData[key];
+            button.onclick = function () {
+              showLabel(label);
+            };
+            knownLabels.push(label);
+            cloud.appendChild(button);
+          });
+      }
+
+      function renderRows(data) {
+        var colors = data.label_color_dict;
+        Object.keys(data).forEach(function (key) {
+          if (key === 'label_color_dict') {
+            return;
+          }
+          var item = data[key];
+
           var row = document.createElement('li');
           row.className = 'in-post-list-item-wrapper';
           row.dataset.labels = item.labels.join(' ');
@@ -98,101 +112,101 @@
           link.className = 'in-post-list-item';
           link.href = item.post_url;
 
-          var titleDiv = document.createElement('div');
-          titleDiv.className = 'in-post-list-title';
+          var title = document.createElement('div');
+          title.className = 'in-post-list-title';
+          title.appendChild(postIcon());
+          var label = document.createElement('span');
+          label.textContent = item.post_title;
+          title.appendChild(label);
 
-          var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.setAttribute('class', 'octicon');
-          svg.setAttribute('width', '16');
-          svg.setAttribute('height', '16');
-          var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', window.icons.post);
-          svg.appendChild(path);
-
-          var titleSpan = document.createElement('span');
-          titleSpan.textContent = item.post_title;
-
-          titleDiv.appendChild(svg);
-          titleDiv.appendChild(titleSpan);
-
-          var badgesDiv = document.createElement('div');
-          badgesDiv.className = 'in-post-list-badges';
-
-          item.labels.forEach(function(label) {
-            var badge = document.createElement('span');
-            badge.className = 'in-badge';
-            badge.style.backgroundColor = jsonData.label_color_dict[label];
-            badge.textContent = label;
-            badgesDiv.appendChild(badge);
+          var badges = document.createElement('div');
+          badges.className = 'in-post-list-badges';
+          item.labels.forEach(function (name) {
+            badges.appendChild(badge(name, colors[name]));
           });
+          badges.appendChild(badge(item.created_date, item.date_label_color));
 
-          var timeBadge = document.createElement('span');
-          timeBadge.className = 'in-badge';
-          timeBadge.style.backgroundColor = item.date_label_color;
-          timeBadge.textContent = item.created_date;
-          badgesDiv.appendChild(timeBadge);
-
-          link.appendChild(titleDiv);
-          link.appendChild(badgesDiv);
+          link.appendChild(title);
+          link.appendChild(badges);
           row.appendChild(link);
-          postList.appendChild(row);
+          list.appendChild(row);
+        });
+      }
+
+      function setVisible(row, visible) {
+        row.hidden = !visible;
+      }
+
+      function setHeading(text, title) {
+        heading.textContent = text;
+        document.title = title;
+      }
+
+      function showLabel(label) {
+        if (window.location.hash.slice(1) === encodeURI(label)) {
+          return;
         }
+        window.location.hash = '#' + label;
+        filter(label);
       }
 
-      function updateShowTag(label) {
-        if (window.location.hash.slice(1) !== encodeURI(label)) {
-          window.location.hash = '#' + label;
-          setClassDisplay(label);
-        }
-      }
-
-      function rows() {
-        return document.querySelectorAll('#post-list .in-post-list-item-wrapper');
-      }
-
-      function show(node, visible) {
-        node.style.display = visible ? '' : 'none';
-      }
-
-      function setClassDisplay(label) {
-        var list = rows();
-        var tagTitle = document.querySelector('.in-page-title');
-        tagTitle.textContent = 'Tag #' + label;
-        document.title = label + ' - {{ site.title }}';
-        document.querySelector('.in-search-input').value = '';
+      function filter(label) {
+        var all = rows();
+        searchInput.value = '';
+        emptyState.hidden = true;
 
         if (label === 'All') {
-          for (var i = 0; i < list.length; i++) show(list[i], true);
-          document.getElementById('empty-state').style.display = 'none';
-        } else if (tagList.indexOf(label) !== -1) {
-          for (var i = 0; i < list.length; i++) {
-            show(list[i], list[i].dataset.labels.split(' ').indexOf(label) !== -1);
-          }
-          document.getElementById('empty-state').style.display = 'none';
-        } else {
-          document.querySelector('.in-search-input').value = label;
-          searchShow();
+          all.forEach(function (row) {
+            setVisible(row, true);
+          });
+          setHeading('Tag #' + label, label + ' - ' + pageTitle);
+          return;
         }
+
+        if (knownLabels.indexOf(label) === -1) {
+          searchInput.value = label;
+          search();
+          return;
+        }
+
+        all.forEach(function (row) {
+          setVisible(row, row.dataset.labels.split(' ').indexOf(label) !== -1);
+        });
+        setHeading('Tag #' + label, label + ' - ' + pageTitle);
       }
 
-      function searchShow() {
-        var list = rows();
-        var tagTitle = document.querySelector('.in-page-title');
-        var searchInput = document.querySelector('.in-search-input').value;
-        tagTitle.textContent = 'Search #' + searchInput;
-        document.title = searchInput ? searchInput + ' - {{ site.title }}' : 'Search - {{ site.title }}';
-        var needle = searchInput.toUpperCase();
+      function search() {
+        var needle = searchInput.value;
+        var upper = needle.toUpperCase();
         var found = 0;
-        window.location.hash = '#' + searchInput;
-        for (var i = 0; i < list.length; i++) {
-          var match = list[i].textContent.toUpperCase().indexOf(needle) !== -1;
-          show(list[i], match);
-          if (match) found++;
-        }
-        var emptyState = document.getElementById('empty-state');
-        emptyState.style.display = found === 0 ? 'block' : 'none';
-        if (found === 0) emptyState.textContent = 'Not Find "' + searchInput + '"';
+        window.location.hash = '#' + needle;
+        rows().forEach(function (row) {
+          var match = row.textContent.toUpperCase().indexOf(upper) !== -1;
+          setVisible(row, match);
+          if (match) {
+            found += 1;
+          }
+        });
+        setHeading('Search #' + needle, needle ? needle + ' - ' + pageTitle : 'Search - ' + pageTitle);
+        emptyState.hidden = found !== 0;
+        emptyState.textContent = 'Not Find "' + needle + '"';
       }
+
+      document.getElementById('search-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        search();
+      });
+
+      var request = new XMLHttpRequest();
+      request.open('GET', 'post-list.json');
+      request.responseType = 'text';
+      request.onload = function () {
+        var data = JSON.parse(request.response);
+        renderCloud(data, countLabels(data));
+        renderRows(data);
+        filter(decodeURI(window.location.hash.slice(1)) || 'All');
+      };
+      request.send();
     })();
   </script>
 {% endblock %}

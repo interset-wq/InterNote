@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ site.language | default('zh-CN') }}" data-color-mode="light" data-dark-theme="{{ site.night_theme }}" data-light-theme="{{ site.day_theme }}">
+<html lang="{{ site.language | default('zh-CN') }}" data-color-mode="light" data-light-theme="{{ site.day_theme }}" data-dark-theme="{{ site.night_theme }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="{{ site.home_url }}/assets/main.css">
   <link rel="icon" href="{{ site.avatar_url }}">
   <script>
-    (function() {
+    // Resolve the stored theme before first paint, otherwise a dark-mode
+    // visitor sees a white flash. theme.js takes over once loaded.
+    (function () {
       var theme = localStorage.getItem('internote_theme') || 'light';
       if (theme === 'auto') {
         theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -19,44 +21,15 @@
     })();
   </script>
   {% block head %}{% endblock %}
-  {% block style %}{% endblock %}
+  {# Child templates fill this with raw CSS text; the wrapper is ours. #}
+  {% set extra_css %}{% block style %}{% endblock %}{% endset %}
+  {% if extra_css | trim %}<style>{{ extra_css }}</style>{% endif %}
 </head>
 <body>
   <header class="in-site-header" id="header">{% block header %}{% endblock %}</header>
   <main class="in-site-main" id="content">{% block content %}{% endblock %}</main>
   <footer class="in-site-footer" id="footer">{% include 'components/footer.j2.html' %}</footer>
-
-  <script>
-    var themeSettings = {
-      dark: ['dark', 'moon', '#00f0ff', 'dark'],
-      light: ['light', 'sun', '#ff5000', 'light'],
-      auto: ['auto', 'sync', '', 'preferred_color_scheme']
-    };
-    function resolveTheme(mode) {
-      return mode === 'auto'
-        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : mode;
-    }
-    function changeTheme(mode, icon, color, giscusThemeName) {
-      document.documentElement.setAttribute('data-color-mode', resolveTheme(mode));
-      var sw = document.getElementById('themeSwitch');
-      if (sw) {
-        sw.setAttribute('d', window.icons[icon]);
-        sw.parentNode.style.color = color;
-      }
-      if (window.giscusTheme) window.giscusTheme(giscusThemeName);
-    }
-    function modeSwitch() {
-      var currentMode = localStorage.getItem('internote_theme') || 'light';
-      var newMode = currentMode === 'light' ? 'dark' : currentMode === 'dark' ? 'auto' : 'light';
-      localStorage.setItem('internote_theme', newMode);
-      if (themeSettings[newMode]) {
-        changeTheme.apply(null, themeSettings[newMode]);
-      }
-    }
-    var theme = localStorage.getItem('internote_theme') || 'light';
-    if (themeSettings[theme]) { changeTheme.apply(null, themeSettings[theme]); }
-  </script>
+  <script src="{{ site.home_url }}/plugins/theme.js"></script>
   {% block script %}{% endblock %}
 </body>
 </html>

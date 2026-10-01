@@ -12,8 +12,13 @@ PKG_TEMPLATES = Path(__file__).resolve().parent / "templates"
 class Renderer:
     def __init__(self, templates_dir: str | Path = PKG_TEMPLATES):
         self.templates_dir = Path(templates_dir)
+        # autoescape stays off: post bodies are pre-rendered HTML from the
+        # GitHub API. trim_blocks/lstrip_blocks keep {% if %} blocks from
+        # leaking blank lines into the output.
         self.env = Environment(
             loader=FileSystemLoader(str(self.templates_dir)),
+            trim_blocks=True,
+            lstrip_blocks=True,
         )
 
     def render(self, template: str, context: dict) -> str:
