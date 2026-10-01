@@ -140,13 +140,13 @@ class Generator:
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         issue = self.repo.get_issue(int(number_str))
         if issue.state != "open":
-            print("====== issue is closed ======")
-            return
-        entry = self._add_entry(issue)
-        if entry is None:
-            print("====== issue has no label, skipped ======")
-            return
-        self._create_post(entry)
+            self._drop_entry(issue.number, "issue is closed")
+        else:
+            entry = self._add_entry(issue)
+            if entry is not None:
+                self._create_post(entry)
+        # A withdrawn post still has to reach the lists, the feed and the
+        # state file, otherwise they keep linking to a page that is gone.
         self._create_lists()
         self._create_feed()
         self._finalize()
@@ -195,10 +195,32 @@ class Generator:
         self.ctx["post_list"] = data.get("post_list", {})
         self.ctx["single_list"] = data.get("single_list", {})
 
+    def _drop_entry(self, number: int, reason: str) -> bool:
+        """Withdraw a post: remove its page and its entry from the state.
+
+        Called when an issue stops qualifying for publication - closed,
+        stripped of its last label, or marked draft. Without this the
+        homepage, the search index and the feed keep pointing at a page
+        that no longer exists.
+        """
+        key = f"P{number}"
+        for list_name in ("post_list", "single_list"):
+            entry = self.ctx[list_name].get(key)
+            if entry is None:
+                continue
+            page = Path(entry["html_dir"])
+            if page.exists():
+                page.unlink()
+            del self.ctx[list_name][key]
+            print("withdraw #{} ({}): {}".format(number, reason, entry["html_dir"]))
+            return True
+        return False
+
     # -------------------------------------------------------------- entries
 
     def _add_entry(self, issue):
         if len(issue.labels) < 1:
+            self._drop_entry(issue.number, "no labels")
             return None
         labels = [label.name for label in issue.labels]
 
@@ -225,11 +247,7 @@ class Generator:
         if meta.get("draft"):
             # An incremental build does not clear dist, so a post that used
             # to be published would otherwise keep serving a stale page.
-            if html_dir.exists():
-                html_dir.unlink()
-                print("draft post #{}: removed {}".format(issue.number, html_dir))
-            else:
-                print("draft post #{}: skipped".format(issue.number))
+            self._drop_entry(issue.number, "draft")
             return None
 
         entry = {

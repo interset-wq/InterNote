@@ -28,6 +28,8 @@ class FixtureIssue:
         self.labels = [SimpleNamespace(**lb) for lb in raw["labels"]]
         self.created_at = datetime.fromisoformat(raw["created_at"])
         self.updated_at = datetime.fromisoformat(raw["updated_at"])
+        # Generator.run_one branches on this; PyGithub's Issue always has it.
+        self.state = raw.get("state", "open")
         self._comments_total = raw["comments_total"]
         self._events = raw["events"]
 
