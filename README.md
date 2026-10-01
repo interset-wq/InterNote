@@ -73,7 +73,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 | `[giscus]` | giscus 四项参数（在 [giscus.app](https://giscus.app) 生成；留空则不渲染评论区） |
 | `[features]` | `visit_counter` 访问计数（`off` / `vercount` / `busuanzi`） |
 
-主题无需配置：明暗切换内置（亮 / 暗 / 跟随系统三态循环），Primer CSS 与站点样式随包内置并复制到 `dist/templates/assets/`。
+主题无需配置：明暗切换内置（亮 / 暗 / 跟随系统三态循环），Primer CSS 与站点样式随包内置并复制到 `dist/assets/`。
 
 ### 文章内配置（Issue 正文最后一行）
 

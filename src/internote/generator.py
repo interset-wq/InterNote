@@ -81,6 +81,7 @@ class Generator:
         self.sources_dir = self.root / "sources"
         self.static_dir = self.root / "static"
         self.plugins_dir = Path(__file__).resolve().parent / "plugins"
+        self.assets_dir = Path(__file__).resolve().parent / "assets"
         self.state_path = self.root / "internote.json"
 
         self.ctx = config.context()
@@ -106,8 +107,6 @@ class Generator:
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
         self.i18n = get_i18n(self.ctx["language"])
         self.renderer = Renderer(Path(__file__).resolve().parent / "templates")
-        # static assets shipped inside the package (e.g. templates/assets/)
-        self.pkg_templates_dir = Path(__file__).resolve().parent / "templates"
 
         self.old_feed = ""
         rss_path = self.dist_dir / "rss.xml"
@@ -177,11 +176,10 @@ class Generator:
         else:
             print("static does not exist")
 
-        # ship package template assets (css) so pages can reference them
-        pkg_assets = self.pkg_templates_dir / "assets"
-        if pkg_assets.exists():
+        # ship packaged css so pages can reference it
+        if self.assets_dir.exists():
             shutil.copytree(
-                pkg_assets, self.dist_dir / "templates" / "assets",
+                self.assets_dir, self.dist_dir / "assets",
                 dirs_exist_ok=True,
             )
 
