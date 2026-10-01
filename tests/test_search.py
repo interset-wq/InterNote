@@ -331,3 +331,8 @@ class TestIndexSettings:
 
     def test_snippet_is_configured(self):
         assert INDEX_SETTINGS["attributesToSnippet"] == ["body:25"]
+
+    def test_no_unused_faceting_setting(self):
+        """attributesForFaceting was set on the assumption a label filter would
+        follow. Nothing reads it, so shipping it is dead configuration."""
+        assert "attributesForFaceting" not in INDEX_SETTINGS

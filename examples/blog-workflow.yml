@@ -16,7 +16,10 @@ name: build Internote
 on:
   workflow_dispatch:
   issues:
-    types: [opened, edited]
+    # `closed` is what actually unpublishes a post: run_one sees a non-open
+    # state and drops the entry from the pages, the lists, the feed, the state
+    # file and the search index. Without a cron there is no later sweep.
+    types: [opened, edited, closed]
 
 jobs:
   build:

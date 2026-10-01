@@ -29,9 +29,10 @@ ADMIN_KEY_ENV = "ALGOLIA_ADMIN_KEY"
 
 # Applied on every sync so the index describes itself and a settings change
 # lands on the next build instead of needing a one-off dashboard edit.
+# attributesForFaceting was here on the assumption a label filter would be
+# built later; nothing reads it, so it is not sent.
 INDEX_SETTINGS = {
     "searchableAttributes": ["title", "labels", "body"],
-    "attributesForFaceting": ["searchable(labels)"],
     "attributesToSnippet": ["body:25"],
 }
 

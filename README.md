@@ -36,7 +36,11 @@
 | 触发 | 行为 |
 | --- | --- |
 | Issue `opened` / `edited` | 增量重建该篇文章及列表页 |
+| Issue `closed` | 取消发布该篇文章：从页面、列表、RSS、状态文件与搜索索引中移除 |
 | `workflow_dispatch` | 手动全局重建（修改 `config.toml` 后执行一次） |
+
+> 关闭 Issue 即取消发布。已删除每日定时构建，因此没有事后清扫，`closed` 触发是唯一
+> 能让撤稿及时生效的方式。Pull Request 不会作为文章发布，也不会进入搜索索引。
 
 > blog workflow 总是检出 InterNote `main` 分支最新提交，本仓库的推送会影响线上博客的下一次构建。
 

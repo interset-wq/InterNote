@@ -30,6 +30,11 @@ class FixtureIssue:
         self.updated_at = datetime.fromisoformat(raw["updated_at"])
         # Generator.run_one branches on this; PyGithub's Issue always has it.
         self.state = raw.get("state", "open")
+        # PyGithub exposes a PullRequest object here for PRs and None for
+        # issues. Generator._add_entry skips anything truthy.
+        self.pull_request = (
+            SimpleNamespace(number=raw["number"]) if raw.get("pull_request") else None
+        )
         self._comments_total = raw["comments_total"]
         self._events = raw["events"]
 

@@ -234,6 +234,15 @@ class Generator:
     # -------------------------------------------------------------- entries
 
     def _add_entry(self, issue):
+        # get_issues() returns pull requests alongside issues, so a PR would
+        # otherwise be published as a post and pushed into the search index.
+        # fetch_fixtures.py has always filtered these out, which is why this
+        # only showed up on the live path.
+        if getattr(issue, "pull_request", None):
+            print(f"pull request #{issue.number}, skipped")
+            self._drop_entry(issue.number, "is a pull request")
+            return None
+
         if len(issue.labels) < 1:
             self._drop_entry(issue.number, "no labels")
             return None

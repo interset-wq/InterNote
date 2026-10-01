@@ -53,7 +53,14 @@ def make_repo(tmp_path, issues, labels=None):
     return fixtures.load_repo(path)
 
 
-def issue(number=1, title="Title", body="Body text.", labels=("blog",), state="open"):
+def issue(
+    number=1,
+    title="Title",
+    body="Body text.",
+    labels=("blog",),
+    state="open",
+    pull_request=False,
+):
     return {
         "number": number,
         "title": title,
@@ -65,6 +72,7 @@ def issue(number=1, title="Title", body="Body text.", labels=("blog",), state="o
         "comments_total": 0,
         "events": [],
         "state": state,
+        "pull_request": pull_request,
     }
 
 
@@ -271,6 +279,122 @@ class TestRenderCache:
         # the cache is discarded rather than crashing, and the page is built
         assert (tmp_path / "dist" / "post" / "1.html").exists()
         assert "P1" in state_of(tmp_path)["post_list"]
+
+
+class TestPullRequestsAreNotPosts:
+    """get_issues() returns pull requests as well as issues. scripts/
+    fetch_fixtures.py has always filtered them; the live path did not, so a PR
+    would be published *and* pushed into the search index."""
+
+    def test_pull_request_is_skipped_on_a_full_build(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2, pull_request=True)])
+        assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
+        assert not (tmp_path / "dist" / "post" / "2.html").exists()
+
+    def test_pull_request_is_not_in_the_listing(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)])
+        assert "PR" not in index_of(tmp_path)
+
+    def test_pull_request_is_not_in_the_feed(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)])
+        rss = (tmp_path / "dist" / "rss.xml").read_text(encoding="utf-8")
+        assert "PR" not in rss
+
+    def test_pull_request_is_not_in_the_search_index(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
+        cfg_path = write_config(tmp_path, extra=SEARCH_ON)
+        repo, markdown = make_repo(
+            tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)]
+        )
+        gen = Generator(
+            load_config(cfg_path),
+            repo,
+            repo_name="owner/blog",
+            markdown=markdown,
+            root=tmp_path,
+        )
+        from conftest import RecordingUrlopen
+        from internote import search as search_module
+
+        recorder = RecordingUrlopen()
+        monkeypatch.setattr(search_module.urllib.request, "urlopen", recorder)
+        gen.run_all()
+
+        assert [item["body"]["objectID"] for item in recorder.batch()] == ["post-1"]
+
+    def test_a_labelled_pull_request_is_still_skipped(self, tmp_path):
+        """Label routing happens before this point, so a PR labelled `about`
+        could otherwise have claimed the about.html single-page slot."""
+        build(tmp_path, [issue(number=1, labels=("about",), pull_request=True)])
+        assert state_of(tmp_path)["single_list"] == {}
+        assert not (tmp_path / "dist" / "about.html").exists()
+
+    def test_issue_without_pull_request_attribute_still_builds(self, tmp_path):
+        """Guards the getattr default: anything duck-typed without the
+        attribute must not be silently dropped."""
+        build(tmp_path, [issue(number=1)])
+        assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
+
+
+class TestClosedIssuesUnpublish:
+    """The `closed` trigger is what makes this work in CI: there is no cron
+    to sweep unpublishes any more."""
+
+    def test_closing_an_issue_removes_every_trace(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2)])
+        assert (tmp_path / "dist" / "post" / "2.html").exists()
+
+        build(tmp_path, [issue(number=1), issue(number=2, state="closed")], incremental="2")
+
+        assert not (tmp_path / "dist" / "post" / "2.html").exists()
+        assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
+        assert "P2" not in (tmp_path / "dist" / "post-list.json").read_text(
+            encoding="utf-8"
+        )
+        assert index_of(tmp_path).count('post/2.html') == 0
+
+    def test_closing_a_single_page_removes_it(self, tmp_path):
+        build(tmp_path, [issue(number=1, labels=("about",))])
+        assert (tmp_path / "dist" / "about.html").exists()
+
+        build(
+            tmp_path,
+            [issue(number=1, labels=("about",), state="closed")],
+            incremental="1",
+        )
+        assert not (tmp_path / "dist" / "about.html").exists()
+        assert state_of(tmp_path)["single_list"] == {}
+
+    def test_closing_drops_it_from_the_search_index_too(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
+        cfg_path = write_config(tmp_path, extra=SEARCH_ON)
+        repo, markdown = make_repo(
+            tmp_path, [issue(number=1), issue(number=2, labels=("about",))]
+        )
+        gen = Generator(
+            load_config(cfg_path),
+            repo,
+            repo_name="owner/blog",
+            markdown=markdown,
+            root=tmp_path,
+        )
+        from conftest import RecordingUrlopen
+        from internote import search as search_module
+
+        recorder = RecordingUrlopen()
+        monkeypatch.setattr(search_module.urllib.request, "urlopen", recorder)
+        gen.run_all()
+        assert sorted(i["body"]["objectID"] for i in recorder.batch()) == [
+            "page-about",
+            "post-1",
+        ]
+
+        repo._issues[1].state = "closed"
+        recorder.calls.clear()
+        gen.run_one("2")
+
+        # The withdrawn page must not survive in the index either.
+        assert [i["body"]["objectID"] for i in recorder.batch()] == ["post-1"]
 
 
 class TestIncrementalKeepsOthers:
