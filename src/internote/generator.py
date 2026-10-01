@@ -411,6 +411,13 @@ class Generator:
             page["post"]["highlight"] = 0
             keys = ["sun", "moon", "sync", "home", "github", "rss"]
 
+        if page["search"] == "algolia":
+            # search_button() renders icon('search'); without it in the crop
+            # the SVG gets an empty d and the button is invisible.
+            keys.append("search")
+        # Every page header links to the tag cloud, so `tag` is never optional.
+        keys.append("tag")
+
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
             "site": page,
@@ -433,11 +440,12 @@ class Generator:
                 reverse=True,
             )
         )
-        nav_keys = ["sun", "moon", "sync", "search", "rss", "github", "upload", "post"]
+        nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post"]
         nav_keys = list(
             dict.fromkeys(nav_keys + self.ctx["single_labels"])
         )
         nav_icon = {key: ICONS.get(key) for key in nav_keys}
+        # tag.html does not link to itself, so it needs no tag glyph.
         tag_icon = {
             key: ICONS.get(key)
             for key in ["sun", "moon", "sync", "home", "search", "post", "rss", "github"]

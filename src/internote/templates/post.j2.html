@@ -15,6 +15,7 @@
   <h1 class="in-post-title">{{ post.title }}</h1>
   {% call site_nav('Post navigation') %}
     {{ nav_link('home', site.home_url, i18n.home) }}
+    {{ nav_link('tag', site.home_url ~ '/tag.html', i18n.tags) }}
     {% if site.search == 'algolia' %}{{ search_button() }}{% endif %}
   {% endcall %}
 {% endblock %}
