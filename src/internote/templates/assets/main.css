@@ -154,6 +154,20 @@ a:hover { text-decoration: underline; }
   padding-bottom: 36px;
 }
 
+/* Task lists (not included in the Primer bundle) */
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body .task-list-item input {
+  margin: 0 0.2em 0.25em -1.6em;
+  vertical-align: middle;
+}
+
+.markdown-body .task-list-item + .task-list-item {
+  margin-top: 0.25rem;
+}
+
 .in-post-footer-text {
   font-size: 14px;
   margin-top: 8px;
