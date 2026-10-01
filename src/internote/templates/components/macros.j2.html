@@ -20,7 +20,7 @@
   it on load.
 #}
 {% macro theme_button() -%}
-<button class="in-nav-btn" type="button" title="{{ i18n.switchTheme }}" aria-label="{{ i18n.switchTheme }}">
+<button class="in-nav-btn" id="in-theme-toggle" type="button" title="{{ i18n.switchTheme }}" aria-label="{{ i18n.switchTheme }}">
   <svg class="octicon" width="16" height="16"><path id="themeSwitch" d="{{ icons.sun }}" fill-rule="evenodd"></path></svg>
 </button>
 {%- endmacro %}

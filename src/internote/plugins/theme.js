@@ -44,7 +44,6 @@
     }
   }
 
-  // exposed for the inline onclick="InternoteTheme.cycle()" handler
   function cycle() {
     var current = stored();
     var next = current === 'light' ? 'dark' : current === 'dark' ? 'auto' : 'light';
@@ -55,6 +54,14 @@
   window.InternoteTheme = { apply: apply, cycle: cycle };
 
   function init() {
+    var toggle = document.getElementById('in-theme-toggle');
+    if (toggle) {
+      // Bound here rather than with an inline onclick in the template: an
+      // inline handler was lost when the nav moved into macros, which left the
+      // button inert on every page - and it failed silently, because nothing
+      // references the missing function at template-render time.
+      toggle.addEventListener('click', cycle);
+    }
     if (document.getElementById('themeSwitch')) {
       apply(stored());
     }
