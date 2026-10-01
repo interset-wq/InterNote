@@ -15,7 +15,6 @@ single_labels = []           # 单页标签（如 ["about"]）
 # start_date = ""           # 建站日期（如 "2026-01-01"）
 # icp = ""                  # ICP 备案号
 # footer_text = ""          # 文章页底部附加文字
-show_source = true           # 是否显示 Issue 源码链接
 
 [comments]
 enabled = true

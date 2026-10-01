@@ -68,7 +68,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 | 分组 | 说明 |
 | --- | --- |
 | `[site]` | 标题、副标题、头像、语言（`CN` / `EN`）、时区 `utc`；`home_url` 留空自动推导 GitHub Pages 地址 |
-| `[layout]` | 每页文章数 `posts_per_page`、单页标签 `single_labels`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、源码链接 `show_source`、注入的 `head/style/script/index_script/index_style/all_head` |
+| `[layout]` | 每页文章数 `posts_per_page`、单页标签 `single_labels`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、注入的 `head/style/script/index_script/index_style/all_head` |
 | `[comments]` | 评论开关 `enabled`（还需配置 giscus 才会渲染评论区） |
 | `[giscus]` | giscus 四项参数（在 [giscus.app](https://giscus.app) 生成；留空则不渲染评论区） |
 | `[features]` | `visit_counter` 访问计数（`off` / `vercount` / `busuanzi`） |

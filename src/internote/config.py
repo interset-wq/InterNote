@@ -27,7 +27,6 @@ class LayoutConfig(BaseModel):
     start_date: str = ""
     icp: str = ""
     footer_text: str = ""
-    show_source: bool = True
     head: str = ""
     style: str = ""
     script: str = ""
@@ -82,7 +81,6 @@ class InternoteConfig(BaseModel):
             "start_date": layout.start_date,
             "icp": layout.icp,
             "footer_text": layout.footer_text,
-            "show_source": layout.show_source,
             "head": layout.head,
             "style": layout.style,
             "script": layout.script,

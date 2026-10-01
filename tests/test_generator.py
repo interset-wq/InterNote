@@ -21,7 +21,6 @@ utc = 8
 posts_per_page = 10
 single_labels = ["about"]
 start_date = "2026-01-01"
-show_source = true
 
 [comments]
 enabled = false
