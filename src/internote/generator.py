@@ -378,11 +378,11 @@ class Generator:
                 reverse=True,
             )
         )
-        plist_keys = ["sun", "moon", "sync", "search", "rss", "github", "upload", "post"]
-        plist_keys = list(
-            dict.fromkeys(plist_keys + self.ctx["single_labels"])
+        nav_keys = ["sun", "moon", "sync", "search", "rss", "github", "upload", "post"]
+        nav_keys = list(
+            dict.fromkeys(nav_keys + self.ctx["single_labels"])
         )
-        plist_icon = {key: ICONS.get(key) for key in plist_keys}
+        nav_icon = {key: ICONS.get(key) for key in nav_keys}
         tag_icon = {
             key: ICONS.get(key)
             for key in ["sun", "moon", "sync", "home", "search", "post", "rss", "github"]
@@ -411,7 +411,7 @@ class Generator:
                         else f"/page{page_flag}.html"
                     )
                     self.ctx["next_url"] = "disabled"
-                self._render_list(one_page, html_dir, plist_icon)
+                self._render_list(one_page, html_dir, nav_icon)
                 break
             else:
                 one_page = dict(
@@ -430,7 +430,7 @@ class Generator:
                         else f"/page{page_flag}.html"
                     )
                     self.ctx["next_url"] = f"/page{page_flag + 2}.html"
-                self._render_list(one_page, html_dir, plist_icon)
+                self._render_list(one_page, html_dir, nav_icon)
             page_flag = page_flag + 1
 
         tag_context = {
@@ -442,12 +442,12 @@ class Generator:
         self.renderer.render_to("tag", tag_context, self.dist_dir / "tag.html")
         print("create tag.html")
 
-    def _render_list(self, one_page, html_dir, plist_icon):
+    def _render_list(self, one_page, html_dir, nav_icon):
         context = {
             "site": self.ctx,
             "posts": {k: _list_item(v) for k, v in one_page.items()},
             "i18n": self.i18n,
-            "icons": plist_icon,
+            "icons": nav_icon,
         }
         self.renderer.render_to("post-list", context, html_dir)
         print("create " + str(html_dir))

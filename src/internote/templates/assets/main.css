@@ -152,62 +152,6 @@ a:hover { text-decoration: underline; }
 .in-post-body {
   border-bottom: 1px solid var(--in-color-border);
   padding-bottom: 36px;
-  line-height: 1.8;
-}
-
-.in-post-body h1, .in-post-body h2, .in-post-body h3,
-.in-post-body h4, .in-post-body h5, .in-post-body h6 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.in-post-body p { margin: 0 0 16px; }
-
-.in-post-body pre {
-  padding: 16px;
-  overflow: auto;
-  font-size: 85%;
-  line-height: 1.45;
-  background-color: var(--in-color-subtle);
-  border-radius: var(--in-radius);
-}
-
-.in-post-body code {
-  padding: 0.2em 0.4em;
-  font-size: 85%;
-  background-color: var(--in-color-subtle);
-  border-radius: var(--in-radius);
-  font-family: var(--in-font-mono);
-}
-
-.in-post-body pre code {
-  padding: 0;
-  background: transparent;
-}
-
-.in-post-body blockquote {
-  padding: 0 1em;
-  color: var(--in-color-muted);
-  border-left: 0.25em solid var(--in-color-border);
-  margin: 0 0 16px;
-}
-
-.in-post-body img {
-  max-width: 100%;
-  height: auto;
-}
-
-.in-post-body table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.in-post-body th, .in-post-body td {
-  padding: 6px 13px;
-  border: 1px solid var(--in-color-border);
 }
 
 .in-post-footer-text {

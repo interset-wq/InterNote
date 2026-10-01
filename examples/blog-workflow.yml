@@ -44,15 +44,10 @@ jobs:
 
       - name: Clone InterNote source
         run: |
-          INTERNOTE_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('config.toml','rb'))['site']['version'])")
           git clone https://github.com/interset-wq/InterNote.git /opt/Internote
           cd /opt/Internote/
-          if [ "$INTERNOTE_VERSION" == "last" ]; then
-            lastTag=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || git rev-parse HEAD)
-            git checkout $lastTag
-          else
-            git checkout $INTERNOTE_VERSION
-          fi
+          # always track HEAD of main (no tags are maintained)
+          git checkout $(git rev-parse HEAD)
 
       - name: Generate new html
         run: |

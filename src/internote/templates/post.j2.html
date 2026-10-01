@@ -16,8 +16,8 @@
   <style>
     .in-post-title { font-size: 36px; font-weight: 700; margin: 0 0 16px; line-height: 1.2; }
     .in-post-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 24px; }
-    .in-post-body { border-bottom: 1px solid var(--in-color-border); padding-bottom: 36px; line-height: 1.8; }
-    .in-post-body hr { height: 2px; }
+    .in-post-meta .Label a { color: inherit; text-decoration: none; }
+    .in-post-body { border-bottom: 1px solid var(--in-color-border); padding-bottom: 36px; }
     .in-comments-section { margin-top: 48px; }
     .g-emoji { font-size: 24px; }
     {% if post.highlight != 0 %}
@@ -55,17 +55,17 @@
 {% block content %}
   <article>
     <div class="in-post-meta">
-      <span class="in-badge" style="background-color:{{ post.date_label_color }}">{{ post.created_date }}</span>
+      <span class="Label" style="background-color:{{ post.date_label_color }};color:#fff">{{ post.created_date }}</span>
       {% if post.updated_date and post.updated_date != post.created_date %}
-      <span class="in-badge" style="background-color:{{ post.date_label_color }}">{{ i18n.updated }} {{ post.updated_date }}</span>
+      <span class="Label" style="background-color:{{ post.date_label_color }};color:#fff">{{ i18n.updated }} {{ post.updated_date }}</span>
       {% endif %}
       {% for label in post.labels %}
-      <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">
+      <span class="Label" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }};color:#fff">
         <a href="{{ site.home_url }}/tag.html#{{ label }}">{{ label }}</a>
       </span>
       {% endfor %}
     </div>
-    <div class="in-post-body">{{ post.body }}</div>
+    <div class="in-post-body markdown-body">{{ post.body }}</div>
     {% if post.footer_text %}
     <div class="in-post-footer-text">{{ post.footer_text }}</div>
     {% endif %}
