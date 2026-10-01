@@ -9,11 +9,6 @@ avatar_url = "https://github.githubassets.com/favicons/favicon.svg"
 language = "CN"              # CN | EN
 utc = 8                      # 时区偏移（小时）
 
-[theme]
-day = "light"
-night = "dark"
-# year_colors = ["#bc4c00", "#0969da", "#1f883d", "#A333D0"]
-
 [layout]
 posts_per_page = 15
 single_labels = []           # 单页标签（如 ["about"]）
