@@ -75,4 +75,34 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 
 主题无需配置：明暗切换内置（亮 / 暗 / 跟随系统三态循环），Primer CSS 与站点样式随包内置并复制到 `dist/assets/`。
 
-文章时间取自 Issue 创建时间，`head` / `style` / `script` 注入片段在 `[layout]` 中全局配置。
+### 文章 front matter（可选）
+
+正文开头可用 `+++` 包裹一段 TOML，覆盖该文章的元信息：
+
+````text
++++
+title = "自定义标题"
+description = "自定义摘要，用于 <meta description> 与分享卡片"
+date = 2026-01-01T10:00:00+08:00
+head = '<meta name="x" content="y">'
+style = ".my-post { color: red; }"
+script = "console.log('hi');"
+draft = false
++++
+正文从这里开始
+````
+
+| 字段 | 说明 |
+| --- | --- |
+| `title` | 覆盖 Issue 标题（列表页、文章页 `<title>`、RSS 均生效） |
+| `description` | 覆盖自动摘要；缺省时取正文首个句号前的内容 |
+| `date` | 覆盖文章时间；支持 TOML 日期时间、Unix 秒、ISO 8601 字符串 |
+| `head` / `style` / `script` | 单篇注入的 HTML 片段，追加在 `[layout]` 同名配置之后。`style` 会被自动包进 `<style>`，`head` 与 `script` 需自行带标签 |
+| `draft` | `true` 则该文章完全不发布：不生成页面，不进列表、标签页与 RSS |
+
+说明：
+
+- 用 `+++` 而非 `---`，因为 `---` 同时是 Markdown 水平线，放在正文开头会产生歧义；正文中间的 `---` 不受影响。
+- **不支持 `labels`**：标签始终以 GitHub Issue 标签为准，搜索页、标签颜色与单页路由都依赖它。
+- 字段拼错或 TOML 语法错误会**直接让构建失败**并报出 Issue 编号，不会静默忽略。
+- `head` / `style` / `script` 会原样注入页面，仅在完全信任 Issue 作者时使用。
