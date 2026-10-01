@@ -51,10 +51,19 @@ class GiscusConfig(BaseModel):
     category_id: str = ""
 
 
+class SearchConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    app_id: str = ""
+    api_key: str = ""
+    index_name: str = ""
+
+
 class FeaturesConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     visit_counter: Literal["off", "vercount", "busuanzi"] = "off"
+    search: Literal["off", "algolia"] = "off"
 
 
 class InternoteConfig(BaseModel):
@@ -64,6 +73,7 @@ class InternoteConfig(BaseModel):
     layout: LayoutConfig = LayoutConfig()
     comments: CommentsConfig = CommentsConfig()
     giscus: GiscusConfig = GiscusConfig()
+    search: SearchConfig = SearchConfig()
     features: FeaturesConfig = FeaturesConfig()
 
     def context(self) -> dict:
@@ -94,6 +104,10 @@ class InternoteConfig(BaseModel):
             "giscus_category": self.giscus.category,
             "giscus_category_id": self.giscus.category_id,
             "visit_counter": self.features.visit_counter,
+            "search": self.features.search,
+            "search_app_id": self.search.app_id,
+            "search_api_key": self.search.api_key,
+            "search_index_name": self.search.index_name,
             "theme_mode": "manual",
             "day_theme": "light",
             "night_theme": "dark",

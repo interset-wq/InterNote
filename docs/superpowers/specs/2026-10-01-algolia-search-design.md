@@ -83,19 +83,44 @@ collide.
 |---|---|
 | `objectID` | `post-<n>` or `page-<label>` |
 | `title` | front-matter `title`, falling back to issue title — same precedence as the rendered page |
-| `body` | plain text derived from `body_html` |
+| `body` | plain text derived from `sources/<n>.md` |
 | `labels` | label names, for faceting |
 | `url` | `post_url` resolved to absolute against `home_url` |
 | `date` | `created_date` |
 | `wordCount` | entry word count |
 
-### HTML stripping
+### Why the markdown source, not the rendered HTML
 
-`body_html` is GitHub-rendered HTML and must not be indexed raw, or every post
-matches on `div` and the markup outweighs the prose. Stripping removes `<script>`
-and `<style>` elements with their contents, drops all remaining tags, decodes
-HTML entities, collapses runs of whitespace, and trims. Text inside `<code>` and
-`<pre>` is deliberately kept: it is legitimate searchable content.
+The first draft of this spec indexed `body_html`. That turned out not to exist:
+`_create_post` renders the body into a local and passes it straight to the
+template, so it never reaches the entry dict. The only ways to get it were to
+cache it on the entry or to re-read the rendered page, and both are worse than
+the obvious alternative.
+
+`sources/<n>.md` is already written per post, already stripped of front matter,
+and already what the render cache keys on. Indexing it keeps `internote.json`
+unchanged in size — which matters because the blog repo commits that file — and
+works identically on a full build and an incremental one, since `sources/` is
+not wiped by `run_one`.
+
+The cost is stripping markdown rather than HTML, which is the same set of rules
+in reverse order.
+
+### Markdown stripping
+
+`<script>` and `<style>` are dropped with their contents, inline HTML tags are
+removed, images keep their alt text and links keep their label, heading /
+blockquote / list / rule markers are stripped, and fence markers go while the
+code between them stays — code is legitimate searchable content. HTML entities
+are decoded **last**, so an escaped `&lt;script&gt;` cannot reconstruct a tag
+after the tag pass has already run.
+
+That last case is worth being precise about: an escaped tag *does* survive into
+the indexed text as literal `<script>`, because the author meant it to be
+visible. That is fine, because the dialog only ever builds DOM from text nodes
+and `search.js` contains no `innerHTML`. A test asserts that absence directly,
+since it is the actual safety property rather than a consequence of the
+stripping rules.
 
 `post_url` is stored percent-encoded and relative (`generator.py:250`), so it is
 resolved against `home_url` before upload. A consumer sitting outside `dist/`
@@ -193,15 +218,26 @@ Not TDD. Tests are written alongside the behaviour, covering:
 
 - `[search]` schema validation, including `extra="forbid"` rejecting unknown keys
   and `features.search` rejecting values outside the `Literal`
-- HTML stripping: script and style contents removed, entities decoded, whitespace
-  collapsed, code text retained
+- Markdown stripping: script and style contents removed, entities decoded,
+  whitespace collapsed, code text retained, escaped tags left inert
 - Record shape, including that `single_list` entries are present — the bug this
   work fixes
-- `url` resolved to absolute against `home_url`
-- `_sync_search()` performs no HTTP call when the admin key is absent
-- The three-step swap issues the expected calls in order, using a stub
-  `urlopen`
-- A failing push warns rather than raises
+- `url` resolved to absolute against `home_url`, and a trailing slash on
+  `home_url` not doubled
+- `post-N` and `page-N` objectIDs cannot collide when an issue number is also a
+  label name
+- `_sync_search()` performs no HTTP call when the admin key is absent, and
+  `features.search = "off"` never reaches `sync` at all
+- The three-step swap issues `posts/operation`, `posts_tmp/settings`,
+  `posts_tmp/batch`, `posts_tmp/operation` in that order, with the admin key in
+  the header and never in a URL
+- An empty site clears the scratch index explicitly, since an empty batch is a
+  no-op and a move could otherwise resurrect stale records
+- A failing push warns rather than raising
+- `search.js` contains no `innerHTML`, `outerHTML` or `insertAdjacentHTML`
+
+Shared HTTP stubbing lives in `tests/conftest.py` because `tests/` is not an
+importable package and two modules need the same double.
 
 ## Known risks
 
@@ -213,4 +249,7 @@ Not TDD. Tests are written alongside the behaviour, covering:
 - **CJK relevance is unverified.** Algolia handles Chinese natively, but this has
   not been tested against real content. The first acceptance test is that a term
   such as `这是` matches a post containing it, and that a title-only term
-  outranks a body-only term.
+  outranks a body-only term. The UI path was verified in a browser against a
+  stubbed endpoint: endpoint, headers, `\u0001`/`\u0002` highlight sentinels,
+  `<mark>` rendering, arrow-key selection and `Escape` all behave. What remains
+  unproven is Algolia's own ranking and Chinese segmentation on real data.

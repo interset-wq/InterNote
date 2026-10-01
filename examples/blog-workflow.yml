@@ -47,6 +47,10 @@ jobs:
           git checkout $(git rev-parse HEAD)
 
       - name: Generate new html
+        env:
+          # Admin key for the Algolia search index. Unset means the build
+          # skips indexing and says so, so this stays optional.
+          ALGOLIA_ADMIN_KEY: ${{ secrets.ALGOLIA_ADMIN_KEY }}
         run: |
           cp -r ./* /opt/Internote/
           cd /opt/Internote/

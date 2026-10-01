@@ -16,6 +16,7 @@ from .constants import ICONS, get_i18n
 from .feed import build_feed, strip_build_date
 from .frontmatter import FrontMatterError
 from .renderer import Renderer
+from .search import sync as sync_search
 
 MATHJAX_SCRIPT = (
     '<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script>'
@@ -549,7 +550,27 @@ class Generator:
             json.dumps(stripped, ensure_ascii=False), encoding="utf-8"
         )
 
+        self._sync_search()
         self._write_readme()
+
+    def _sync_search(self):
+        """Push the site to the hosted index, if one is configured.
+
+        Runs last, after both lists are final, so a withdrawn post cannot
+        survive in the index. No-ops without network access when
+        ALGOLIA_ADMIN_KEY is absent, which covers tests and fixture builds.
+        """
+        if self.ctx["search"] != "algolia":
+            return
+        sync_search(
+            post_list=self.ctx["post_list"],
+            single_list=self.ctx["single_list"],
+            home_url=self.ctx["home_url"],
+            sources_dir=self.sources_dir,
+            app_id=self.ctx["search_app_id"],
+            api_key=self.ctx["search_api_key"],
+            index_name=self.ctx["search_index_name"],
+        )
 
     def _write_readme(self):
         workspace = os.environ.get("GITHUB_WORKSPACE")
