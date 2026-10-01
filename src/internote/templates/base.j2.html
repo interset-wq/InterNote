@@ -13,6 +13,9 @@
   <script>
     (function() {
       var theme = localStorage.getItem('internote_theme') || 'light';
+      if (theme === 'auto') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
       document.documentElement.setAttribute('data-color-mode', theme);
     })();
   </script>
@@ -32,20 +35,29 @@
       light: ['light', 'sun', '#ff5000', 'light'],
       auto: ['auto', 'sync', '', 'preferred_color_scheme']
     };
+    function resolveTheme(mode) {
+      return mode === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : mode;
+    }
     function changeTheme(mode, icon, color, giscusThemeName) {
-      document.documentElement.setAttribute('data-color-mode', mode);
-      document.getElementById('themeSwitch').setAttribute('d', window.icons[icon]);
-      document.getElementById('themeSwitch').parentNode.style.color = color;
+      document.documentElement.setAttribute('data-color-mode', resolveTheme(mode));
+      var sw = document.getElementById('themeSwitch');
+      if (sw) {
+        sw.setAttribute('d', window.icons[icon]);
+        sw.parentNode.style.color = color;
+      }
       if (window.giscusTheme) window.giscusTheme(giscusThemeName);
     }
     function modeSwitch() {
-      var currentMode = document.documentElement.getAttribute('data-color-mode');
+      var currentMode = localStorage.getItem('internote_theme') || 'light';
       var newMode = currentMode === 'light' ? 'dark' : currentMode === 'dark' ? 'auto' : 'light';
       localStorage.setItem('internote_theme', newMode);
       if (themeSettings[newMode]) {
         changeTheme.apply(null, themeSettings[newMode]);
       }
     }
+    var theme = localStorage.getItem('internote_theme') || 'light';
     if (themeSettings[theme]) { changeTheme.apply(null, themeSettings[theme]); }
     {% endif %}
   </script>
