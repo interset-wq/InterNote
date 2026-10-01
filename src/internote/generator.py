@@ -9,9 +9,11 @@ import shutil
 import urllib.parse
 from pathlib import Path
 
+from . import frontmatter
 from .config import InternoteConfig
 from .constants import ICONS, get_i18n
 from .feed import build_feed, strip_build_date
+from .frontmatter import FrontMatterError
 from .renderer import Renderer
 
 MATHJAX_SCRIPT = (
@@ -212,25 +214,45 @@ class Generator:
             html_dir.relative_to(self.dist_dir).as_posix()
         )
 
+        raw_body = issue.body or ""
+        try:
+            meta, body = frontmatter.split(raw_body)
+        except frontmatter.FrontMatterError as error:
+            raise FrontMatterError(
+                "issue #{}: {}".format(issue.number, error)
+            ) from error
+
+        if meta.get("draft"):
+            # An incremental build does not clear dist, so a post that used
+            # to be published would otherwise keep serving a stale page.
+            if html_dir.exists():
+                html_dir.unlink()
+                print("draft post #{}: removed {}".format(issue.number, html_dir))
+            else:
+                print("draft post #{}: skipped".format(issue.number))
+            return None
+
         entry = {
             "number": issue.number,
             "html_dir": str(html_dir),
             "labels": labels,
-            "post_title": issue.title,
+            "post_title": meta.get("title") or issue.title,
             "post_url": post_url,
             "source_url": f"https://github.com/{self.repo_name}/issues/{issue.number}",
             "comment_num": issue.get_comments().totalCount,
-            "word_count": len(issue.body) if issue.body else 0,
+            "word_count": len(body),
             "top": 0,
-            "style": self.ctx["style"],
-            "script": self.ctx["script"],
-            "head": self.ctx["head"],
+            "style": self.ctx["style"] + meta.get("style", ""),
+            "script": self.ctx["script"] + meta.get("script", ""),
+            "head": self.ctx["head"] + meta.get("head", ""),
         }
 
-        if issue.body:
+        if meta.get("description"):
+            entry["description"] = meta["description"]
+        elif body:
             period = "。" if self.ctx["language"] == "CN" else "."
             entry["description"] = (
-                issue.body.split(period)[0].replace('"', "'") + period
+                body.split(period)[0].replace('"', "'") + period
             )
         else:
             entry["description"] = ""
@@ -241,10 +263,13 @@ class Generator:
             elif event.event == "unpinned":
                 entry["top"] = 0
 
-        created = issue.created_at
-        if created.tzinfo is None:
-            created = created.replace(tzinfo=datetime.timezone.utc)
-        entry["created_at"] = int(created.timestamp())
+        if "date" in meta:
+            entry["created_at"] = frontmatter.parse_date(meta["date"])
+        else:
+            created = issue.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=datetime.timezone.utc)
+            entry["created_at"] = int(created.timestamp())
 
         this_time = datetime.datetime.fromtimestamp(entry["created_at"], tz=self.tz)
         entry["created_date"] = this_time.strftime("%Y-%m-%d")
@@ -261,9 +286,9 @@ class Generator:
         entry["updated_date"] = upd_time.strftime("%Y-%m-%d")
 
         self.sources_dir.mkdir(parents=True, exist_ok=True)
-        (self.sources_dir / f"{issue.number}.md").write_text(
-            issue.body or "", encoding="utf-8"
-        )
+        # The stripped body is what reaches the markdown renderer, so the
+        # delimiters never turn into an <hr>.
+        (self.sources_dir / f"{issue.number}.md").write_text(body, encoding="utf-8")
 
         self.ctx[list_name][f"P{issue.number}"] = entry
         return entry

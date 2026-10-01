@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+from . import frontmatter
+
 
 class _CommentList:
     def __init__(self, total: int):
@@ -62,7 +64,16 @@ def load_repo(path: str | Path):
     """Return (repo, markdown_fn) built from a fixture JSON."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     repo = FixtureRepo(data)
-    html_by_body = {issue.body: issue.body_html for issue in repo._issues}
+    # The generator strips front matter before calling markdown(), so the
+    # lookup is keyed on the stripped body. The fixture keeps the raw body
+    # so the front matter is still readable as post metadata.
+    html_by_body = {}
+    for issue in repo._issues:
+        try:
+            _, cleaned = frontmatter.split(issue.body)
+        except frontmatter.FrontMatterError:
+            cleaned = issue.body
+        html_by_body[cleaned] = issue.body_html
 
     def markdown(text: str) -> str:
         html = html_by_body.get(text)

@@ -15,7 +15,12 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from internote.frontmatter import FrontMatterError, split as split_front_matter
 
 
 def _gh(*args: str, stdin: str | None = None) -> str:
@@ -66,12 +71,20 @@ def fetch(repo: str) -> dict:
             "repos/{}/issues/{}/events?per_page=100".format(repo, number)
         )
         body = issue["body"] or ""
+        try:
+            _, cleaned = split_front_matter(body)
+        except FrontMatterError as error:
+            raise SystemExit("issue #{}: {}".format(number, error)) from error
         data["issues"].append(
             {
                 "number": number,
                 "title": issue["title"],
+                # The raw body is kept so the generator can still read the
+                # front matter; the html is rendered from the stripped body
+                # so the +++ delimiters never become an <hr>. fixtures.py
+                # keys its lookup on the stripped form.
                 "body": body,
-                "body_html": _gh_markdown(body),
+                "body_html": _gh_markdown(cleaned),
                 "labels": [
                     {"name": lb["name"], "color": lb["color"]}
                     for lb in issue["labels"]
