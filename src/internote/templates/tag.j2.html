@@ -8,17 +8,8 @@
 {% block header %}
   <h1 class="in-page-title"><span>Loading</span><span class="in-animated-ellipsis"></span></h1>
   {% call site_nav('Tag navigation') %}
-    {# With Algolia on, search lives in the modal and this page is a pure tag
-       browser, so the inline form is redundant. Configs without it keep the
-       form, because tag.html#free-text is still the only way to search. #}
-    {% if site.search == 'algolia' %}
+    {# Search lives in the modal; this page stays a pure tag browser. #}
     {{ search_button() }}
-    {% else %}
-    <form class="in-search-form" id="search-form">
-      <input type="search" class="in-search-input" aria-label="Search site" value="">
-      <button class="in-search-btn" type="submit">{{ i18n.Search }}</button>
-    </form>
-    {% endif %}
     {{ nav_link('home', site.home_url, i18n.home) }}
   {% endcall %}
 {% endblock %}
@@ -37,7 +28,6 @@
       var cloud = document.getElementById('tag-cloud');
       var emptyState = document.getElementById('empty-state');
       var heading = document.querySelector('.in-page-title');
-      var searchInput = document.querySelector('.in-search-input');
       var knownLabels = [];
 
       function rows() {
@@ -65,12 +55,9 @@
 
       function countLabels(data) {
         var counts = { All: 0 };
-        Object.keys(data).forEach(function (key) {
-          if (key === 'label_color_dict' || !Array.isArray(data[key].labels)) {
-            return;
-          }
+        data.posts.forEach(function (item) {
           counts.All += 1;
-          data[key].labels.forEach(function (label) {
+          item.labels.forEach(function (label) {
             counts[label] = (counts[label] || 0) + 1;
           });
         });
@@ -78,20 +65,29 @@
       }
 
       function renderCloud(data, counts) {
-        var colors = data.label_color_dict;
-        colors.All = '#000';
+        var colors = data.label_colors;
         Object.keys(counts)
           .sort(function (a, b) {
             return counts[b] - counts[a];
           })
           .forEach(function (label) {
             var button = document.createElement('button');
-            button.className = 'in-badge in-tag-cloud-item';
-            button.style.backgroundColor = colors[label];
+            button.className = 'in-tag-cloud-item';
+            button.type = 'button';
+            button.dataset.label = label;
+
+            // Neutral chip + colour dot: label colours stay visible without
+            // making the cloud a wall of saturated backgrounds.
+            if (label !== 'All') {
+              var dot = document.createElement('span');
+              dot.className = 'in-tag-cloud-dot';
+              dot.style.backgroundColor = colors[label] || 'var(--in-color-muted)';
+              button.appendChild(dot);
+            }
             button.appendChild(document.createTextNode(label));
 
             var count = document.createElement('span');
-            count.className = 'in-badge-count';
+            count.className = 'in-tag-cloud-count';
             count.textContent = counts[label];
             button.appendChild(count);
 
@@ -104,34 +100,33 @@
       }
 
       function renderRows(data) {
-        var colors = data.label_color_dict;
-        Object.keys(data).forEach(function (key) {
-          if (key === 'label_color_dict') {
-            return;
-          }
-          var item = data[key];
-
+        data.posts.forEach(function (item) {
           var row = document.createElement('li');
           row.className = 'in-post-list-item-wrapper';
           row.dataset.labels = item.labels.join(' ');
 
           var link = document.createElement('a');
           link.className = 'in-post-list-item';
-          link.href = item.post_url;
+          link.href = item.url;
 
           var title = document.createElement('div');
           title.className = 'in-post-list-title';
           title.appendChild(postIcon());
           var label = document.createElement('span');
-          label.textContent = item.post_title;
+          label.textContent = item.title;
           title.appendChild(label);
 
+          // Second line: label chips then a muted date, so long titles and
+          // many labels never fight for one row.
           var badges = document.createElement('div');
           badges.className = 'in-post-list-badges';
           item.labels.forEach(function (name) {
-            badges.appendChild(badge(name, colors[name]));
+            badges.appendChild(badge(name, data.label_colors[name]));
           });
-          badges.appendChild(badge(item.created_date, item.date_label_color));
+          var date = document.createElement('span');
+          date.className = 'in-post-list-date';
+          date.textContent = item.date;
+          badges.appendChild(date);
 
           link.appendChild(title);
           link.appendChild(badges);
@@ -161,33 +156,32 @@
         rows().forEach(function (row) {
           setVisible(row, false);
         });
-        emptyState.textContent = message;
+        var box = document.createElement('div');
+        box.className = 'in-empty-state-box';
+        // Icon built from the window.icons crop, same as post rows use.
+        var glyph = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        glyph.setAttribute('class', 'octicon');
+        glyph.setAttribute('width', '24');
+        glyph.setAttribute('height', '24');
+        glyph.setAttribute('aria-hidden', 'true');
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', (window.icons || {}).tag || '');
+        glyph.appendChild(path);
+        box.appendChild(glyph);
+        box.appendChild(document.createTextNode(message));
+        emptyState.textContent = '';
+        emptyState.appendChild(box);
         emptyState.hidden = false;
-      }
-
-      function search() {
-        var needle = searchInput.value;
-        var upper = needle.toUpperCase();
-        var found = 0;
-        window.location.hash = '#' + needle;
-        rows().forEach(function (row) {
-          var match = row.textContent.toUpperCase().indexOf(upper) !== -1;
-          setVisible(row, match);
-          if (match) {
-            found += 1;
-          }
-        });
-        setHeading('Search #' + needle, needle ? needle + ' - ' + pageTitle : 'Search - ' + pageTitle);
-        emptyState.hidden = found !== 0;
-        emptyState.textContent = 'Not Find "' + needle + '"';
       }
 
       function filter(label) {
         var all = rows();
-        if (searchInput) {
-          searchInput.value = '';
-        }
         emptyState.hidden = true;
+
+        // Keep the cloud's active chip in sync with the visible filter.
+        cloud.querySelectorAll('.in-tag-cloud-item').forEach(function (chip) {
+          chip.classList.toggle('is-active', chip.dataset.label === label);
+        });
 
         if (label === 'All') {
           all.forEach(function (row) {
@@ -199,11 +193,6 @@
 
         if (knownLabels.indexOf(label) === -1) {
           // An unrecognised hash is free text rather than a tag.
-          if (searchInput) {
-            searchInput.value = label;
-            search();
-            return;
-          }
           // No inline form: free text is the modal's job now.
           setHeading('#' + label, label + ' - ' + pageTitle);
           showEmpty('Not Find "' + label + '"');
@@ -216,16 +205,8 @@
         setHeading('Tag #' + label, label + ' - ' + pageTitle);
       }
 
-      var form = document.getElementById('search-form');
-      if (form) {
-        form.addEventListener('submit', function (event) {
-          event.preventDefault();
-          search();
-        });
-      }
-
       var request = new XMLHttpRequest();
-      request.open('GET', 'post-list.json');
+      request.open('GET', 'search-index.json');
       request.responseType = 'text';
       request.onload = function () {
         var data = JSON.parse(request.response);
