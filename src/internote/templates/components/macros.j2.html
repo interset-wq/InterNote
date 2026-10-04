@@ -26,8 +26,8 @@
 {%- endmacro %}
 
 {#
-  Opens the Algolia dialog. id="in-search-open" is the hook search.js binds
-  to; the keyboard shortcut works with or without this button present.
+  Opens the local search dialog. id="in-search-open" is the hook search.js
+  binds to; the keyboard shortcut works with or without this button present.
 #}
 {% macro search_button() -%}
 <button class="in-nav-btn" id="in-search-open" type="button" title="{{ i18n.Search }}" aria-label="{{ i18n.Search }}">{{ icon('search') }}</button>

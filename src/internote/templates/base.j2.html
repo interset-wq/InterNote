@@ -31,14 +31,10 @@
   <footer class="in-site-footer" id="footer">{% include 'components/footer.j2.html' %}</footer>
   <script src="{{ site.home_url }}/plugins/theme.js"></script>
   {# Search config travels as data-* because plugins are copied verbatim. #}
-  {% if site.search == 'algolia' %}
   <script id="internote-search" src="{{ site.home_url }}/plugins/search.js"
-    data-app-id="{{ site.search_app_id }}"
-    data-api-key="{{ site.search_api_key }}"
-    data-index="{{ site.search_index_name }}"
+    data-index-url="{{ site.home_url }}/search-index.json"
     data-placeholder="{{ i18n.Search }}"
     data-no-results="{{ i18n.noResults }}"></script>
-  {% endif %}
   {% block script %}{% endblock %}
 </body>
 </html>

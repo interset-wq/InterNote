@@ -1,38 +1,36 @@
 (function () {
   'use strict';
 
-  // Algolia returns highlighted fragments wrapped in these sentinels. They are
-  // split on and turned into <mark> nodes rather than assigned via innerHTML,
-  // so nothing a post contains can ever become markup in the dialog.
-  var MARK_OPEN = '\u0001';
-  var MARK_CLOSE = '\u0002';
+  // Local search: the whole index is a static JSON file written by the
+  // generator (dist/search-index.json) and fetched once. Matching is a plain
+  // case-insensitive substring test on title and labels; a date fragment in
+  // the query filters by the post date instead.
+  //
+  // Matches are highlighted by splitting the raw text on the matched term and
+  // wrapping the pieces in <mark> nodes created with createElement —
+  // innerHTML is never used, so nothing an index contains can become markup.
 
-  var DEBOUNCE_MS = 140;
-  var HITS_PER_PAGE = 8;
+  var DEBOUNCE_MS = 60;
+  var MAX_HITS = 8;
   var SCRIPT_ID = 'internote-search';
+
+  // A date fragment such as "2024", "2024-0" or "2024-05-1" filters on the
+  // post date; everything else in the term still matches title/labels.
+  var DATE_RE = /\d{4}(?:-\d{0,2}){0,2}/;
 
   var script = document.getElementById(SCRIPT_ID);
   if (!script) {
     return;
   }
 
-  var appId = script.dataset.appId;
-  var apiKey = script.dataset.apiKey;
-  var indexName = script.dataset.index;
-  if (!appId || !apiKey || !indexName) {
+  var indexUrl = script.dataset.indexUrl;
+  if (!indexUrl) {
     return;
   }
 
   var labels = {
     noResults: script.dataset.noResults || 'No results for'
   };
-
-  var endpoint =
-    'https://' +
-    appId +
-    '-dsn.algolia.net/1/indexes/' +
-    encodeURIComponent(indexName) +
-    '/query';
 
   // ---------------------------------------------------------------- overlay
 
@@ -44,6 +42,8 @@
   var debounce = 0;
   var seq = 0;
   var lastFocus = null;
+  var index = null; // array of {title, labels, date, url}, null until loaded
+  var indexPromise = null;
 
   function el(tag, cls, text) {
     var node = document.createElement(tag);
@@ -56,26 +56,31 @@
     return node;
   }
 
-  // Turns Algolia's MARK_OPEN/MARK_CLOSE sentinels into <mark> elements.
+  // Wraps every case-insensitive occurrence of `term` in `value` with <mark>.
   // Text nodes only; innerHTML is never used.
-  function appendHighlighted(parent, value) {
+  function appendHighlighted(parent, value, term) {
     if (!value) {
       return;
     }
-    var parts = String(value).split(MARK_OPEN);
-    for (var i = 0; i < parts.length; i++) {
-      var chunk = parts[i];
-      if (chunk === '') {
-        continue;
+    var text = String(value);
+    if (!term) {
+      parent.appendChild(document.createTextNode(text));
+      return;
+    }
+    var lower = text.toLowerCase();
+    var needle = term.toLowerCase();
+    var at = 0;
+    var hit = lower.indexOf(needle);
+    while (hit !== -1) {
+      if (hit > at) {
+        parent.appendChild(document.createTextNode(text.slice(at, hit)));
       }
-      var pieces = chunk.split(MARK_CLOSE);
-      parent.appendChild(document.createTextNode(pieces[0]));
-      for (var j = 1; j < pieces.length; j++) {
-        if (pieces[j - 1]) {
-          parent.appendChild(el('mark', 'in-search-hit-mark', pieces[j - 1]));
-        }
-        parent.appendChild(document.createTextNode(pieces[j]));
-      }
+      parent.appendChild(el('mark', 'in-search-hit-mark', text.slice(hit, hit + needle.length)));
+      at = hit + needle.length;
+      hit = lower.indexOf(needle, at);
+    }
+    if (at < text.length) {
+      parent.appendChild(document.createTextNode(text.slice(at)));
     }
   }
 
@@ -117,14 +122,7 @@
 
     var foot = el('div', 'in-search-foot');
     status = el('span', 'in-search-status');
-    // The Algolia logo is a condition of the free tier, so it is rendered
-    // unconditionally rather than behind a flag.
-    var credit = el('a', 'in-search-credit', 'Search by Algolia');
-    credit.href = 'https://www.algolia.com/';
-    credit.target = '_blank';
-    credit.rel = 'noopener';
     foot.appendChild(status);
-    foot.appendChild(credit);
 
     panel.appendChild(head);
     panel.appendChild(list);
@@ -154,15 +152,7 @@
     list.appendChild(empty);
   }
 
-  function snippetFor(hit) {
-    var snippet = hit._snippetResult && hit._snippetResult.body;
-    if (snippet && snippet.value) {
-      return snippet.value;
-    }
-    return hit.body || '';
-  }
-
-  function renderHits(results, nbHits) {
+  function renderHits(results) {
     clearResults();
 
     if (!results.length) {
@@ -171,33 +161,28 @@
       return;
     }
 
-    results.forEach(function (hit, index) {
+    var term = lastTerm;
+    results.forEach(function (record, index) {
       var item = el('li', 'in-search-hit');
       item.setAttribute('role', 'option');
       item.id = 'in-search-hit-' + index;
       item.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
 
       var link = el('a', 'in-search-hit-link');
-      link.href = hit.url;
+      link.href = record.url;
 
       var title = el('span', 'in-search-hit-title');
-      appendHighlighted(
-        title,
-        hit._highlightResult && hit._highlightResult.title
-          ? hit._highlightResult.title.value
-          : hit.title
-      );
+      appendHighlighted(title, record.title, term.title);
       link.appendChild(title);
 
       var badges = el('span', 'in-search-hit-labels');
-      (hit.labels || []).forEach(function (label) {
+      (record.labels || []).forEach(function (label) {
         badges.appendChild(el('span', 'in-badge in-search-hit-label', label));
       });
       link.appendChild(badges);
 
-      var snippet = el('span', 'in-search-hit-snippet');
-      appendHighlighted(snippet, snippetFor(hit));
-      link.appendChild(snippet);
+      var date = el('span', 'in-search-hit-snippet', record.date || '');
+      link.appendChild(date);
 
       item.appendChild(link);
       item.addEventListener('click', function () {
@@ -206,11 +191,8 @@
       list.appendChild(item);
     });
 
-    var total = typeof nbHits === 'number' ? nbHits : results.length;
-    status.textContent =
-      total > results.length
-        ? results.length + ' / ' + total
-        : String(results.length);
+    var total = results.length;
+    status.textContent = total > MAX_HITS ? MAX_HITS + ' / ' + total : String(total);
     select(0);
   }
 
@@ -231,26 +213,15 @@
 
   // ----------------------------------------------------------------- query
 
-  function query(term) {
-    var mine = ++seq;
-    var body = {
-      query: term,
-      hitsPerPage: HITS_PER_PAGE,
-      attributesToHighlight: ['title'],
-      attributesToSnippet: ['body:25'],
-      highlightPreTag: MARK_OPEN,
-      highlightPostTag: MARK_CLOSE
-    };
+  // The parts of the term that drove the current result set, so the highlight
+  // pass uses the same text the match did.
+  var lastTerm = { text: '', title: '' };
 
-    return fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Algolia-Application-Id': appId,
-        'X-Algolia-API-Key': apiKey
-      },
-      body: JSON.stringify(body)
-    })
+  function loadIndex() {
+    if (indexPromise) {
+      return indexPromise;
+    }
+    indexPromise = fetch(indexUrl)
       .then(function (response) {
         if (!response.ok) {
           throw new Error('HTTP ' + response.status);
@@ -258,11 +229,66 @@
         return response.json();
       })
       .then(function (data) {
-        // A slow earlier request must not overwrite a newer one.
+        // The file is shared with the tag page: {label_colors, posts}.
+        var posts = data && Array.isArray(data.posts) ? data.posts : [];
+        index = posts;
+        return index;
+      })
+      .catch(function (error) {
+        // A failed fetch must not poison later retries: drop the promise so
+        // the next keystroke fetches again.
+        indexPromise = null;
+        throw error;
+      });
+    return indexPromise;
+  }
+
+  function matchRecord(record, rest, datePrefix) {
+    if (datePrefix && String(record.date || '').indexOf(datePrefix) !== 0) {
+      return false;
+    }
+    if (!rest) {
+      return true;
+    }
+    var needle = rest.toLowerCase();
+    if (String(record.title || '').toLowerCase().indexOf(needle) !== -1) {
+      lastTerm.title = rest;
+      return true;
+    }
+    var labelsList = record.labels || [];
+    for (var i = 0; i < labelsList.length; i++) {
+      if (String(labelsList[i]).toLowerCase().indexOf(needle) !== -1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function searchLocal(term) {
+    var mine = ++seq;
+    loadIndex()
+      .then(function (records) {
         if (mine !== seq) {
           return;
         }
-        renderHits(data.hits || [], data.nbHits);
+        var dateMatch = term.match(DATE_RE);
+        var datePrefix = dateMatch ? dateMatch[0] : '';
+        // The date fragment only filters; the remainder matches text.
+        var rest = datePrefix ? term.replace(datePrefix, '').trim() : term;
+        lastTerm = { text: term, title: rest };
+
+        var scored = [];
+        for (var i = 0; i < records.length; i++) {
+          if (matchRecord(records[i], rest, datePrefix)) {
+            scored.push(records[i]);
+          }
+        }
+        // Newest first; the generator writes dates as YYYY-MM-DD, so a
+        // string compare is a chronological compare.
+        scored.sort(function (a, b) {
+          return String(b.date || '') < String(a.date || '') ? -1 : 1;
+        });
+        renderHits(scored.slice(0, MAX_HITS));
       })
       .catch(function (error) {
         if (mine !== seq) {
@@ -283,7 +309,7 @@
       return;
     }
     debounce = window.setTimeout(function () {
-      query(term);
+      searchLocal(term);
     }, DEBOUNCE_MS);
   }
 
@@ -294,6 +320,7 @@
     overlay.hidden = false;
     document.documentElement.classList.add('in-search-open-page');
     renderEmpty('');
+    loadIndex(); // warm the cache while the dialog is still empty
     input.focus();
     input.select();
   }
