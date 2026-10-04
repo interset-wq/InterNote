@@ -157,8 +157,8 @@ class TestWithdrawal:
         assert not (tmp_path / "dist" / "post" / "1.html").exists()
         assert state_of(tmp_path)["post_list"] == {}
         assert "Body one." not in index_of(tmp_path)
-        listing = (tmp_path / "dist" / "post-list.json").read_text(encoding="utf-8")
-        assert '"P1"' not in listing
+        listing = (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
+        assert '"post/1.html"' not in listing
         rss = (tmp_path / "dist" / "rss.xml").read_text(encoding="utf-8")
         assert "post/1.html" not in rss
 
@@ -166,9 +166,9 @@ class TestWithdrawal:
         self._publish_then_rebuild(tmp_path, issue(number=1, labels=()))
         assert not (tmp_path / "dist" / "post" / "1.html").exists()
         assert state_of(tmp_path)["post_list"] == {}
-        assert '"P1"' not in (tmp_path / "dist" / "post-list.json").read_text(
-            encoding="utf-8"
-        )
+        assert '"post/1.html"' not in (
+            tmp_path / "dist" / "search-index.json"
+        ).read_text(encoding="utf-8")
 
     def test_closed_issue_removes_every_reference(self, tmp_path):
         self._publish_then_rebuild(tmp_path, issue(number=1, state="closed"))
@@ -300,27 +300,12 @@ class TestPullRequestsAreNotPosts:
         rss = (tmp_path / "dist" / "rss.xml").read_text(encoding="utf-8")
         assert "PR" not in rss
 
-    def test_pull_request_is_not_in_the_search_index(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
-        cfg_path = write_config(tmp_path, extra=SEARCH_ON)
-        repo, markdown = make_repo(
-            tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)]
+    def test_pull_request_is_not_in_the_search_index(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)])
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )
-        gen = Generator(
-            load_config(cfg_path),
-            repo,
-            repo_name="owner/blog",
-            markdown=markdown,
-            root=tmp_path,
-        )
-        from conftest import RecordingUrlopen
-        from internote import search as search_module
-
-        recorder = RecordingUrlopen()
-        monkeypatch.setattr(search_module.urllib.request, "urlopen", recorder)
-        gen.run_all()
-
-        assert [item["body"]["objectID"] for item in recorder.batch()] == ["post-1"]
+        assert all(record["title"] != "PR" for record in index["posts"])
 
     def test_a_labelled_pull_request_is_still_skipped(self, tmp_path):
         """Label routing happens before this point, so a PR labelled `about`
@@ -348,9 +333,9 @@ class TestClosedIssuesUnpublish:
 
         assert not (tmp_path / "dist" / "post" / "2.html").exists()
         assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
-        assert "P2" not in (tmp_path / "dist" / "post-list.json").read_text(
-            encoding="utf-8"
-        )
+        assert "post/2.html" not in (
+            tmp_path / "dist" / "search-index.json"
+        ).read_text(encoding="utf-8")
         assert index_of(tmp_path).count('post/2.html') == 0
 
     def test_closing_a_single_page_removes_it(self, tmp_path):
@@ -365,36 +350,18 @@ class TestClosedIssuesUnpublish:
         assert not (tmp_path / "dist" / "about.html").exists()
         assert state_of(tmp_path)["single_list"] == {}
 
-    def test_closing_drops_it_from_the_search_index_too(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
-        cfg_path = write_config(tmp_path, extra=SEARCH_ON)
-        repo, markdown = make_repo(
-            tmp_path, [issue(number=1), issue(number=2, labels=("about",))]
+    def test_closing_drops_it_from_the_search_index_too(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2, labels=("about",))])
+
+        build(
+            tmp_path,
+            [issue(number=1), issue(number=2, labels=("about",), state="closed")],
+            incremental="2",
         )
-        gen = Generator(
-            load_config(cfg_path),
-            repo,
-            repo_name="owner/blog",
-            markdown=markdown,
-            root=tmp_path,
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )
-        from conftest import RecordingUrlopen
-        from internote import search as search_module
-
-        recorder = RecordingUrlopen()
-        monkeypatch.setattr(search_module.urllib.request, "urlopen", recorder)
-        gen.run_all()
-        assert sorted(i["body"]["objectID"] for i in recorder.batch()) == [
-            "page-about",
-            "post-1",
-        ]
-
-        repo._issues[1].state = "closed"
-        recorder.calls.clear()
-        gen.run_one("2")
-
-        # The withdrawn page must not survive in the index either.
-        assert [i["body"]["objectID"] for i in recorder.batch()] == ["post-1"]
+        assert all(record["url"] != "about.html" for record in index["posts"])
 
 
 class TestIncrementalKeepsOthers:
@@ -406,70 +373,30 @@ class TestIncrementalKeepsOthers:
         assert (tmp_path / "dist" / "post" / "2.html").exists()
 
 
-SEARCH_ON = (
-    '\n[features]\nsearch = "algolia"\n\n'
-    '[search]\napp_id = "A"\napi_key = "K"\nindex_name = "i"\n'
-)
+class TestSearchIndexFile:
+    """dist/search-index.json feeds the client-side search plugin."""
 
-
-class TestSearchIntegration:
-    """_sync_search is the only gate between a build and the hosted index."""
-
-    def test_search_off_never_calls_sync(self, tmp_path, monkeypatch):
-        from internote import generator as generator_module
-
-        def explode(*args, **kwargs):
-            raise AssertionError("sync must not run while features.search is off")
-
-        monkeypatch.setattr(generator_module, "sync_search", explode)
-        build(tmp_path, [issue()])
-        assert (tmp_path / "dist" / "post" / "1.html").exists()
-
-    def _search_build(self, tmp_path, monkeypatch, recorder):
-        cfg_path = write_config(tmp_path, extra=SEARCH_ON)
-        repo, markdown = make_repo(
-            tmp_path, [issue(), issue(number=4, labels=("about",))]
+    def test_full_build_writes_index_with_both_lists(self, tmp_path):
+        build(tmp_path, [issue(number=1, labels=("a", "b")), issue(number=4, labels=("about",))])
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )
-        gen = Generator(
-            load_config(cfg_path),
-            repo,
-            repo_name="owner/blog",
-            markdown=markdown,
-            root=tmp_path,
+        by_url = {record["url"]: record for record in index["posts"]}
+        assert set(by_url) == {"post/1.html", "about.html"}
+        assert by_url["post/1.html"]["labels"] == ["a", "b"]
+        assert by_url["post/1.html"]["date"] == "2026-01-02"
+        assert by_url["post/1.html"]["date_color"]
+        assert isinstance(index["label_colors"], dict)
+
+    def test_incremental_rebuild_keeps_index_current(self, tmp_path):
+        build(tmp_path, [issue(number=1), issue(number=2)])
+        # Incremental rebuilds only re-render one issue; the other entry, and
+        # its search record, survive.
+        build(tmp_path, [issue(number=1)], incremental="1")
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )
-        from internote import search as search_module
-
-        monkeypatch.setattr(search_module.urllib.request, "urlopen", recorder)
-        gen.run_all()
-        return gen
-
-    def test_search_on_without_admin_key_does_no_network(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("ALGOLIA_ADMIN_KEY", raising=False)
-
-        def explode(*args, **kwargs):
-            raise AssertionError("urlopen must not be called without an admin key")
-
-        self._search_build(tmp_path, monkeypatch, explode)
-        assert (tmp_path / "dist" / "post" / "1.html").exists()
-
-    def test_search_on_with_key_pushes_both_lists(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
-        from conftest import RecordingUrlopen
-
-        recorder = RecordingUrlopen()
-        self._search_build(tmp_path, monkeypatch, recorder)
-
-        ids = sorted(item["body"]["objectID"] for item in recorder.batch())
-        # about.html is searchable for the first time; post-list.json only
-        # ever carried P1.
-        assert ids == ["page-about", "post-1"]
-
-    def test_record_body_comes_from_the_markdown_source(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("ALGOLIA_ADMIN_KEY", "admin")
-        from conftest import RecordingUrlopen
-
-        recorder = RecordingUrlopen()
-        self._search_build(tmp_path, monkeypatch, recorder)
-
-        bodies = [item["body"]["body"] for item in recorder.batch()]
-        assert any("Body text" in body for body in bodies)
+        assert sorted(record["url"] for record in index["posts"]) == [
+            "post/1.html",
+            "post/2.html",
+        ]

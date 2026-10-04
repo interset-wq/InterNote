@@ -16,7 +16,6 @@ from .constants import ICONS, get_i18n
 from .feed import build_feed, strip_build_date
 from .frontmatter import FrontMatterError
 from .renderer import Renderer
-from .search import sync as sync_search
 
 MATHJAX_SCRIPT = (
     '<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script>'
@@ -39,17 +38,6 @@ ALERT_STYLES = {
     "warning": "attention",
     "caution": "danger",
 }
-
-POST_LIST_FIELDS = {
-    "post_title",
-    "post_url",
-    "labels",
-    "created_date",
-    "date_label_color",
-    "comment_num",
-    "top",
-}
-
 
 def _list_item(entry: dict) -> dict:
     """Convert a stored entry to the template's list-item shape."""
@@ -411,12 +399,10 @@ class Generator:
             page["post"]["highlight"] = 0
             keys = ["sun", "moon", "sync", "home", "github", "rss"]
 
-        if page["search"] == "algolia":
-            # search_button() renders icon('search'); without it in the crop
-            # the SVG gets an empty d and the button is invisible.
-            keys.append("search")
-        # Every page header links to the tag cloud, so `tag` is never optional.
-        keys.append("tag")
+        # Every page header links to the tag cloud, so `tag` is never optional,
+        # and the nav search button needs its magnifier glyph since search.js
+        # fetches the local index on every page.
+        keys.extend(["search", "tag"])
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
@@ -445,10 +431,11 @@ class Generator:
             dict.fromkeys(nav_keys + self.ctx["single_labels"])
         )
         nav_icon = {key: ICONS.get(key) for key in nav_keys}
-        # tag.html does not link to itself, so it needs no tag glyph.
+        # tag.html does not link to itself, but its empty state and rows are
+        # JS-built, so `tag` and `post` must both reach window.icons.
         tag_icon = {
             key: ICONS.get(key)
-            for key in ["sun", "moon", "sync", "home", "search", "post", "rss", "github"]
+            for key in ["sun", "moon", "sync", "home", "search", "tag", "post", "rss", "github"]
         }
 
         page_size = self.ctx["posts_per_page"]
@@ -558,35 +545,45 @@ class Generator:
             json.dumps(state, ensure_ascii=False), encoding="utf-8"
         )
 
-        stripped = {
-            key: {field: value for field, value in entry.items() if field in POST_LIST_FIELDS}
-            for key, entry in self.ctx["post_list"].items()
-        }
-        stripped["label_color_dict"] = self.ctx["label_color_dict"]
-        (self.dist_dir / "post-list.json").write_text(
-            json.dumps(stripped, ensure_ascii=False), encoding="utf-8"
-        )
-
-        self._sync_search()
+        self._write_search_index()
         self._write_readme()
 
-    def _sync_search(self):
-        """Push the site to the hosted index, if one is configured.
+    def _write_search_index(self):
+        """Write dist/search-index.json, the site's single client-side data file.
 
-        Runs last, after both lists are final, so a withdrawn post cannot
-        survive in the index. No-ops without network access when
-        ALGOLIA_ADMIN_KEY is absent, which covers tests and fixture builds.
+        Consumed by both the search dialog (plugins/search.js) and the tag
+        page (tag.j2.html), so it carries everything the listings need:
+        `{label_colors: {name: "#hex"}, posts: [{title, labels, date,
+        date_color, url}]}` — no body text, no third-party service, no keys.
+        post_list and single_list are merged so about.html is searchable too.
         """
-        if self.ctx["search"] != "algolia":
-            return
-        sync_search(
-            post_list=self.ctx["post_list"],
-            single_list=self.ctx["single_list"],
-            home_url=self.ctx["home_url"],
-            sources_dir=self.sources_dir,
-            app_id=self.ctx["search_app_id"],
-            api_key=self.ctx["search_api_key"],
-            index_name=self.ctx["search_index_name"],
+        records = []
+        for entry in self.ctx["post_list"].values():
+            records.append(
+                {
+                    "title": entry["post_title"],
+                    "labels": entry["labels"],
+                    "date": entry["created_date"],
+                    "date_color": entry["date_label_color"],
+                    "url": entry["post_url"],
+                }
+            )
+        for label, entry in self.ctx["single_list"].items():
+            records.append(
+                {
+                    "title": entry["post_title"],
+                    "labels": entry["labels"],
+                    "date": entry["created_date"],
+                    "date_color": entry["date_label_color"],
+                    "url": entry["post_url"],
+                }
+            )
+        index = {
+            "label_colors": self.ctx["label_color_dict"],
+            "posts": records,
+        }
+        (self.dist_dir / "search-index.json").write_text(
+            json.dumps(index, ensure_ascii=False), encoding="utf-8"
         )
 
     def _write_readme(self):
