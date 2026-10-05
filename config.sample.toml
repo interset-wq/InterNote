@@ -10,7 +10,7 @@ language = "CN"              # CN | EN
 utc = 8                      # 时区偏移（小时）
 
 [layout]
-posts_per_page = 15
+posts_per_page = 10
 single_labels = []           # 单页标签（如 ["about"]）
 # start_date = ""           # 建站日期（如 "2026-01-01"）
 # icp = ""                  # ICP 备案号

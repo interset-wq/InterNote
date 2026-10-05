@@ -22,7 +22,7 @@ class SiteConfig(BaseModel):
 class LayoutConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    posts_per_page: int = 15
+    posts_per_page: int = 10
     single_labels: list[str] = []
     start_date: str = ""
     icp: str = ""

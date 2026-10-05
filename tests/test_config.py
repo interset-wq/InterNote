@@ -108,7 +108,7 @@ class TestDefaults:
     def test_optional_values_have_defaults(self, tmp_path):
         ctx = load_config(write(tmp_path, MINIMAL)).context()
         assert ctx["sub_title"] == ""
-        assert ctx["posts_per_page"] == 15
+        assert ctx["posts_per_page"] == 10
         assert ctx["single_labels"] == []
         assert ctx["language"] == "CN"
         assert ctx["utc"] == 8
