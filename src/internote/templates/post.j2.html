@@ -39,13 +39,13 @@
     <div class="in-post-footer-text">{{ post.footer_text }}</div>
     {% endif %}
   </article>
-  {% if site.need_comment %}
+  {% if site.need_comment and post.comments %}
   {% include 'components/comments.j2.html' %}
   {% endif %}
 {% endblock %}
 
 {% block script %}
-  {% if site.need_comment %}
+  {% if site.need_comment and post.comments %}
   <script src="{{ site.home_url }}/plugins/giscus.js"></script>
   {% endif %}
   <script src="{{ site.home_url }}/plugins/toc.js"></script>

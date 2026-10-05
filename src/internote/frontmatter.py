@@ -30,7 +30,8 @@ DELIMITER = "+++"
 #: labels are authoritative because the tag pages, label colours and
 #: single-page routing are all derived from them.
 FIELDS = frozenset(
-    {"title", "description", "date", "head", "style", "script", "draft"}
+    {"title", "description", "date", "head", "style", "script", "draft",
+     "comments", "pinned"}
 )
 
 #: Keys whose value is injected into the page as raw HTML.
@@ -110,6 +111,13 @@ def _check_types(meta: dict) -> None:
                 type(meta["draft"]).__name__
             )
         )
+    for key in ("comments", "pinned"):
+        if key in meta and not isinstance(meta[key], bool):
+            raise FrontMatterError(
+                "front matter {!r} must be a boolean, got {}".format(
+                    key, type(meta[key]).__name__
+                )
+            )
     for key in HTML_FIELDS:
         if key in meta and not isinstance(meta[key], str):
             raise FrontMatterError(

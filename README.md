@@ -97,6 +97,8 @@ head = '<meta name="x" content="y">'
 style = ".my-post { color: red; }"
 script = "console.log('hi');"
 draft = false
+comments = true
+pinned = true
 +++
 正文从这里开始
 ````
@@ -108,6 +110,8 @@ draft = false
 | `date` | 覆盖文章时间；支持 TOML 日期时间、Unix 秒、ISO 8601 字符串 |
 | `head` / `style` / `script` | 单篇注入的 HTML 片段，追加在 `[layout]` 同名配置之后。`style` 会被自动包进 `<style>`，`head` 与 `script` 需自行带标签 |
 | `draft` | `true` 则该文章完全不发布：不生成页面，不进列表、标签页与 RSS |
+| `comments` | `false` 则该文章页不渲染 giscus 评论区（默认 `true`） |
+| `pinned` | `true` 置顶：排序列表最前，列表页显示置顶图标；覆盖 GitHub 上对该 Issue 的 pin 状态 |
 
 说明：
 

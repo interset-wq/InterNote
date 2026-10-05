@@ -271,6 +271,8 @@ class Generator:
             "comment_num": issue.get_comments().totalCount,
             "word_count": len(body),
             "top": 0,
+            # Default is on: a page opts out with `comments = false`.
+            "comments": not meta.get("comments") is False,
             "style": self.ctx["style"] + meta.get("style", ""),
             "script": self.ctx["script"] + meta.get("script", ""),
             "head": self.ctx["head"] + meta.get("head", ""),
@@ -291,6 +293,10 @@ class Generator:
                 entry["top"] = 1
             elif event.event == "unpinned":
                 entry["top"] = 0
+        if "pinned" in meta:
+            # Front matter wins over timeline events, so an author can pin
+            # without repo-maintainer access to the issue page.
+            entry["top"] = 1 if meta["pinned"] else 0
 
         if "date" in meta:
             entry["created_at"] = frontmatter.parse_date(meta["date"])
@@ -374,6 +380,7 @@ class Generator:
             "description": entry["description"],
             "body": post_body,
             "comment_num": entry["comment_num"],
+            "comments": entry["comments"],
             "style": entry["style"],
             "script": entry["script"],
             "head": entry["head"],
