@@ -16,10 +16,6 @@
 
 {% block content %}
   <div class="in-tag-cloud" id="tag-cloud"></div>
-  <div class="in-view-switch" role="tablist" aria-label="List view">
-    <button class="in-view-switch-btn is-active" type="button" data-view="cards" role="tab" aria-selected="true">卡片</button>
-    <button class="in-view-switch-btn" type="button" data-view="timeline" role="tab" aria-selected="false">时间轴</button>
-  </div>
   <ul class="in-post-list" id="post-list" aria-label="Filtered posts"></ul>
   <div class="in-timeline" id="timeline" hidden></div>
   <div class="in-empty-state" id="empty-state" hidden>Not Find</div>
@@ -34,24 +30,11 @@
       var emptyState = document.getElementById('empty-state');
       var heading = document.querySelector('.in-page-title');
       var timeline = document.getElementById('timeline');
-      var viewButtons = document.querySelectorAll('.in-view-switch-btn');
       var knownLabels = [];
-      var currentView = localStorage.getItem('internote_tag_view') || 'cards';
-      if (currentView !== 'timeline') {
-        currentView = 'cards'; // only two views exist; ignore stale values
-      }
 
-      function setView(view) {
-        currentView = view;
-        localStorage.setItem('internote_tag_view', view);
-        viewButtons.forEach(function (button) {
-          var active = button.dataset.view === view;
-          button.classList.toggle('is-active', active);
-          button.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        list.hidden = view !== 'cards';
-        timeline.hidden = view !== 'timeline';
-      }
+      // `时间轴` is a pseudo-tag: selecting it hides the card flow and
+      // shows the month-grouped timeline instead of filtering rows.
+      var TIMELINE_LABEL = '时间轴';
 
       function rows() {
         return list.querySelectorAll('.in-post-card');
@@ -84,6 +67,7 @@
             counts[label] = (counts[label] || 0) + 1;
           });
         });
+        counts[TIMELINE_LABEL] = counts.All;
         return counts;
       }
 
@@ -100,11 +84,18 @@
             button.dataset.label = label;
 
             // Neutral chip + colour dot: label colours stay visible without
-            // making the cloud a wall of saturated backgrounds.
-            if (label !== 'All') {
+            // making the cloud a wall of saturated backgrounds. The timeline
+            // pseudo-tag uses an accent dot instead of a label colour.
+            var dotColor = null;
+            if (label === TIMELINE_LABEL) {
+              dotColor = 'var(--in-color-accent)';
+            } else if (label !== 'All') {
+              dotColor = colors[label] || 'var(--in-color-muted)';
+            }
+            if (dotColor) {
               var dot = document.createElement('span');
               dot.className = 'in-tag-cloud-dot';
-              dot.style.backgroundColor = colors[label] || 'var(--in-color-muted)';
+              dot.style.backgroundColor = dotColor;
               button.appendChild(dot);
             }
             button.appendChild(document.createTextNode(label));
@@ -271,12 +262,26 @@
           all.forEach(function (row) {
             setVisible(row, true);
           });
-          groups.forEach(function (group) {
-            setVisible(group, true);
-          });
+          timeline.hidden = true;
           setHeading('Tag #' + label, label + ' - ' + pageTitle);
           return;
         }
+
+        if (label === TIMELINE_LABEL) {
+          // The pseudo-tag swaps the listing style instead of filtering:
+          // card flow hidden, timeline rail shown, everything visible.
+          all.forEach(function (row) {
+            setVisible(row, false);
+          });
+          timeline.hidden = false;
+          groups.forEach(function (group) {
+            setVisible(group, true);
+          });
+          setHeading('Timeline', 'Timeline - ' + pageTitle);
+          return;
+        }
+
+        timeline.hidden = true;
 
         if (knownLabels.indexOf(label) === -1) {
           // An unrecognised hash is free text rather than a tag.
@@ -313,12 +318,6 @@
         renderCloud(data, countLabels(data));
         renderRows(data);
         renderTimeline(data);
-        viewButtons.forEach(function (button) {
-          button.addEventListener('click', function () {
-            setView(button.dataset.view);
-          });
-        });
-        setView(currentView);
         filter(decodeURI(window.location.hash.slice(1)) || 'All');
       };
       request.send();
