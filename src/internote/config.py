@@ -51,12 +51,6 @@ class GiscusConfig(BaseModel):
     category_id: str = ""
 
 
-class FeaturesConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    visit_counter: Literal["off", "vercount", "busuanzi"] = "off"
-
-
 class InternoteConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -64,7 +58,6 @@ class InternoteConfig(BaseModel):
     layout: LayoutConfig = LayoutConfig()
     comments: CommentsConfig = CommentsConfig()
     giscus: GiscusConfig = GiscusConfig()
-    features: FeaturesConfig = FeaturesConfig()
 
     def context(self) -> dict:
         site = self.site
@@ -93,7 +86,6 @@ class InternoteConfig(BaseModel):
             "giscus_repo_id": self.giscus.repo_id,
             "giscus_category": self.giscus.category,
             "giscus_category_id": self.giscus.category_id,
-            "visit_counter": self.features.visit_counter,
             "theme_mode": "manual",
             "day_theme": "light",
             "night_theme": "dark",

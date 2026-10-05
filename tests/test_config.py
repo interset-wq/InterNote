@@ -59,7 +59,7 @@ class TestForbidUnknownKeys:
 
     def test_misspelled_key_is_rejected(self, tmp_path):
         with pytest.raises(ValidationError):
-            load_config(write(tmp_path, MINIMAL + "\n[features]\nvisit_couner = 'off'\n"))
+            load_config(write(tmp_path, MINIMAL + "\n[comments]\nenabled2 = true\n"))
 
 
 class TestTypes:
@@ -84,20 +84,6 @@ class TestTypes:
         for lang in ("CN", "EN"):
             cfg = load_config(write(tmp_path, MINIMAL + "\nlanguage = '{}'\n".format(lang)))
             assert cfg.site.language == lang
-
-    @pytest.mark.parametrize("value", ["on", "yes", "true", ""])
-    def test_visit_counter_is_restricted(self, tmp_path, value):
-        with pytest.raises(ValidationError):
-            load_config(
-                write(tmp_path, MINIMAL + "\n[features]\nvisit_counter = '{}'\n".format(value))
-            )
-
-    def test_visit_counter_accepts_known_values(self, tmp_path):
-        for value in ("off", "vercount", "busuanzi"):
-            cfg = load_config(
-                write(tmp_path, MINIMAL + "\n[features]\nvisit_counter = '{}'\n".format(value))
-            )
-            assert cfg.features.visit_counter == value
 
     def test_comments_enabled_rejects_a_non_boolean(self, tmp_path):
         with pytest.raises(ValidationError):
@@ -126,14 +112,12 @@ class TestDefaults:
         assert ctx["single_labels"] == []
         assert ctx["language"] == "CN"
         assert ctx["utc"] == 8
-        assert ctx["visit_counter"] == "off"
         assert ctx["need_comment"] is True
 
     def test_sections_default_when_absent(self, tmp_path):
         cfg = load_config(write(tmp_path, MINIMAL))
         assert cfg.comments.enabled is True
         assert cfg.giscus.repo == ""
-        assert cfg.features.visit_counter == "off"
 
     def test_explicit_values_win(self, tmp_path):
         cfg = load_config(
@@ -174,7 +158,6 @@ class TestContext:
             "giscus_repo_id",
             "giscus_category",
             "giscus_category_id",
-            "visit_counter",
             "day_theme",
             "night_theme",
             "single_list",

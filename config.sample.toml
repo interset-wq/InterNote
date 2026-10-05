@@ -27,6 +27,3 @@ category_id = ""             # giscus.app 提供
 
 # 本地搜索无需配置：构建时生成 dist/search-index.json，
 # 浏览器端按 title / 标签 / 日期匹配，无第三方服务。
-
-[features]
-visit_counter = "off"        # off | vercount | busuanzi

@@ -643,12 +643,6 @@ a:hover { text-decoration: underline; }
   overflow: auto;
 }
 
-/* ===== Visit Counter ===== */
-.in-counter {
-  margin-left: 8px;
-  white-space: nowrap;
-}
-
 /* ===== Table of Contents ===== */
 .in-toc {
   position: fixed;
