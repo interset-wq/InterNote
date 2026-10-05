@@ -10,8 +10,16 @@
 #
 # 触发方式：
 #   - Issue opened / edited   -> 增量重建该篇文章
+#   - Issue closed            -> 下线该篇（清页面、列表、feed、search-index）
 #   - workflow_dispatch        -> 手动全局重建（修改 config.toml 后执行一次）
 name: build Internote
+
+concurrency:
+  # 构建必须串行：每个 run 都会 clone 全库、重新生成 dist/ 再 push，
+  # 并发 run 会互相 push 冲突导致产物丢失（连续创建/关闭 issue 时必现）。
+  # cancel-in-progress 必须为 false——取消会丢掉 closed 事件的下线动作。
+  group: internote-build
+  cancel-in-progress: false
 
 on:
   workflow_dispatch:
