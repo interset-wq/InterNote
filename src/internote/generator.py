@@ -44,6 +44,7 @@ def _list_item(entry: dict) -> dict:
     return {
         "title": entry["post_title"],
         "url": entry["post_url"],
+        "description": entry["description"],
         "labels": entry["labels"],
         "created_date": entry["created_date"],
         "date_label_color": entry["date_label_color"],

@@ -28,20 +28,25 @@
   {% endif %}
   <ul class="in-post-list">
     {% for item in posts.values() %}
-    <li>
-      <a class="in-post-list-item" href="{{ item.url }}">
-        <div class="in-post-list-title">
+    <li class="in-post-card">
+      <a class="in-post-card-link" href="{{ item.url }}">
+        <div class="in-post-card-title">
           {{ icon('upload' if item.top else 'post', 'in-post-icon-top' if item.top else '') }}
           <span>{{ item.title }}</span>
         </div>
-        <div class="in-post-list-badges">
+        {% if item.description %}
+        <p class="in-post-card-desc">{{ item.description }}</p>
+        {% endif %}
+        <div class="in-post-card-meta">
+          <span class="in-post-card-labels">
+            {% for label in item.labels %}
+            <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">{{ label }}</span>
+            {% endfor %}
+          </span>
           {% if item.comment_num > 0 %}
           <span class="in-badge" style="background-color:{{ site.comment_label_color }}">{{ item.comment_num }}</span>
           {% endif %}
-          {% for label in item.labels %}
-          <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">{{ label }}</span>
-          {% endfor %}
-          <span class="in-badge" style="background-color:{{ item.date_label_color }}">{{ item.created_date }}</span>
+          <span class="in-post-card-date">{{ item.created_date }}</span>
         </div>
       </a>
     </li>

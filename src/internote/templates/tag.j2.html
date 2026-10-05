@@ -31,7 +31,7 @@
       var knownLabels = [];
 
       function rows() {
-        return list.querySelectorAll('.in-post-list-item-wrapper');
+        return list.querySelectorAll('.in-post-card');
       }
 
       function badge(text, color) {
@@ -102,34 +102,35 @@
       function renderRows(data) {
         data.posts.forEach(function (item) {
           var row = document.createElement('li');
-          row.className = 'in-post-list-item-wrapper';
+          row.className = 'in-post-card';
           row.dataset.labels = item.labels.join(' ');
 
           var link = document.createElement('a');
-          link.className = 'in-post-list-item';
+          link.className = 'in-post-card-link';
           link.href = item.url;
 
           var title = document.createElement('div');
-          title.className = 'in-post-list-title';
+          title.className = 'in-post-card-title';
           title.appendChild(postIcon());
           var label = document.createElement('span');
           label.textContent = item.title;
           title.appendChild(label);
 
-          // Second line: label chips then a muted date, so long titles and
-          // many labels never fight for one row.
-          var badges = document.createElement('div');
-          badges.className = 'in-post-list-badges';
+          var meta = document.createElement('div');
+          meta.className = 'in-post-card-meta';
+          var labelsBox = document.createElement('span');
+          labelsBox.className = 'in-post-card-labels';
           item.labels.forEach(function (name) {
-            badges.appendChild(badge(name, data.label_colors[name]));
+            labelsBox.appendChild(badge(name, data.label_colors[name]));
           });
+          meta.appendChild(labelsBox);
           var date = document.createElement('span');
-          date.className = 'in-post-list-date';
+          date.className = 'in-post-card-date';
           date.textContent = item.date;
-          badges.appendChild(date);
+          meta.appendChild(date);
 
           link.appendChild(title);
-          link.appendChild(badges);
+          link.appendChild(meta);
           row.appendChild(link);
           list.appendChild(row);
         });
