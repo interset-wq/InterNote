@@ -21,36 +21,15 @@
     frame.contentWindow.postMessage({ giscus: { setConfig: { theme: theme } } }, 'https://giscus.app');
   }
 
-  function loadGiscus() {
-    var container = document.getElementById('comments');
-    var template = document.getElementById('giscusTemplate');
-    if (!container || !template) return;
-
-    var script = template.content.firstElementChild.cloneNode(true);
-    script.setAttribute('data-theme', resolveTheme(currentMode()));
-    container.appendChild(script);
-
+  function init() {
+    // Comments render immediately now; the script tag lives in the markup.
+    // Once the frame exists, sync it with the current theme.
     var timer = setInterval(function () {
       var frames = document.getElementsByClassName('giscus-frame');
       if (frames.length !== 1 || frames[0].style.height === '') return;
       clearInterval(timer);
-      var button = document.getElementById('cmButton');
-      if (button) button.hidden = true;
       setTheme(resolveTheme(currentMode()));
     }, 200);
-  }
-
-  function openComments() {
-    var button = document.getElementById('cmButton');
-    if (!button) return;
-    button.disabled = true;
-    button.innerHTML = 'loading<span class="in-animated-ellipsis"></span>';
-    loadGiscus();
-  }
-
-  function init() {
-    var button = document.getElementById('cmButton');
-    if (button) button.addEventListener('click', openComments);
 
     new MutationObserver(function () {
       setTheme(resolveTheme(currentMode()));

@@ -1,8 +1,6 @@
 {# Comments section - expects: site, i18n, post #}
 <section class="in-comments-section">
-  <button class="in-comments-toggle" type="button" id="cmButton">{{ i18n.comments }}</button>
-  <div class="in-comments-container" id="comments"></div>
-  <template id="giscusTemplate">
+  <div class="in-comments-container" id="comments">
     <script src="https://giscus.app/client.js"
       data-repo="{{ site.giscus_repo }}"
       data-repo-id="{{ site.giscus_repo_id }}"
@@ -17,5 +15,5 @@
       data-lang="{{ site.language | lower | replace('cn', 'zh-CN') | replace('en', 'en') }}"
       crossorigin="anonymous"
       async></script>
-  </template>
+  </div>
 </section>

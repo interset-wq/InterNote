@@ -45,17 +45,6 @@
 {% endblock %}
 
 {% block script %}
-  <script>
-    (function () {
-      {% if post.comment_num > 0 %}
-      var badge = document.createElement('span');
-      badge.className = 'in-badge';
-      badge.style.background = 'rgba(234, 238, 242, 0.5)';
-      badge.textContent = '{{ post.comment_num }}';
-      document.getElementById('cmButton').appendChild(badge);
-      {% endif %}
-    })();
-  </script>
   {% if site.need_comment %}
   <script src="{{ site.home_url }}/plugins/giscus.js"></script>
   {% endif %}

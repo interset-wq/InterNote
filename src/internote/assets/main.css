@@ -198,24 +198,7 @@ a:hover { text-decoration: underline; }
 /* ===== Comments ===== */
 .in-comments-section { margin-top: 48px; }
 
-.in-comments-toggle {
-  width: 100%;
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--in-color-text);
-  background-color: var(--in-color-btn-bg);
-  border: 1px solid var(--in-color-border);
-  border-radius: var(--in-radius);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.in-comments-toggle:hover {
-  background-color: var(--in-color-btn-hover);
-}
-
-.in-comments-container { margin-top: 32px; }
+.in-comments-container { margin-top: 16px; }
 
 /* ===== Post List ===== */
 .in-post-list {
