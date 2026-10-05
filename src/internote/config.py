@@ -23,7 +23,6 @@ class LayoutConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     posts_per_page: int = 10
-    single_labels: list[str] = []
     start_date: str = ""
     icp: str = ""
     footer_text: str = ""
@@ -70,7 +69,6 @@ class InternoteConfig(BaseModel):
             "language": site.language,
             "utc": site.utc,
             "posts_per_page": layout.posts_per_page,
-            "single_labels": layout.single_labels,
             "start_date": layout.start_date,
             "icp": layout.icp,
             "footer_text": layout.footer_text,

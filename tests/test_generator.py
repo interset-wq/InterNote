@@ -19,7 +19,6 @@ utc = 8
 
 [layout]
 posts_per_page = 10
-single_labels = ["about"]
 start_date = "2026-01-01"
 
 [comments]
@@ -101,19 +100,46 @@ class TestEntryPlacement:
         assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
         assert state_of(tmp_path)["single_list"] == {}
 
-    def test_single_label_routes_to_single_list(self, tmp_path):
-        build(tmp_path, [issue(labels=("about",))])
+    def test_about_url_routes_to_single_page(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nAbout.')])
         assert state_of(tmp_path)["post_list"] == {}
         assert sorted(state_of(tmp_path)["single_list"]) == ["P1"]
+        assert (tmp_path / "dist" / "about.html").exists()
 
-    def test_unlabelled_issue_is_skipped(self, tmp_path):
+    def test_unlabelled_issue_publishes_as_default(self, tmp_path):
+        # Labels are optional: a forgotten label must not silence a post.
         build(tmp_path, [issue(labels=())])
-        assert state_of(tmp_path)["post_list"] == {}
+        entry = state_of(tmp_path)["post_list"]["P1"]
+        assert entry["labels"] == ["default"]
+
+    def test_url_slug_replaces_the_issue_number(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nurl = "hello"\n+++\nBody.')])
+        entry = state_of(tmp_path)["post_list"]["P1"]
+        assert entry["post_url"] == "post/hello.html"
+        assert (tmp_path / "dist" / "post" / "hello.html").exists()
+
+    def test_about_label_without_url_is_a_normal_post(self, tmp_path):
+        # Routing is front-matter driven; the label name alone means nothing.
+        build(tmp_path, [issue(labels=("about",))])
+        assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
         assert state_of(tmp_path)["single_list"] == {}
 
-    def test_first_label_decides_single_page_routing(self, tmp_path):
-        build(tmp_path, [issue(labels=("blog", "about"))])
-        assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
+    def test_empty_url_is_rejected(self, tmp_path):
+        with pytest.raises(Exception, match="must not be empty"):
+            build(tmp_path, [issue(body='+++\nurl = ""\n+++\nBody.')])
+
+    def test_dot_url_is_rejected(self, tmp_path):
+        with pytest.raises(Exception, match="url"):
+            build(tmp_path, [issue(body='+++\nurl = ".hidden"\n+++\nBody.')])
+
+    def test_moving_between_lists_cleans_the_old_location(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nBody.')])
+        assert (tmp_path / "dist" / "about.html").exists()
+        # the url front matter is removed: the page moves back under post/
+        build(tmp_path, [issue()], incremental="1")
+        assert state_of(tmp_path)["single_list"] == {}
+        assert not (tmp_path / "dist" / "about.html").exists()
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
 
 
 class TestFrontMatterOverrides:
@@ -162,13 +188,10 @@ class TestWithdrawal:
         rss = (tmp_path / "dist" / "rss.xml").read_text(encoding="utf-8")
         assert "post/1.html" not in rss
 
-    def test_removing_the_last_label_removes_every_reference(self, tmp_path):
+    def test_removing_all_labels_falls_back_to_default(self, tmp_path):
         self._publish_then_rebuild(tmp_path, issue(number=1, labels=()))
-        assert not (tmp_path / "dist" / "post" / "1.html").exists()
-        assert state_of(tmp_path)["post_list"] == {}
-        assert '"post/1.html"' not in (
-            tmp_path / "dist" / "search-index.json"
-        ).read_text(encoding="utf-8")
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+        assert state_of(tmp_path)["post_list"]["P1"]["labels"] == ["default"]
 
     def test_closed_issue_removes_every_reference(self, tmp_path):
         self._publish_then_rebuild(tmp_path, issue(number=1, state="closed"))
@@ -176,11 +199,11 @@ class TestWithdrawal:
         assert state_of(tmp_path)["post_list"] == {}
 
     def test_single_page_withdrawal_also_cleans_up(self, tmp_path):
-        build(tmp_path, [issue(labels=("about",))])
+        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nBody.')])
         assert (tmp_path / "dist" / "about.html").exists()
         build(
             tmp_path,
-            [issue(labels=("about",), body="+++\ndraft = true\n+++\nBody.")],
+            [issue(body='+++\nurl = "about"\ndraft = true\n+++\nBody.')],
             incremental="1",
         )
         assert not (tmp_path / "dist" / "about.html").exists()
@@ -307,10 +330,13 @@ class TestPullRequestsAreNotPosts:
         )
         assert all(record["title"] != "PR" for record in index["posts"])
 
-    def test_a_labelled_pull_request_is_still_skipped(self, tmp_path):
-        """Label routing happens before this point, so a PR labelled `about`
-        could otherwise have claimed the about.html single-page slot."""
-        build(tmp_path, [issue(number=1, labels=("about",), pull_request=True)])
+    def test_a_pull_request_with_the_about_slug_is_still_skipped(self, tmp_path):
+        """Routing happens after the PR check, so a PR carrying
+        `url = "about"` could otherwise have claimed about.html."""
+        build(
+            tmp_path,
+            [issue(number=1, pull_request=True, body='+++\nurl = "about"\n+++\nBody.')],
+        )
         assert state_of(tmp_path)["single_list"] == {}
         assert not (tmp_path / "dist" / "about.html").exists()
 
@@ -339,23 +365,24 @@ class TestClosedIssuesUnpublish:
         assert index_of(tmp_path).count('post/2.html') == 0
 
     def test_closing_a_single_page_removes_it(self, tmp_path):
-        build(tmp_path, [issue(number=1, labels=("about",))])
+        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nBody.')])
         assert (tmp_path / "dist" / "about.html").exists()
 
         build(
             tmp_path,
-            [issue(number=1, labels=("about",), state="closed")],
+            [issue(body='+++\nurl = "about"\n+++\nBody.', state="closed")],
             incremental="1",
         )
         assert not (tmp_path / "dist" / "about.html").exists()
         assert state_of(tmp_path)["single_list"] == {}
 
     def test_closing_drops_it_from_the_search_index_too(self, tmp_path):
-        build(tmp_path, [issue(number=1), issue(number=2, labels=("about",))])
+        about = '+++\nurl = "about"\n+++\nBody.'
+        build(tmp_path, [issue(number=1), issue(number=2, body=about)])
 
         build(
             tmp_path,
-            [issue(number=1), issue(number=2, labels=("about",), state="closed")],
+            [issue(number=1), issue(number=2, body=about, state="closed")],
             incremental="2",
         )
         index = json.loads(
@@ -377,7 +404,13 @@ class TestSearchIndexFile:
     """dist/search-index.json feeds the client-side search plugin."""
 
     def test_full_build_writes_index_with_both_lists(self, tmp_path):
-        build(tmp_path, [issue(number=1, labels=("a", "b")), issue(number=4, labels=("about",))])
+        build(
+            tmp_path,
+            [
+                issue(number=1, labels=("a", "b")),
+                issue(number=4, labels=("about",), body='+++\nurl = "about"\n+++\nAbout.'),
+            ],
+        )
         index = json.loads(
             (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )

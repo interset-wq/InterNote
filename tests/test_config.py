@@ -53,6 +53,12 @@ class TestForbidUnknownKeys:
         with pytest.raises(ValidationError, match="show_source"):
             load_config(write(tmp_path, MINIMAL + "\n[layout]\nshow_source = true\n"))
 
+    def test_removed_single_labels_is_rejected(self, tmp_path):
+        # single-page routing moved to front matter `url`; a blog repo may
+        # still carry the old key, which must fail the build loudly
+        with pytest.raises(ValidationError, match="single_labels"):
+            load_config(write(tmp_path, MINIMAL + "\n[layout]\nsingle_labels = ['about']\n"))
+
     def test_unknown_key_in_site(self, tmp_path):
         with pytest.raises(ValidationError):
             load_config(write(tmp_path, MINIMAL + "\nfoo = 1\n"))
@@ -66,10 +72,6 @@ class TestTypes:
     def test_posts_per_page_must_be_int(self, tmp_path):
         with pytest.raises(ValidationError):
             load_config(write(tmp_path, MINIMAL + "\n[layout]\nposts_per_page = 'ten'\n"))
-
-    def test_single_labels_must_be_list(self, tmp_path):
-        with pytest.raises(ValidationError):
-            load_config(write(tmp_path, MINIMAL + "\n[layout]\nsingle_labels = 'about'\n"))
 
     def test_utc_must_be_int(self, tmp_path):
         with pytest.raises(ValidationError):
@@ -109,7 +111,6 @@ class TestDefaults:
         ctx = load_config(write(tmp_path, MINIMAL)).context()
         assert ctx["sub_title"] == ""
         assert ctx["posts_per_page"] == 10
-        assert ctx["single_labels"] == []
         assert ctx["language"] == "CN"
         assert ctx["utc"] == 8
         assert ctx["need_comment"] is True
@@ -121,14 +122,9 @@ class TestDefaults:
 
     def test_explicit_values_win(self, tmp_path):
         cfg = load_config(
-            write(
-                tmp_path,
-                MINIMAL
-                + "\n[layout]\nposts_per_page = 3\nsingle_labels = ['about']\n",
-            )
+            write(tmp_path, MINIMAL + "\n[layout]\nposts_per_page = 3\n")
         )
         assert cfg.layout.posts_per_page == 3
-        assert cfg.layout.single_labels == ["about"]
 
 
 class TestContext:
@@ -142,7 +138,6 @@ class TestContext:
             "language",
             "utc",
             "posts_per_page",
-            "single_labels",
             "start_date",
             "icp",
             "footer_text",
@@ -166,8 +161,7 @@ class TestContext:
             assert key in ctx, key
 
     def test_context_is_json_serialisable_shapes(self, tmp_path):
-        ctx = load_config(write(tmp_path, MINIMAL + "\n[layout]\nsingle_labels = ['a']\n")).context()
-        assert isinstance(ctx["single_labels"], list)
+        ctx = load_config(write(tmp_path, MINIMAL)).context()
         assert isinstance(ctx["posts_per_page"], int)
 
     def test_direct_validation_without_a_file(self):

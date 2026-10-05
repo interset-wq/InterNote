@@ -54,7 +54,7 @@
     {
       "number": 4,
       "title": "关于",
-      "body": "## 关于本站\n\n这是使用 [InterNote](https://github.com/interset-wq/InterNote) 搭建的个人博客，以 GitHub Issue 为写作入口。\n\n- 文章即 Issue，推送即发布\n- 评论由 giscus 提供（基于 GitHub Discussions）\n- 本站于 2026-09-30 建站",
+      "body": "+++\nurl = \"about\"\n+++\n## 关于本站\n\n这是使用 [InterNote](https://github.com/interset-wq/InterNote) 搭建的个人博客，以 GitHub Issue 为写作入口。\n\n- 文章即 Issue，推送即发布\n- 评论由 giscus 提供（基于 GitHub Discussions）\n- 本站于 2026-09-30 建站",
       "body_html": "<h2>关于本站</h2>\n<p>这是使用 <a href=\"https://github.com/interset-wq/InterNote\">InterNote</a> 搭建的个人博客，以 GitHub Issue 为写作入口。</p>\n<ul>\n<li>文章即 Issue，推送即发布</li>\n<li>评论由 giscus 提供（基于 GitHub Discussions）</li>\n<li>本站于 2026-09-30 建站</li>\n</ul>",
       "labels": [
         {

@@ -203,7 +203,7 @@ class Generator:
         """Withdraw a post: remove its page and its entry from the state.
 
         Called when an issue stops qualifying for publication - closed,
-        stripped of its last label, or marked draft. Without this the
+        marked draft, or turned into a pull request. Without this the
         homepage, the search index and the feed keep pointing at a page
         that no longer exists.
         """
@@ -232,23 +232,6 @@ class Generator:
             self._drop_entry(issue.number, "is a pull request")
             return None
 
-        if len(issue.labels) < 1:
-            self._drop_entry(issue.number, "no labels")
-            return None
-        labels = [label.name for label in issue.labels]
-
-        if labels[0] in self.ctx["single_labels"]:
-            list_name = "single_list"
-            file_name = re.sub(r'[<>:/\\|?*\"]|[\0-\31]', "-", labels[0])
-            html_dir = self.dist_dir / f"{file_name}.html"
-        else:
-            list_name = "post_list"
-            html_dir = self.post_dir / f"{issue.number}.html"
-
-        post_url = urllib.parse.quote(
-            html_dir.relative_to(self.dist_dir).as_posix()
-        )
-
         raw_body = issue.body or ""
         try:
             meta, body = frontmatter.split(raw_body)
@@ -263,9 +246,45 @@ class Generator:
             self._drop_entry(issue.number, "draft")
             return None
 
+        # Labels are optional: an issue published without any is tagged
+        # `default`, so forgetting a label never silences a post.
+        labels = [label.name for label in issue.labels] or ["default"]
+
+        # `url` front matter replaces the issue number in the URL. `about`
+        # is the reserved slug for the root single page; anything else is a
+        # post filename under post/.
+        slug = str(meta.get("url") or "").strip()
+        if "url" in meta and not slug:
+            raise FrontMatterError(
+                "issue #{}: front matter 'url' must not be empty".format(
+                    issue.number
+                )
+            )
+        if slug == "about":
+            list_name = "single_list"
+            html_dir = self.dist_dir / "about.html"
+        elif slug:
+            if slug.startswith("."):
+                raise FrontMatterError(
+                    "issue #{}: invalid front matter 'url': {!r}".format(
+                        issue.number, meta["url"]
+                    )
+                )
+            file_name = re.sub(r'[<>:/\\|?*\"]|[\0-\31]', "-", slug)
+            list_name = "post_list"
+            html_dir = self.post_dir / f"{file_name}.html"
+        else:
+            list_name = "post_list"
+            html_dir = self.post_dir / f"{issue.number}.html"
+
+        post_url = urllib.parse.quote(
+            html_dir.relative_to(self.dist_dir).as_posix()
+        )
+
         entry = {
             "number": issue.number,
             "html_dir": str(html_dir),
+            "single": list_name == "single_list",
             "labels": labels,
             "post_title": meta.get("title") or issue.title,
             "post_url": post_url,
@@ -326,7 +345,19 @@ class Generator:
         # delimiters never turn into an <hr>.
         (self.sources_dir / f"{issue.number}.md").write_text(body, encoding="utf-8")
 
-        self.ctx[list_name][f"P{issue.number}"] = entry
+        key = f"P{issue.number}"
+        # An issue lives in exactly one list. If routing moved it (a url was
+        # added or removed), drop the stale entry and its page so an
+        # incremental build cannot serve both locations.
+        other = "single_list" if list_name == "post_list" else "post_list"
+        stale = self.ctx[other].pop(key, None)
+        if stale is not None:
+            page = Path(stale["html_dir"])
+            if page.exists():
+                page.unlink()
+            print("moved #{}: {} -> {}".format(issue.number, stale["html_dir"], entry["html_dir"]))
+
+        self.ctx[list_name][key] = entry
         return entry
 
     def _render_body(self, body: str) -> str:
@@ -394,7 +425,7 @@ class Generator:
             "highlight": 0,
         }
 
-        if entry["labels"][0] in self.ctx["single_labels"]:
+        if entry.get("single"):
             page["post"]["footer_text"] = ""
 
         if '<pre class="notranslate">' in post_body:
@@ -435,9 +466,6 @@ class Generator:
             )
         )
         nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post"]
-        nav_keys = list(
-            dict.fromkeys(nav_keys + self.ctx["single_labels"])
-        )
         nav_icon = {key: ICONS.get(key) for key in nav_keys}
         # tag.html does not link to itself, but its empty state and rows are
         # JS-built, so `tag` and `post` must both reach window.icons.

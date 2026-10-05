@@ -26,6 +26,7 @@ class TestSplit:
             'title = "Custom"\n'
             'description = "Custom summary"\n'
             "date = 2026-01-01T00:00:00+00:00\n"
+            'url = "hello"\n'
             'head = "<meta x>"\n'
             'style = ".a{}"\n'
             'script = "var a=1;"\n'
@@ -36,6 +37,7 @@ class TestSplit:
         meta, body = split(text)
         assert meta["title"] == "Custom"
         assert meta["description"] == "Custom summary"
+        assert meta["url"] == "hello"
         assert meta["draft"] is False
         assert body == "body\n"
 
@@ -91,6 +93,10 @@ class TestRejections:
     def test_non_string_title_raises(self):
         with pytest.raises(FrontMatterError, match="must be a string"):
             split("+++\ntitle = 42\n+++\nbody\n")
+
+    def test_non_string_url_raises(self):
+        with pytest.raises(FrontMatterError, match="must be a string"):
+            split("+++\nurl = 42\n+++\nbody\n")
 
     def test_non_boolean_draft_raises(self):
         with pytest.raises(FrontMatterError, match="must be a boolean"):

@@ -9,7 +9,7 @@
 
 ## 特性
 
-- 文章 URL 使用 Issue 编号：`post/42.html`；单页 Label（如 `about`）生成 `about.html`
+- 文章 URL 默认使用 Issue 编号：`post/42.html`；front matter `url` 可自定义（`url = "hello"` → `post/hello.html`），保留值 `about` 生成根目录单页 `about.html` 并进入导航栏
 - 评论：[giscus](https://giscus.app)（按 pathname 映射，`<template>` 懒加载，未配置时不渲染）
 - 文章目录（`toc.js`，自带滚动高亮）、RSS 订阅（`rss.xml`）
 - 站内搜索：本地 `search-index.json`（按标题/标签/日期匹配，点击导航栏搜索图标弹出）
@@ -25,7 +25,7 @@
 3. 【添加 workflow】复制本仓库的 `examples/blog-workflow.yml` 到博客仓库的 `.github/workflows/internote.yml`
 4. 【启用 Pages】博客仓库 `Settings -> Pages -> Build and deployment -> Source` 选择 `GitHub Actions`
 5. 【首次全局生成】Actions 页面手动运行 `build Internote -> Run workflow`
-6. 【开始写作】新建 Issue，**必须**添加至少一个 Label，保存后自动构建，片刻后通过 Pages 地址访问
+6. 【开始写作】新建 Issue，保存后自动构建，片刻后通过 Pages 地址访问；不加 Label 也可以，文章会归入 `default` 标签
 
 > 博客仓库会提交生成产物：`dist/`（站点）、`sources/`（Issue 源码备份）、
 > `internote.json`（构建状态）、`README.md`（统计）。
@@ -62,7 +62,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 ```
 
 输出：`dist/`（静态站点）、`sources/*.md`（源码备份）、`internote.json`（状态）、
-`post-list.json`（搜索/列表数据，位于 `dist/` 内）。
+`search-index.json`（搜索/标签页数据，位于 `dist/` 内）。
 
 ## 配置说明
 
@@ -71,7 +71,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 | 分组 | 说明 |
 | --- | --- |
 | `[site]` | 标题、副标题、头像、语言（`CN` / `EN`）、时区 `utc`；`home_url` 留空自动推导 GitHub Pages 地址 |
-| `[layout]` | 每页文章数 `posts_per_page`、单页标签 `single_labels`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、注入的 `head/style/script/index_script/index_style/all_head` |
+| `[layout]` | 每页文章数 `posts_per_page`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、注入的 `head/style/script/index_script/index_style/all_head` |
 | `[comments]` | 评论开关 `enabled`（还需配置 giscus 才会渲染评论区） |
 | `[giscus]` | giscus 四项参数（在 [giscus.app](https://giscus.app) 生成；留空则不渲染评论区） |
 
@@ -93,6 +93,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 title = "自定义标题"
 description = "自定义摘要，用于 <meta description> 与分享卡片"
 date = 2026-01-01T10:00:00+08:00
+url = "hello-world"
 head = '<meta name="x" content="y">'
 style = ".my-post { color: red; }"
 script = "console.log('hi');"
@@ -108,6 +109,7 @@ pinned = true
 | `title` | 覆盖 Issue 标题（列表页、文章页 `<title>`、RSS 均生效） |
 | `description` | 覆盖自动摘要；缺省时取正文首个句号前的内容 |
 | `date` | 覆盖文章时间；支持 TOML 日期时间、Unix 秒、ISO 8601 字符串 |
+| `url` | 自定义文章 URL：`url = "hello"` 生成 `post/hello.html`，替代默认的 Issue 编号；保留值 `about` 生成根目录单页 `about.html` 并进入导航栏 |
 | `head` / `style` / `script` | 单篇注入的 HTML 片段，追加在 `[layout]` 同名配置之后。`style` 会被自动包进 `<style>`，`head` 与 `script` 需自行带标签 |
 | `draft` | `true` 则该文章完全不发布：不生成页面，不进列表、标签页与 RSS |
 | `comments` | `false` 则该文章页不渲染 giscus 评论区（默认 `true`） |
@@ -116,6 +118,6 @@ pinned = true
 说明：
 
 - 用 `+++` 而非 `---`，因为 `---` 同时是 Markdown 水平线，放在正文开头会产生歧义；正文中间的 `---` 不受影响。
-- **不支持 `labels`**：标签始终以 GitHub Issue 标签为准，搜索页、标签颜色与单页路由都依赖它。
+- **不支持 `labels`**：标签始终以 GitHub Issue 标签为准，搜索页与标签颜色依赖它；未加标签的文章会归入 `default` 标签发布。
 - 字段拼错或 TOML 语法错误会**直接让构建失败**并报出 Issue 编号，不会静默忽略。
 - `head` / `style` / `script` 会原样注入页面，仅在完全信任 Issue 作者时使用。
