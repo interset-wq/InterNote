@@ -16,7 +16,12 @@
 
 {% block content %}
   <div class="in-tag-cloud" id="tag-cloud"></div>
+  <div class="in-view-switch" role="tablist" aria-label="List view">
+    <button class="in-view-switch-btn is-active" type="button" data-view="cards" role="tab" aria-selected="true">卡片</button>
+    <button class="in-view-switch-btn" type="button" data-view="timeline" role="tab" aria-selected="false">时间轴</button>
+  </div>
   <ul class="in-post-list" id="post-list" aria-label="Filtered posts"></ul>
+  <div class="in-timeline" id="timeline" hidden></div>
   <div class="in-empty-state" id="empty-state" hidden>Not Find</div>
 {% endblock %}
 
@@ -28,7 +33,25 @@
       var cloud = document.getElementById('tag-cloud');
       var emptyState = document.getElementById('empty-state');
       var heading = document.querySelector('.in-page-title');
+      var timeline = document.getElementById('timeline');
+      var viewButtons = document.querySelectorAll('.in-view-switch-btn');
       var knownLabels = [];
+      var currentView = localStorage.getItem('internote_tag_view') || 'cards';
+      if (currentView !== 'timeline') {
+        currentView = 'cards'; // only two views exist; ignore stale values
+      }
+
+      function setView(view) {
+        currentView = view;
+        localStorage.setItem('internote_tag_view', view);
+        viewButtons.forEach(function (button) {
+          var active = button.dataset.view === view;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        list.hidden = view !== 'cards';
+        timeline.hidden = view !== 'timeline';
+      }
 
       function rows() {
         return list.querySelectorAll('.in-post-card');
@@ -136,6 +159,65 @@
         });
       }
 
+      function renderTimeline(data) {
+        // Group posts by YYYY-MM; the index arrives date-descending, so
+        // groups come out newest-first and stay ordered inside.
+        var groups = {};
+        var order = [];
+        data.posts.forEach(function (item) {
+          var month = (item.date || '').slice(0, 7);
+          if (!groups[month]) {
+            groups[month] = [];
+            order.push(month);
+          }
+          groups[month].push(item);
+        });
+
+        order.forEach(function (month) {
+          var group = document.createElement('section');
+          group.className = 'in-timeline-group';
+          group.dataset.labels = groups[month]
+            .map(function (item) { return item.labels.join(' '); })
+            .join(' ');
+
+          var title = document.createElement('h2');
+          title.className = 'in-timeline-month';
+          title.textContent = month.replace('-', ' 年 ') + ' 月';
+          group.appendChild(title);
+
+          groups[month].forEach(function (item) {
+            var entry = document.createElement('a');
+            entry.className = 'in-timeline-entry';
+            entry.href = item.url;
+
+            var day = document.createElement('span');
+            day.className = 'in-timeline-day';
+            day.textContent = item.date.slice(8) || '?';
+
+            var body = document.createElement('span');
+            body.className = 'in-timeline-body';
+
+            var title = document.createElement('span');
+            title.className = 'in-timeline-title';
+            title.textContent = item.title;
+            body.appendChild(title);
+
+            var labelsBox = document.createElement('span');
+            labelsBox.className = 'in-timeline-labels';
+            item.labels.forEach(function (name) {
+              labelsBox.appendChild(badge(name, data.label_colors[name]));
+            });
+            body.appendChild(labelsBox);
+
+            entry.appendChild(day);
+            entry.appendChild(body);
+            group.appendChild(entry);
+          });
+
+          timeline.appendChild(group);
+        });
+      }
+
       function setVisible(row, visible) {
         row.hidden = !visible;
       }
@@ -177,6 +259,7 @@
 
       function filter(label) {
         var all = rows();
+        var groups = timeline.querySelectorAll('.in-timeline-group');
         emptyState.hidden = true;
 
         // Keep the cloud's active chip in sync with the visible filter.
@@ -187,6 +270,9 @@
         if (label === 'All') {
           all.forEach(function (row) {
             setVisible(row, true);
+          });
+          groups.forEach(function (group) {
+            setVisible(group, true);
           });
           setHeading('Tag #' + label, label + ' - ' + pageTitle);
           return;
@@ -200,6 +286,19 @@
           return;
         }
 
+        var timelineEmpty = true;
+        groups.forEach(function (group) {
+          var match = group.dataset.labels.split(' ').indexOf(label) !== -1;
+          setVisible(group, match);
+          if (match) {
+            timelineEmpty = false;
+          }
+        });
+        if (timelineEmpty) {
+          // The timeline has no matching group at all: fall back to the
+          // shared empty state so the same message serves both views.
+          showEmpty('Not Find "' + label + '"');
+        }
         all.forEach(function (row) {
           setVisible(row, row.dataset.labels.split(' ').indexOf(label) !== -1);
         });
@@ -213,6 +312,13 @@
         var data = JSON.parse(request.response);
         renderCloud(data, countLabels(data));
         renderRows(data);
+        renderTimeline(data);
+        viewButtons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            setView(button.dataset.view);
+          });
+        });
+        setView(currentView);
         filter(decodeURI(window.location.hash.slice(1)) || 'All');
       };
       request.send();

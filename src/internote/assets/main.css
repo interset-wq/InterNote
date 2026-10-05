@@ -400,6 +400,118 @@ a:hover { text-decoration: underline; }
   text-align: center;
 }
 
+/* ===== Tag Page: view switch ===== */
+/* Segmented control picking between the card flow and the timeline. */
+.in-view-switch {
+  display: inline-flex;
+  margin-bottom: 12px;
+  border: 1px solid var(--in-color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.in-view-switch-btn {
+  padding: 4px 14px;
+  border: none;
+  background: transparent;
+  color: var(--in-color-muted);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.in-view-switch-btn.is-active {
+  background: var(--in-color-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ===== Tag Page: timeline view ===== */
+/* One vertical rail; month headers break it, entries hang off it. */
+.in-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.in-timeline-group {
+  border-left: 2px solid var(--in-color-border);
+  padding-left: 20px;
+}
+
+.in-timeline-month {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--in-color-fg);
+}
+
+.in-timeline-entry {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0 5px 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* The dot sits on the rail; hover turns it accent. */
+.in-timeline-entry::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--in-color-border);
+  transition: background-color 0.15s;
+}
+
+.in-timeline-entry:hover::before {
+  background: var(--in-color-accent);
+}
+
+.in-timeline-entry:hover .in-timeline-title {
+  color: var(--in-color-accent);
+}
+
+.in-timeline-day {
+  flex-shrink: 0;
+  min-width: 20px;
+  color: var(--in-color-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.in-timeline-body {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.in-timeline-title {
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.in-timeline-labels {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.in-timeline-labels .in-badge {
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 8px;
+}
+
 /* ===== Search Dialog =====
    Styled after Algolia DocSearch v5's visual language - the dimmed scrim,
    the recessed modal, card-like hit rows with a soft drop shadow, the
