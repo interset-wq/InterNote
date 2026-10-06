@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Generator behaviour, built entirely offline from a fixture repo."""
 import json
+from unittest.mock import patch
 
 import pytest
 
@@ -441,3 +442,74 @@ class TestSearchIndexFile:
             "post/1.html",
             "post/2.html",
         ]
+
+
+class TestFavicon:
+    """[site].favicon: default = the repo owner's avatar, downloaded to
+    dist/assets/; fixture mode has no network object so it degrades."""
+
+    def test_fixture_mode_without_avatar_has_no_favicon(self, tmp_path):
+        build(tmp_path, [issue()])
+        page = (tmp_path / "dist" / "index.html").read_text(encoding="utf-8")
+        assert 'rel="icon"' not in page
+        assert not (tmp_path / "dist" / "assets" / "favicon.png").exists()
+
+    def test_owner_avatar_is_downloaded_to_assets(self, tmp_path):
+        repo, _ = make_repo(tmp_path, [issue()])
+        repo.owner.avatar_url = "https://example.test/avatar"
+        downloads = []
+
+        def fake_urlopen(request, timeout):
+            downloads.append(request.full_url)
+
+            class Response:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+                def read(self):
+                    return b"png-bytes"
+
+            return Response()
+
+        cfg = load_config(write_config(tmp_path))
+        gen = Generator(cfg, repo, repo_name="owner/blog", markdown=lambda t: t, root=tmp_path)
+        with patch("internote.generator.urllib.request.urlopen", fake_urlopen):
+            gen.run_all()
+
+        assert downloads == ["https://example.test/avatar?size=64"]
+        assert (tmp_path / "dist" / "assets" / "favicon.png").read_bytes() == b"png-bytes"
+        page = (tmp_path / "dist" / "index.html").read_text(encoding="utf-8")
+        assert 'href="https://example.com/assets/favicon.png"' in page
+        # the source URL is remembered for the incremental cache
+        assert state_of(tmp_path)["favicon_src"].endswith("?size=64")
+
+    def test_failed_download_degrades_to_no_favicon(self, tmp_path):
+        repo, _ = make_repo(tmp_path, [issue()])
+        repo.owner.avatar_url = "https://example.test/avatar"
+        cfg = load_config(write_config(tmp_path))
+        gen = Generator(cfg, repo, repo_name="owner/blog", markdown=lambda t: t, root=tmp_path)
+        with patch(
+            "internote.generator.urllib.request.urlopen",
+            side_effect=OSError("network down"),
+        ):
+            gen.run_all()
+        assert gen.ctx["favicon_file"] == ""
+        page = (tmp_path / "dist" / "index.html").read_text(encoding="utf-8")
+        assert 'rel="icon"' not in page
+
+    def test_favicon_none_disables_it(self, tmp_path):
+        repo, _ = make_repo(tmp_path, [issue()])
+        repo.owner.avatar_url = "https://example.test/avatar"
+        config = write_config(tmp_path).read_text(encoding="utf-8")
+        # insert into the [site] section, not at the file tail
+        config = config.replace('[site]\n', '[site]\nfavicon = "none"\n')
+        cfg = load_config(write_config(tmp_path))
+        (tmp_path / "config.toml").write_text(config, encoding="utf-8")
+        cfg = load_config(tmp_path / "config.toml")
+        gen = Generator(cfg, repo, repo_name="owner/blog", markdown=lambda t: t, root=tmp_path)
+        gen.run_all()
+        assert gen.ctx["favicon_file"] == ""
+        assert 'rel="icon"' not in (tmp_path / "dist" / "index.html").read_text(encoding="utf-8")

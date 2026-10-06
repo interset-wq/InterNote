@@ -14,6 +14,9 @@ class SiteConfig(BaseModel):
     title: str
     sub_title: str = ""
     avatar_url: str = ""
+    # Empty = use the blog repo owner's GitHub avatar (downloaded at build
+    # time); a URL = use that image; "none" = no favicon at all.
+    favicon: str = ""
     home_url: str = ""
     language: Literal["CN", "EN"] = "CN"
     utc: int = 8
@@ -65,6 +68,7 @@ class InternoteConfig(BaseModel):
             "title": site.title,
             "sub_title": site.sub_title,
             "avatar_url": site.avatar_url,
+            "favicon": site.favicon,
             "home_url": site.home_url,
             "language": site.language,
             "utc": site.utc,

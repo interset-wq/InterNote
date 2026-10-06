@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <script>window.icons = {{ icons | tojson }};</script>
+  {% if site.favicon_file %}<link rel="icon" type="image/png" href="{{ site.home_url }}/{{ site.favicon_file }}">
+  {% endif %}
   <link rel="stylesheet" href="{{ site.home_url }}/assets/primer.css">
   {{ site.all_head }}
   <link rel="stylesheet" href="{{ site.home_url }}/assets/main.css">
-  <link rel="icon" href="{{ site.avatar_url }}">
   <script>
     // Resolve the stored theme before first paint, otherwise a dark-mode
     // visitor sees a white flash. theme.js takes over once loaded.

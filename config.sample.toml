@@ -5,6 +5,7 @@
 title = "InterNote"
 sub_title = "My notes on everything"
 avatar_url = "https://github.githubassets.com/favicons/favicon.svg"
+# favicon = ""              # 留空 = 自动下载博客仓库 owner 的 GitHub 头像作为站点图标；填 URL 用自定义图；"none" 关闭
 # home_url = ""             # 留空则自动推导（GitHub Pages 地址）
 language = "CN"              # CN | EN
 utc = 8                      # 时区偏移（小时）

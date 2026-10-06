@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import urllib.parse
+import urllib.request
 from pathlib import Path
 
 from . import frontmatter
@@ -97,6 +98,9 @@ class Generator:
             self.ctx["need_comment"] and self.ctx["giscus_repo"]
         )
         self.ctx["blog_repo_url"] = f"https://github.com/{repo_name}"
+        # Resolved by _fetch_favicon before any page renders; empty = no
+        # <link rel="icon">.
+        self.ctx["favicon_file"] = ""
         print("GitHub Pages URL: ", self.ctx["home_url"])
 
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
@@ -113,6 +117,9 @@ class Generator:
         # from scratch but can still reuse the HTML.
         self.render_cache: dict[str, str] = {}
         self.render_cache_used: set[str] = set()
+        # favicon state: the source URL the cached dist/assets/favicon.png
+        # was downloaded from
+        self.favicon_src = ""
         if self.state_path.exists():
             try:
                 cached = json.loads(self.state_path.read_text(encoding="utf-8"))
@@ -120,12 +127,65 @@ class Generator:
                 cached = {}
             if isinstance(cached.get("render_cache"), dict):
                 self.render_cache = cached["render_cache"]
+            self.favicon_src = cached.get("favicon_src", "") or ""
 
     # ------------------------------------------------------------------ run
+
+    def _fetch_favicon(self):
+        """Resolve [site].favicon to a local file under dist/assets/.
+
+        Empty config downloads the blog repo owner's GitHub avatar (the
+        default); a URL downloads that image; "none" disables the favicon.
+        The download is keyed on the source URL in internote.json, so an
+        unchanged avatar is not re-fetched on every build. Any failure only
+        warns: a flaky network must not fail the blog build. Fixture mode
+        (a repo without an avatar_url) skips the download entirely but keeps
+        an existing favicon file, so offline previews still show one.
+        """
+        setting = str(self.ctx.get("favicon") or "").strip()
+        if setting.lower() == "none":
+            self.ctx["favicon_file"] = ""
+            return
+
+        favicon_path = self.dist_dir / "assets" / "favicon.png"
+        if not setting:
+            avatar_url = getattr(getattr(self.repo, "owner", None), "avatar_url", "")
+            if not avatar_url:
+                # Fixture/offline mode: keep whatever a previous build fetched.
+                self.ctx["favicon_file"] = (
+                    "assets/favicon.png" if favicon_path.exists() else ""
+                )
+                return
+            source = avatar_url + ("&" if "?" in avatar_url else "?") + "size=64"
+        else:
+            source = setting
+
+        if source == self.favicon_src and favicon_path.exists():
+            self.ctx["favicon_file"] = "assets/favicon.png"
+            return
+
+        try:
+            request = urllib.request.Request(source, headers={"User-Agent": "Internote"})
+            with urllib.request.urlopen(request, timeout=30) as response:
+                data = response.read()
+            if not data:
+                raise ValueError("empty response")
+            favicon_path.parent.mkdir(parents=True, exist_ok=True)
+            favicon_path.write_bytes(data)
+            self.favicon_src = source
+            print("create favicon from", source)
+        except Exception as error:  # noqa: BLE001 - never fail the build here
+            print("warning: favicon download failed ({}); {}".format(
+                source, error
+            ))
+        self.ctx["favicon_file"] = (
+            "assets/favicon.png" if favicon_path.exists() else ""
+        )
 
     def run_all(self):
         print("====== start create static html ======")
         self._clean()
+        self._fetch_favicon()
         for issue in self.repo.get_issues():
             self._add_entry(issue)
         for entry in list(self.ctx["post_list"].values()):
@@ -142,6 +202,7 @@ class Generator:
         else:
             self._clean()
         self.sources_dir.mkdir(parents=True, exist_ok=True)
+        self._fetch_favicon()
         issue = self.repo.get_issue(int(number_str))
         if issue.state != "open":
             self._drop_entry(issue.number, "issue is closed")
@@ -557,6 +618,7 @@ class Generator:
         state = {
             "post_list": self.ctx["post_list"],
             "render_cache": pruned,
+            "favicon_src": self.favicon_src,
         }
         self.state_path.write_text(
             json.dumps(state, ensure_ascii=False), encoding="utf-8"
