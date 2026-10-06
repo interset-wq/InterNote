@@ -90,13 +90,8 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 
 ````text
 +++
-title = "自定义标题"
-description = "自定义摘要，用于 <meta description> 与分享卡片"
 date = 2026-01-01T10:00:00+08:00
 slug = "hello-world"
-head = '<meta name="x" content="y">'
-style = ".my-post { color: red; }"
-script = "console.log('hi');"
 draft = false
 comments = true
 pinned = true
@@ -106,18 +101,16 @@ pinned = true
 
 | 字段 | 说明 |
 | --- | --- |
-| `title` | 覆盖 Issue 标题（列表页、文章页 `<title>`、RSS 均生效） |
-| `description` | 覆盖自动摘要；缺省时取正文首个句号前的内容 |
 | `date` | 覆盖文章时间；支持 TOML 日期时间、Unix 秒、ISO 8601 字符串 |
 | `slug` | URL 别名：`slug = "hello"` 生成根目录 `hello.html`，重定向到规范页 `post/<id>.html`（规范 URL 始终是编号地址，别名仅便于分享；`index`/`tag`/`rss` 等保留名不可用） |
-| `head` / `style` / `script` | 单篇注入的 HTML 片段，追加在 `[layout]` 同名配置之后。`style` 会被自动包进 `<style>`，`head` 与 `script` 需自行带标签 |
 | `draft` | `true` 则该文章完全不发布：不生成页面，不进列表、标签页与 RSS |
 | `comments` | `false` 则该文章页不渲染 giscus 评论区（默认 `true`） |
 | `pinned` | `true` 置顶：排序列表最前，列表页显示置顶图标；覆盖 GitHub 上对该 Issue 的 pin 状态 |
 
 说明：
 
+- 文章标题始终取 Issue 标题，摘要始终从正文自动生成（首句），均不可通过 front matter 覆盖。
 - 用 `+++` 而非 `---`，因为 `---` 同时是 Markdown 水平线，放在正文开头会产生歧义；正文中间的 `---` 不受影响。
 - **不支持 `labels`**：标签始终以 GitHub Issue 标签为准，搜索页与标签颜色依赖它；未加标签的文章会归入 `default` 标签发布。
-- 字段拼错或 TOML 语法错误会**直接让构建失败**并报出 Issue 编号，不会静默忽略。
-- `head` / `style` / `script` 会原样注入页面，仅在完全信任 Issue 作者时使用。
+- 字段拼错（包括已废弃的 `title`/`description`/`head`/`style`/`script`）或 TOML 语法错误会**直接让构建失败**并报出 Issue 编号，不会静默忽略。
+- GitHub 网页编辑保存的正文是 CRLF 换行，front matter 解析已兼容。

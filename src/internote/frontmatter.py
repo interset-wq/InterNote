@@ -30,14 +30,10 @@ DELIMITER = "+++"
 #: labels are authoritative because the tag pages and label colours are
 #: derived from them (an issue with no label is published as ``default``).
 #: ``slug`` never changes the canonical post/<id>.html URL; it only mints
-#: a root-level alias page that redirects there.
-FIELDS = frozenset(
-    {"title", "description", "date", "head", "style", "script", "draft",
-     "comments", "pinned", "slug"}
-)
-
-#: Keys whose value is injected into the page as raw HTML.
-HTML_FIELDS = ("head", "style", "script")
+#: a root-level alias page that redirects there. The title is always the
+#: issue title and the description is always derived from the body, so
+#: neither can be overridden here.
+FIELDS = frozenset({"date", "draft", "comments", "pinned", "slug"})
 
 
 class FrontMatterError(ValueError):
@@ -45,8 +41,14 @@ class FrontMatterError(ValueError):
 
 
 def has_front_matter(text: str) -> bool:
-    """True when *text* opens with a delimiter line."""
-    return text.startswith(DELIMITER + "\n") or text.rstrip("\n") == DELIMITER
+    """True when *text* opens with a delimiter line.
+
+    GitHub stores issue bodies with CRLF line endings, so the delimiter
+    may be followed by ``\\r`` before the ``\\n``; both are accepted.
+    """
+    return text.startswith((DELIMITER + "\n", DELIMITER + "\r\n")) or (
+        text.rstrip("\r\n") == DELIMITER
+    )
 
 
 def split(text: str) -> tuple[dict, str]:
@@ -67,7 +69,9 @@ def split(text: str) -> tuple[dict, str]:
         if lines[index].strip() == DELIMITER:
             end = index
             break
-        block.append(lines[index])
+        # CRLF bodies leave a stray \r on every line; tomllib rejects a
+        # basic string followed by a lone carriage return.
+        block.append(lines[index].rstrip("\r"))
 
     if end is None:
         # A body consisting of nothing but the delimiter is not front
@@ -100,13 +104,12 @@ def split(text: str) -> tuple[dict, str]:
 
 
 def _check_types(meta: dict) -> None:
-    for key in ("title", "description", "slug"):
-        if key in meta and not isinstance(meta[key], str):
-            raise FrontMatterError(
-                "front matter {!r} must be a string, got {}".format(
-                    key, type(meta[key]).__name__
-                )
+    if "slug" in meta and not isinstance(meta["slug"], str):
+        raise FrontMatterError(
+            "front matter 'slug' must be a string, got {}".format(
+                type(meta["slug"]).__name__
             )
+        )
     if "draft" in meta and not isinstance(meta["draft"], bool):
         raise FrontMatterError(
             "front matter 'draft' must be a boolean, got {}".format(
@@ -117,13 +120,6 @@ def _check_types(meta: dict) -> None:
         if key in meta and not isinstance(meta[key], bool):
             raise FrontMatterError(
                 "front matter {!r} must be a boolean, got {}".format(
-                    key, type(meta[key]).__name__
-                )
-            )
-    for key in HTML_FIELDS:
-        if key in meta and not isinstance(meta[key], str):
-            raise FrontMatterError(
-                "front matter {!r} must be a string, got {}".format(
                     key, type(meta[key]).__name__
                 )
             )

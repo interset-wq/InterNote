@@ -370,24 +370,22 @@ class Generator:
             "number": issue.number,
             "html_dir": str(html_dir),
             "labels": labels,
-            "post_title": meta.get("title") or issue.title,
+            "post_title": issue.title,
             "post_url": post_url,
             "comment_num": issue.get_comments().totalCount,
             "word_count": len(body),
             "top": 0,
             # Default is on: a page opts out with `comments = false`.
             "comments": not meta.get("comments") is False,
-            "style": self.ctx["style"] + meta.get("style", ""),
-            "script": self.ctx["script"] + meta.get("script", ""),
-            "head": self.ctx["head"] + meta.get("head", ""),
+            "style": self.ctx["style"],
+            "script": self.ctx["script"],
+            "head": self.ctx["head"],
         }
         if alias_dir is not None:
             entry["slug"] = file_name
             entry["alias_dir"] = str(alias_dir)
 
-        if meta.get("description"):
-            entry["description"] = meta["description"]
-        elif body:
+        if body:
             period = "。" if self.ctx["language"] == "CN" else "."
             entry["description"] = (
                 body.split(period)[0].replace('"', "'") + period

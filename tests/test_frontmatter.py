@@ -23,46 +23,55 @@ class TestSplit:
     def test_parses_every_supported_field(self):
         text = (
             "+++\n"
-            'title = "Custom"\n'
-            'description = "Custom summary"\n'
             "date = 2026-01-01T00:00:00+00:00\n"
             'slug = "hello"\n'
-            'head = "<meta x>"\n'
-            'style = ".a{}"\n'
-            'script = "var a=1;"\n'
             "draft = false\n"
+            "comments = true\n"
+            "pinned = true\n"
             "+++\n"
             "body\n"
         )
         meta, body = split(text)
-        assert meta["title"] == "Custom"
-        assert meta["description"] == "Custom summary"
         assert meta["slug"] == "hello"
         assert meta["draft"] is False
+        assert meta["comments"] is True
+        assert meta["pinned"] is True
+        assert meta["date"].year == 2026
         assert body == "body\n"
 
+    def test_github_crlf_bodies_are_parsed(self):
+        # GitHub stores issue bodies with CRLF endings; the block must
+        # still be detected and the TOML must survive the stray \r.
+        text = (
+            "+++\r\n"
+            'slug = "hello"\r\n'
+            "date = 2025-07-31T10:18:38+08:00\r\n"
+            "+++\r\n"
+            "\r\n"
+            "body\r\n"
+        )
+        meta, body = split(text)
+        assert meta["slug"] == "hello"
+        assert meta["date"].year == 2025
+        assert body.startswith("\r\nbody")
+
     def test_delimiters_are_not_left_in_the_body(self):
-        _, body = split("+++\ntitle = 'x'\n+++\nreal content\n")
+        _, body = split("+++\nslug = 'x'\n+++\nreal content\n")
         assert body == "real content\n"
         assert "+++" not in body
 
     def test_body_is_stripped_before_the_markdown_renderer(self):
         # GitHub would turn a leading --- into an <hr>; that is why the
         # split has to happen first.
-        _, body = split("+++\ntitle = 'x'\n+++\n# Heading\n")
+        _, body = split("+++\nslug = 'x'\n+++\n# Heading\n")
         assert not body.lstrip().startswith("+++")
 
     def test_is_idempotent(self):
-        once = split("+++\ntitle = 'x'\n+++\nbody\n")[1]
+        once = split("+++\nslug = 'x'\n+++\nbody\n")[1]
         assert split(once) == ({}, once)
 
     def test_empty_block_is_allowed(self):
         assert split("+++\n+++\nbody\n") == ({}, "body\n")
-
-    def test_multiline_value(self):
-        text = '+++\nstyle = """\n.a { color: red; }\n"""\n+++\nbody\n'
-        meta, _ = split(text)
-        assert "color: red" in meta["style"]
 
     def test_delimiter_only_body(self):
         assert split("+++") == ({}, "")
@@ -71,11 +80,11 @@ class TestSplit:
 class TestRejections:
     def test_unterminated_block_raises(self):
         with pytest.raises(FrontMatterError, match="never closed"):
-            split("+++\ntitle = 'x'\nbody without closing\n")
+            split("+++\nslug = 'x'\nbody without closing\n")
 
     def test_invalid_toml_raises(self):
         with pytest.raises(FrontMatterError, match="invalid TOML"):
-            split("+++\ntitle = \n+++\nbody\n")
+            split("+++\nslug = \n+++\nbody\n")
 
     def test_unknown_key_raises(self):
         with pytest.raises(FrontMatterError, match="unknown front matter key"):
@@ -85,14 +94,16 @@ class TestRejections:
         with pytest.raises(FrontMatterError, match="labels"):
             split('+++\nlabels = ["a"]\n+++\nbody\n')
 
+    def test_removed_title_key_is_rejected(self):
+        # title/description/head/style/script were removed from the schema;
+        # stale bodies using them must fail loudly instead of being ignored.
+        with pytest.raises(FrontMatterError, match="unknown front matter key"):
+            split('+++\ntitle = "Custom"\n+++\nbody\n')
+
     def test_unknown_key_message_lists_allowed_keys(self):
         with pytest.raises(FrontMatterError) as info:
             split("+++\nbogus = 1\n+++\nbody\n")
-        assert "title" in str(info.value)
-
-    def test_non_string_title_raises(self):
-        with pytest.raises(FrontMatterError, match="must be a string"):
-            split("+++\ntitle = 42\n+++\nbody\n")
+        assert "slug" in str(info.value)
 
     def test_non_string_slug_raises(self):
         with pytest.raises(FrontMatterError, match="must be a string"):
@@ -101,6 +112,10 @@ class TestRejections:
     def test_non_boolean_draft_raises(self):
         with pytest.raises(FrontMatterError, match="must be a boolean"):
             split('+++\ndraft = "yes"\n+++\nbody\n')
+
+    def test_non_boolean_pinned_raises(self):
+        with pytest.raises(FrontMatterError, match="must be a boolean"):
+            split('+++\npinned = "yes"\n+++\nbody\n')
 
     def test_bad_date_type_raises(self):
         # date = 2026-01-01 is a TOML local date and is accepted; an array
@@ -118,8 +133,12 @@ class TestHasFrontMatter:
         assert has_front_matter("+++\n")
         assert has_front_matter("+++")
 
+    def test_detects_crlf_delimiter(self):
+        assert has_front_matter("+++\r\nslug = 'x'\r\n+++\r\n")
+        assert has_front_matter("+++\r\n")
+
     def testignores_a_delimiter_that_is_not_first(self):
-        assert not has_front_matter("body\n+++\ntitle = 'x'\n+++\n")
+        assert not has_front_matter("body\n+++\nslug = 'x'\n+++\n")
         assert not has_front_matter("text\n+++\n")
 
 

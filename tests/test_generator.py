@@ -7,6 +7,7 @@ import pytest
 
 from internote import fixtures
 from internote.config import load_config
+from internote.frontmatter import FrontMatterError
 from internote.generator import Generator
 
 CONFIG = """
@@ -153,21 +154,25 @@ class TestEntryPlacement:
 
 
 class TestFrontMatterOverrides:
-    def test_title_and_date_overridden(self, tmp_path):
+    def test_date_overridden_title_always_issue_title(self, tmp_path):
         build(
             tmp_path,
-            [issue(body='+++\ntitle = "Custom"\ndate = 2021-03-04T00:00:00+00:00\n+++\nBody.')],
+            [issue(title="Issue title", body="+++\ndate = 2021-03-04T00:00:00+00:00\n+++\nBody.")],
         )
         entry = state_of(tmp_path)["post_list"]["P1"]
-        assert entry["post_title"] == "Custom"
+        assert entry["post_title"] == "Issue title"
         assert entry["created_date"] == "2021-03-04"
 
     def test_date_falls_back_to_issue_created_at(self, tmp_path):
-        build(tmp_path, [issue(body="+++\ntitle = 'x'\n+++\nBody.")])
+        build(tmp_path, [issue(body="Body.")])
         assert state_of(tmp_path)["post_list"]["P1"]["created_date"] == "2026-01-02"
 
+    def test_removed_title_key_is_a_hard_error(self, tmp_path):
+        with pytest.raises(FrontMatterError, match="unknown front matter key"):
+            build(tmp_path, [issue(body='+++\ntitle = "Custom"\n+++\nBody.')])
+
     def test_delimiters_are_stripped_from_sources(self, tmp_path):
-        build(tmp_path, [issue(body='+++\ntitle = "x"\n+++\nBody.')])
+        build(tmp_path, [issue(body='+++\nslug = "x"\n+++\nBody.')])
         written = (tmp_path / "sources" / "1.md").read_text(encoding="utf-8")
         assert not written.startswith("+++")
 
@@ -273,19 +278,17 @@ class TestRenderCache:
 
     def test_front_matter_change_does_not_re_render(self, tmp_path):
         # The key is a hash of the *stripped* body, and rendering only ever
-        # sees the prose - head/style/script are applied from the entry
-        # afterwards. So editing front matter costs no API call.
+        # sees the prose - front matter never reaches the renderer. So
+        # editing front matter costs no API call.
         plain = [issue(number=1, body="Same prose.")]
         self._counting_build(tmp_path, plain)[0].run_all()
 
-        styled = [issue(number=1, body='+++\nstyle = ".x{}"\n+++\nSame prose.')]
-        gen, calls = self._counting_build(tmp_path, styled)
+        pinned = [issue(number=1, body="+++\npinned = true\n+++\nSame prose.")]
+        gen, calls = self._counting_build(tmp_path, pinned)
         gen.run_all()
         assert calls == []
-        # and the injection still applied
-        assert ".x{}" in (tmp_path / "dist" / "post" / "1.html").read_text(
-            encoding="utf-8"
-        )
+        # and the flag still applied
+        assert state_of(tmp_path)["post_list"]["P1"]["top"] == 1
 
     def test_cache_is_pruned_to_entries_used_this_run(self, tmp_path):
         self._counting_build(
