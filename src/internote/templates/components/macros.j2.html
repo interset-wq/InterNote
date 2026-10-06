@@ -47,7 +47,7 @@
 {# Site branding block for pages that lead with the site identity. #}
 {% macro branding() -%}
 <div class="in-site-branding">
-  <img src="{{ site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
+  <img src="{{ site.avatar_file or site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
   <a class="in-site-title" href="{{ site.home_url }}">{{ site.title }}</a>
 </div>
 {%- endmacro %}
@@ -63,6 +63,6 @@
 <meta property="og:description" content="{{ description or site.sub_title or site.title }}">
 <meta property="og:type" content="{{ type }}">
 <meta property="og:url" content="{{ url or site.home_url }}">
-<meta property="og:image" content="{{ site.avatar_url }}">
+<meta property="og:image" content="{{ site.avatar_file or site.avatar_url }}">
 <title>{{ title or site.title }}</title>
 {%- endmacro %}

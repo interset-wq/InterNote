@@ -479,12 +479,20 @@ class TestFavicon:
         with patch("internote.generator.urllib.request.urlopen", fake_urlopen):
             gen.run_all()
 
-        assert downloads == ["https://example.test/avatar?size=64"]
+        assert downloads == [
+            "https://example.test/avatar?size=64",
+            "https://example.test/avatar?size=200",
+        ]
         assert (tmp_path / "dist" / "assets" / "favicon.png").read_bytes() == b"png-bytes"
+        assert (tmp_path / "dist" / "assets" / "avatar.png").read_bytes() == b"png-bytes"
         page = (tmp_path / "dist" / "index.html").read_text(encoding="utf-8")
         assert 'href="https://example.com/assets/favicon.png"' in page
-        # the source URL is remembered for the incremental cache
-        assert state_of(tmp_path)["favicon_src"].endswith("?size=64")
+        assert 'src="https://example.com/assets/avatar.png"' in page
+        assert '<meta property="og:image" content="https://example.com/assets/avatar.png">' in page
+        # the source URLs are remembered for the incremental cache
+        state_sources = state_of(tmp_path)["favicon_src"]
+        assert state_sources["favicon.png"].endswith("?size=64")
+        assert state_sources["avatar.png"].endswith("?size=200")
 
     def test_failed_download_degrades_to_no_favicon(self, tmp_path):
         repo, _ = make_repo(tmp_path, [issue()])

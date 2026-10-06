@@ -117,9 +117,9 @@ class Generator:
         # from scratch but can still reuse the HTML.
         self.render_cache: dict[str, str] = {}
         self.render_cache_used: set[str] = set()
-        # favicon state: the source URL the cached dist/assets/favicon.png
-        # was downloaded from
-        self.favicon_src = ""
+        # favicon/avatar state: source URL each cached dist/assets/*.png
+        # was downloaded from, keyed by file name
+        self.favicon_src: dict[str, str] = {}
         if self.state_path.exists():
             try:
                 cached = json.loads(self.state_path.read_text(encoding="utf-8"))
@@ -127,7 +127,12 @@ class Generator:
                 cached = {}
             if isinstance(cached.get("render_cache"), dict):
                 self.render_cache = cached["render_cache"]
-            self.favicon_src = cached.get("favicon_src", "") or ""
+            raw_sources = cached.get("favicon_src", "")
+            # older builds stored a single string for the favicon only
+            if isinstance(raw_sources, dict):
+                self.favicon_src = raw_sources
+            elif raw_sources:
+                self.favicon_src = {"favicon.png": raw_sources}
 
     # ------------------------------------------------------------------ run
 
@@ -136,51 +141,67 @@ class Generator:
 
         Empty config downloads the blog repo owner's GitHub avatar (the
         default); a URL downloads that image; "none" disables the favicon.
-        The download is keyed on the source URL in internote.json, so an
-        unchanged avatar is not re-fetched on every build. Any failure only
-        warns: a flaky network must not fail the blog build. Fixture mode
-        (a repo without an avatar_url) skips the download entirely but keeps
-        an existing favicon file, so offline previews still show one.
+        The same avatar is also fetched at a larger size as
+        dist/assets/avatar.png for the site header and og:image — one
+        download per size, cached the same way. Downloads are keyed on
+        their source URL in internote.json, so an unchanged avatar is not
+        re-fetched on every build. Any failure only warns: a flaky network
+        must not fail the blog build. Fixture mode (a repo without an
+        avatar_url) skips the download entirely but keeps existing files,
+        so offline previews still show them.
         """
+        sources = {}
         setting = str(self.ctx.get("favicon") or "").strip()
-        if setting.lower() == "none":
-            self.ctx["favicon_file"] = ""
-            return
+        if setting.lower() != "none":
+            if setting:
+                sources["favicon.png"] = setting
+            else:
+                avatar_url = getattr(getattr(self.repo, "owner", None), "avatar_url", "")
+                if avatar_url:
+                    joiner = "&" if "?" in avatar_url else "?"
+                    sources["favicon.png"] = avatar_url + joiner + "size=64"
+                    sources["avatar.png"] = avatar_url + joiner + "size=200"
+
+        cached_sources = dict(self.favicon_src)
+        for name, source in sources.items():
+            path = self.dist_dir / "assets" / name
+            if cached_sources.get(name) == source and path.exists():
+                continue
+            try:
+                request = urllib.request.Request(
+                    source, headers={"User-Agent": "Internote"}
+                )
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    data = response.read()
+                if not data:
+                    raise ValueError("empty response")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
+                cached_sources[name] = source
+                print("create", name, "from", source)
+            except Exception as error:  # noqa: BLE001 - never fail the build
+                print("warning: {} download failed ({}); {}".format(
+                    name, source, error
+                ))
+        self.favicon_src = cached_sources
 
         favicon_path = self.dist_dir / "assets" / "favicon.png"
-        if not setting:
-            avatar_url = getattr(getattr(self.repo, "owner", None), "avatar_url", "")
-            if not avatar_url:
-                # Fixture/offline mode: keep whatever a previous build fetched.
-                self.ctx["favicon_file"] = (
-                    "assets/favicon.png" if favicon_path.exists() else ""
-                )
-                return
-            source = avatar_url + ("&" if "?" in avatar_url else "?") + "size=64"
-        else:
-            source = setting
-
-        if source == self.favicon_src and favicon_path.exists():
-            self.ctx["favicon_file"] = "assets/favicon.png"
-            return
-
-        try:
-            request = urllib.request.Request(source, headers={"User-Agent": "Internote"})
-            with urllib.request.urlopen(request, timeout=30) as response:
-                data = response.read()
-            if not data:
-                raise ValueError("empty response")
-            favicon_path.parent.mkdir(parents=True, exist_ok=True)
-            favicon_path.write_bytes(data)
-            self.favicon_src = source
-            print("create favicon from", source)
-        except Exception as error:  # noqa: BLE001 - never fail the build here
-            print("warning: favicon download failed ({}); {}".format(
-                source, error
-            ))
         self.ctx["favicon_file"] = (
             "assets/favicon.png" if favicon_path.exists() else ""
         )
+        avatar_path = self.dist_dir / "assets" / "avatar.png"
+        if avatar_path.exists():
+            # full URL: the branding macro uses it as-is and og:image
+            # requires an absolute address
+            self.ctx["avatar_file"] = (
+                self.ctx["home_url"] + "/assets/avatar.png"
+            )
+        elif self.ctx.get("avatar_url"):
+            # No local copy (fixture mode, or every download failed): fall
+            # back to the configured hotlink rather than a broken image.
+            self.ctx["avatar_file"] = self.ctx["avatar_url"]
+        else:
+            self.ctx["avatar_file"] = ""
 
     def run_all(self):
         print("====== start create static html ======")
