@@ -213,6 +213,13 @@ a:hover { text-decoration: underline; }
   gap: 12px;
 }
 
+/* Links inside the client-rendered cards: no global anchor styling. */
+.in-post-list a {
+  text-decoration: none;
+  color: inherit;
+  background: none;
+}
+
 .in-post-card {
   margin: 0;
 }
@@ -244,7 +251,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -279,6 +286,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .in-post-card-meta .in-badge {
@@ -289,12 +297,15 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   gap: 4px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .in-post-card-date {
   margin-left: auto;
+  flex-shrink: 0;
   color: var(--in-color-muted);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ===== Pagination ===== */
@@ -302,25 +313,40 @@ a:hover { text-decoration: underline; }
   margin-top: 24px;
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 8px;
 }
 
-.in-pagination a, .in-pagination span {
-  padding: 8px 16px;
+.in-pagination .in-page-btn {
+  padding: 6px 16px;
   border: 1px solid var(--in-color-border);
-  border-radius: var(--in-radius);
-  text-decoration: none;
+  border-radius: 999px;
+  background: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
   color: var(--in-color-accent);
   font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-.in-pagination a:hover {
+.in-pagination .in-page-btn:hover:not(:disabled) {
   background-color: var(--in-color-subtle);
+  border-color: var(--in-color-accent);
 }
 
-.in-pagination .in-disabled {
+.in-pagination .in-page-btn:disabled {
   color: var(--in-color-muted);
+  border-color: var(--in-color-border);
   cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.in-pagination .in-page-status {
+  padding: 0 4px;
+  color: var(--in-color-muted);
+  font-size: 13px;
+  min-width: 48px;
+  text-align: center;
 }
 
 /* ===== Tag Page ===== */
@@ -966,4 +992,6 @@ a:hover { text-decoration: underline; }
 
   /* Rows are already title-over-badges; just let the chips wrap. */
   .in-post-card-meta { flex-wrap: wrap; }
+
+  .in-post-card-link { padding: 12px 14px; }
 }

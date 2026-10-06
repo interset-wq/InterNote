@@ -77,7 +77,11 @@
 
         var title = document.createElement('div');
         title.className = 'in-post-card-title';
-        title.appendChild(icon(item.top ? 'upload' : 'post'));
+        var glyph = icon(item.top ? 'upload' : 'post');
+        if (item.top) {
+          glyph.classList.add('in-post-icon-top');
+        }
+        title.appendChild(glyph);
         var span = document.createElement('span');
         span.textContent = item.title;
         title.appendChild(span);
