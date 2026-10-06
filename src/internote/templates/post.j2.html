@@ -42,6 +42,13 @@
   {% if site.need_comment and post.comments %}
   {% include 'components/comments.j2.html' %}
   {% endif %}
+  {# Floating action buttons (bottom-right). Server-rendered empty shell;
+     plugins/fab.js fills it below 1250px, where the sidebar TOC is gone. #}
+  <div id="in-fab" class="in-fab"
+       data-toc-title="{{ i18n.toc }}"
+       data-top-title="{{ i18n.top }}"
+       data-bottom-title="{{ i18n.Next }}"
+       hidden></div>
 {% endblock %}
 
 {% block script %}
@@ -49,6 +56,7 @@
   <script src="{{ site.home_url }}/plugins/giscus.js"></script>
   {% endif %}
   <script src="{{ site.home_url }}/plugins/toc.js"></script>
+  <script src="{{ site.home_url }}/plugins/fab.js"></script>
   <script src="{{ site.home_url }}/plugins/lightbox.js"></script>
   {% if post.highlight != 0 %}
   <script src="{{ site.home_url }}/plugins/code-copy.js"></script>

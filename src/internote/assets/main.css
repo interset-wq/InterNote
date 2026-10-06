@@ -874,6 +874,84 @@ a:hover { text-decoration: underline; }
   }
 }
 
+/* ===== Floating action buttons (post pages) ===== */
+/* Bottom-right tool stack: TOC overlay toggle + scroll up/down. Only
+   exists below 1250px, where the sidebar TOC collapses to the top of the
+   article and cannot help while reading. */
+.in-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Desktop has the sidebar TOC; no floating stack there. */
+@media (min-width: 1250px) {
+  .in-fab { display: none; }
+}
+
+.in-fab[hidden] { display: none; }
+
+.in-fab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--in-color-border);
+  border-radius: 50%;
+  background-color: var(--in-color-bg);
+  color: var(--in-color-muted);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.in-fab-btn:hover {
+  color: var(--in-color-accent);
+  border-color: var(--in-color-accent);
+}
+
+.in-fab-btn:active {
+  transform: scale(0.95);
+}
+
+/* TOC overlay: the panel #in-toc is moved here by fab.js and floats over
+   the article near the button stack. */
+.in-fab-toc-overlay {
+  position: fixed;
+  right: 16px;
+  bottom: 160px;
+  z-index: 89;
+  max-width: min(320px, calc(100vw - 32px));
+  max-height: 65vh;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--in-color-border);
+  border-radius: var(--in-radius);
+  background-color: var(--in-color-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.in-fab-toc-overlay[hidden] { display: none; }
+
+/* Inside the overlay the panel is no longer the static top-of-article
+   block from the <=1249px rule above. */
+.in-fab-toc-overlay .in-toc {
+  position: static;
+  width: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
 /* ===== Lightbox ===== */
 .in-lightbox {
   position: fixed;

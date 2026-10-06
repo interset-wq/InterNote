@@ -526,8 +526,9 @@ class Generator:
 
         # Every page header links to the tag cloud, so `tag` is never optional,
         # and the nav search button needs its magnifier glyph since search.js
-        # fetches the local index on every page.
-        keys.extend(["search", "tag"])
+        # fetches the local index on every page. FAB buttons live on post
+        # pages only (toc + scroll up/down).
+        keys.extend(["search", "tag", "bars", "arrow-up", "arrow-down"])
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {

@@ -11,7 +11,7 @@
 
 - 文章 URL 恒为 `post/<issue编号>.html`；front matter `slug` 生成根目录别名页（如 `slug = "hello"` → `hello.html`），重定向到规范地址，便于分享短链
 - 评论：[giscus](https://giscus.app)（按 pathname 映射，`<template>` 懒加载，未配置时不渲染）
-- 文章目录（`toc.js`，自带滚动高亮）、RSS 订阅（`rss.xml`）
+- 文章目录（`toc.js`，自带滚动高亮）、右下角悬浮工具栏（`fab.js`，移动端目录浮层 + 回到顶部/底部）、RSS 订阅（`rss.xml`）
 - 站内搜索：本地 `search-index.json`（按标题/标签/日期匹配，点击导航栏搜索图标弹出）
 - TOML 配置，pydantic 严格校验（未知键报错），`config.sample.toml` 为完整示例
 - 每次构建更新仓库 `README.md` 的文章数 / 评论数 / 字数 / 时间统计（定时任务除外）
