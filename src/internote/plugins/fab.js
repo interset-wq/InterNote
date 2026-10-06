@@ -11,6 +11,11 @@
     if (!fab) {
       return;
     }
+    // Desktop keeps the sidebar TOC untouched: no floating stack there
+    // (CSS hides .in-fab anyway) and #in-toc must stay in the article.
+    if (window.matchMedia('(min-width: 1250px)').matches) {
+      return;
+    }
     var tocRoot = document.getElementById('in-toc');
     // No post body (or no headings -> toc.js removed #in-toc): keep only
     // the scroll buttons; without #in-toc there is nothing to toggle.
