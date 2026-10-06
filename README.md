@@ -9,7 +9,7 @@
 
 ## 特性
 
-- 文章 URL 默认使用 Issue 编号：`post/42.html`；front matter `url` 可自定义（`url = "hello"` → `post/hello.html`），保留值 `about` 生成根目录单页 `about.html` 并进入导航栏
+- 文章 URL 恒为 `post/<issue编号>.html`；front matter `slug` 生成根目录别名页（如 `slug = "hello"` → `hello.html`），重定向到规范地址，便于分享短链
 - 评论：[giscus](https://giscus.app)（按 pathname 映射，`<template>` 懒加载，未配置时不渲染）
 - 文章目录（`toc.js`，自带滚动高亮）、RSS 订阅（`rss.xml`）
 - 站内搜索：本地 `search-index.json`（按标题/标签/日期匹配，点击导航栏搜索图标弹出）
@@ -93,7 +93,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 title = "自定义标题"
 description = "自定义摘要，用于 <meta description> 与分享卡片"
 date = 2026-01-01T10:00:00+08:00
-url = "hello-world"
+slug = "hello-world"
 head = '<meta name="x" content="y">'
 style = ".my-post { color: red; }"
 script = "console.log('hi');"
@@ -109,7 +109,7 @@ pinned = true
 | `title` | 覆盖 Issue 标题（列表页、文章页 `<title>`、RSS 均生效） |
 | `description` | 覆盖自动摘要；缺省时取正文首个句号前的内容 |
 | `date` | 覆盖文章时间；支持 TOML 日期时间、Unix 秒、ISO 8601 字符串 |
-| `url` | 自定义文章 URL：`url = "hello"` 生成 `post/hello.html`，替代默认的 Issue 编号；保留值 `about` 生成根目录单页 `about.html` 并进入导航栏 |
+| `slug` | URL 别名：`slug = "hello"` 生成根目录 `hello.html`，重定向到规范页 `post/<id>.html`（规范 URL 始终是编号地址，别名仅便于分享；`index`/`tag`/`rss` 等保留名不可用） |
 | `head` / `style` / `script` | 单篇注入的 HTML 片段，追加在 `[layout]` 同名配置之后。`style` 会被自动包进 `<style>`，`head` 与 `script` 需自行带标签 |
 | `draft` | `true` 则该文章完全不发布：不生成页面，不进列表、标签页与 RSS |
 | `comments` | `false` 则该文章页不渲染 giscus 评论区（默认 `true`） |

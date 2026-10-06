@@ -29,11 +29,11 @@ DELIMITER = "+++"
 #: Keys a post may set. ``labels`` is deliberately absent: GitHub issue
 #: labels are authoritative because the tag pages and label colours are
 #: derived from them (an issue with no label is published as ``default``).
-#: ``url`` overrides the issue-number URL; ``about`` is a reserved slug
-#: that publishes the post as the root ``about.html`` single page.
+#: ``slug`` never changes the canonical post/<id>.html URL; it only mints
+#: a root-level alias page that redirects there.
 FIELDS = frozenset(
     {"title", "description", "date", "head", "style", "script", "draft",
-     "comments", "pinned", "url"}
+     "comments", "pinned", "slug"}
 )
 
 #: Keys whose value is injected into the page as raw HTML.
@@ -100,7 +100,7 @@ def split(text: str) -> tuple[dict, str]:
 
 
 def _check_types(meta: dict) -> None:
-    for key in ("title", "description", "url"):
+    for key in ("title", "description", "slug"):
         if key in meta and not isinstance(meta[key], str):
             raise FrontMatterError(
                 "front matter {!r} must be a string, got {}".format(

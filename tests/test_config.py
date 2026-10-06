@@ -155,7 +155,6 @@ class TestContext:
             "giscus_category_id",
             "day_theme",
             "night_theme",
-            "single_list",
             "label_color_dict",
         ):
             assert key in ctx, key

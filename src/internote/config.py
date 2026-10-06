@@ -88,7 +88,6 @@ class InternoteConfig(BaseModel):
             "day_theme": "light",
             "night_theme": "dark",
             "post_list": {},
-            "single_list": {},
             "label_color_dict": {},
         }
 

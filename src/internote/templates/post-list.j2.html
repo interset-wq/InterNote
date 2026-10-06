@@ -1,5 +1,5 @@
 {% extends 'base.j2.html' %}
-{% from 'components/macros.j2.html' import branding, head_meta, icon, nav_link, search_button, site_nav with context %}
+{% from 'components/macros.j2.html' import branding, head_meta, nav_link, search_button, site_nav with context %}
 
 {% block head %}
   {{ head_meta(site.title, site.sub_title, 'blog', site.home_url) }}
@@ -12,11 +12,9 @@
   {% call site_nav('Site navigation') %}
     {{ nav_link('tag', site.home_url ~ '/tag.html', i18n.tags) }}
     {{ search_button() }}
-    {% for item in site.single_list.values() %}
-    {# Only the reserved `about` slug lands in single_list, so this loop
-       renders at most the one root single page. #}
-    {{ nav_link('post', site.home_url ~ '/' ~ item.post_url, item.post_title) }}
-    {% endfor %}
+    {% if site.about %}
+    {{ nav_link('post', site.home_url ~ '/' ~ site.about.url, site.about.title) }}
+    {% endif %}
   {% endcall %}
 {% endblock %}
 
@@ -24,48 +22,129 @@
   {% if site.sub_title %}
   <p class="in-site-subtitle">{{ site.sub_title }}</p>
   {% endif %}
-  <ul class="in-post-list">
-    {% for item in posts.values() %}
-    <li class="in-post-card">
-      <a class="in-post-card-link" href="{{ item.url }}">
-        <div class="in-post-card-title">
-          {{ icon('upload' if item.top else 'post', 'in-post-icon-top' if item.top else '') }}
-          <span>{{ item.title }}</span>
-        </div>
-        {% if item.description %}
-        <p class="in-post-card-desc">{{ item.description }}</p>
-        {% endif %}
-        <div class="in-post-card-meta">
-          <span class="in-post-card-labels">
-            {% for label in item.labels %}
-            <span class="in-badge" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}">{{ label }}</span>
-            {% endfor %}
-          </span>
-          {% if item.comment_num > 0 %}
-          <span class="in-badge" style="background-color:{{ site.comment_label_color }}">{{ item.comment_num }}</span>
-          {% endif %}
-          <span class="in-post-card-date">{{ item.created_date }}</span>
-        </div>
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
-  {% if site.prev_url != 'disabled' or site.next_url != 'disabled' %}
-  <nav class="in-pagination" aria-label="Pagination">
-    {% if site.prev_url == 'disabled' %}
-    <span class="in-disabled" aria-disabled="true">{{ i18n.Previous }}</span>
-    {% else %}
-    <a rel="previous" href="{{ site.home_url }}{{ site.prev_url }}" aria-label="Previous Page">{{ i18n.Previous }}</a>
-    {% endif %}
-    {% if site.next_url == 'disabled' %}
-    <span class="in-disabled" aria-disabled="true">{{ i18n.Next }}</span>
-    {% else %}
-    <a rel="next" href="{{ site.home_url }}{{ site.next_url }}" aria-label="Next Page">{{ i18n.Next }}</a>
-    {% endif %}
+  {# The list is client-rendered from search-index.json — the same file the
+     search dialog and the tag page read. Server markup stays an empty shell
+     so a build with zero posts is still valid HTML. #}
+  <ul class="in-post-list" id="post-list" aria-label="Posts"></ul>
+  <nav class="in-pagination" id="pagination" aria-label="Pagination" hidden>
+    <button class="in-page-btn" id="page-prev" type="button" aria-label="Previous Page">{{ i18n.Previous }}</button>
+    <span class="in-page-status" id="page-status"></span>
+    <button class="in-page-btn" id="page-next" type="button" aria-label="Next Page">{{ i18n.Next }}</button>
   </nav>
-  {% endif %}
 {% endblock %}
 
 {% block script %}
   {{ site.index_script }}
+  <script>
+    (function () {
+      'use strict';
+      var PER_PAGE = {{ site.posts_per_page | tojson }};
+      var list = document.getElementById('post-list');
+      var pagination = document.getElementById('pagination');
+      var prevBtn = document.getElementById('page-prev');
+      var nextBtn = document.getElementById('page-next');
+      var status = document.getElementById('page-status');
+      var posts = [];
+
+      function badge(text, color) {
+        var node = document.createElement('span');
+        node.className = 'in-badge';
+        node.style.backgroundColor = color;
+        node.textContent = text;
+        return node;
+      }
+
+      function icon(name) {
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'octicon');
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', window.icons[name]);
+        svg.appendChild(path);
+        return svg;
+      }
+
+      // Same card structure tag.html renders, minus nothing: the index
+      // shows title + label chips + date, no excerpt.
+      function card(item, colors) {
+        var row = document.createElement('li');
+        row.className = 'in-post-card';
+
+        var link = document.createElement('a');
+        link.className = 'in-post-card-link';
+        link.href = item.url;
+
+        var title = document.createElement('div');
+        title.className = 'in-post-card-title';
+        title.appendChild(icon(item.top ? 'upload' : 'post'));
+        var span = document.createElement('span');
+        span.textContent = item.title;
+        title.appendChild(span);
+
+        var meta = document.createElement('div');
+        meta.className = 'in-post-card-meta';
+        var labelsBox = document.createElement('span');
+        labelsBox.className = 'in-post-card-labels';
+        item.labels.forEach(function (name) {
+          labelsBox.appendChild(badge(name, colors[name] || '#6e7781'));
+        });
+        meta.appendChild(labelsBox);
+        var date = document.createElement('span');
+        date.className = 'in-post-card-date';
+        date.textContent = item.date;
+        meta.appendChild(date);
+
+        link.appendChild(title);
+        link.appendChild(meta);
+        row.appendChild(link);
+        return row;
+      }
+
+      function pageFromHash() {
+        var n = parseInt(window.location.hash.replace(/^#p=/, ''), 10);
+        return Number.isInteger(n) && n > 1 ? n : 1;
+      }
+
+      function renderPage(page) {
+        var pages = Math.max(1, Math.ceil(posts.length / PER_PAGE));
+        page = Math.min(Math.max(page, 1), pages);
+        var start = (page - 1) * PER_PAGE;
+        var colors = window.__label_colors || {};
+
+        list.textContent = '';
+        posts.slice(start, start + PER_PAGE).forEach(function (item) {
+          list.appendChild(card(item, colors));
+        });
+
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= pages;
+        status.textContent = pages > 1 ? page + ' / ' + pages : '';
+        pagination.hidden = pages <= 1;
+      }
+
+      function show(page) {
+        // #p=N keeps deep links and back/forward working; page 1 drops the
+        // hash so the canonical URL stays clean.
+        if (page > 1) {
+          window.location.hash = '#p=' + page;
+        } else {
+          history.replaceState(null, '', window.location.pathname);
+        }
+        renderPage(page);
+        window.scrollTo(0, 0);
+      }
+
+      fetch('search-index.json')
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          posts = Array.isArray(data.posts) ? data.posts : [];
+          window.__label_colors = data.label_colors || {};
+          prevBtn.addEventListener('click', function () { show(pageFromHash() - 1); });
+          nextBtn.addEventListener('click', function () { show(pageFromHash() + 1); });
+          window.addEventListener('hashchange', function () { renderPage(pageFromHash()); });
+          renderPage(pageFromHash());
+        });
+    })();
+  </script>
 {% endblock %}

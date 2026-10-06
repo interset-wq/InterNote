@@ -98,13 +98,18 @@ class TestEntryPlacement:
     def test_post_lands_in_post_list(self, tmp_path):
         build(tmp_path, [issue()])
         assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
-        assert state_of(tmp_path)["single_list"] == {}
 
-    def test_about_url_routes_to_single_page(self, tmp_path):
-        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nAbout.')])
-        assert state_of(tmp_path)["post_list"] == {}
-        assert sorted(state_of(tmp_path)["single_list"]) == ["P1"]
-        assert (tmp_path / "dist" / "about.html").exists()
+    def test_slug_about_makes_an_alias_not_a_single_page(self, tmp_path):
+        # The canonical URL is post/<id>.html no matter what; the slug only
+        # mints a redirect alias at the site root.
+        build(tmp_path, [issue(body='+++\nslug = "about"\n+++\nAbout.')])
+        entry = state_of(tmp_path)["post_list"]["P1"]
+        assert entry["post_url"] == "post/1.html"
+        assert entry["slug"] == "about"
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+        alias = (tmp_path / "dist" / "about.html").read_text(encoding="utf-8")
+        assert "post/1.html" in alias
+        assert "noindex" in alias
 
     def test_unlabelled_issue_publishes_as_default(self, tmp_path):
         # Labels are optional: a forgotten label must not silence a post.
@@ -112,33 +117,37 @@ class TestEntryPlacement:
         entry = state_of(tmp_path)["post_list"]["P1"]
         assert entry["labels"] == ["default"]
 
-    def test_url_slug_replaces_the_issue_number(self, tmp_path):
-        build(tmp_path, [issue(body='+++\nurl = "hello"\n+++\nBody.')])
+    def test_slug_alias_redirects_to_the_canonical_page(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nslug = "hello"\n+++\nBody.')])
         entry = state_of(tmp_path)["post_list"]["P1"]
-        assert entry["post_url"] == "post/hello.html"
-        assert (tmp_path / "dist" / "post" / "hello.html").exists()
+        assert entry["post_url"] == "post/1.html"
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+        assert (tmp_path / "dist" / "hello.html").exists()
 
-    def test_about_label_without_url_is_a_normal_post(self, tmp_path):
+    def test_about_label_without_slug_is_a_normal_post(self, tmp_path):
         # Routing is front-matter driven; the label name alone means nothing.
         build(tmp_path, [issue(labels=("about",))])
         assert sorted(state_of(tmp_path)["post_list"]) == ["P1"]
-        assert state_of(tmp_path)["single_list"] == {}
 
-    def test_empty_url_is_rejected(self, tmp_path):
+    def test_empty_slug_is_rejected(self, tmp_path):
         with pytest.raises(Exception, match="must not be empty"):
-            build(tmp_path, [issue(body='+++\nurl = ""\n+++\nBody.')])
+            build(tmp_path, [issue(body='+++\nslug = ""\n+++\nBody.')])
 
-    def test_dot_url_is_rejected(self, tmp_path):
-        with pytest.raises(Exception, match="url"):
-            build(tmp_path, [issue(body='+++\nurl = ".hidden"\n+++\nBody.')])
+    def test_dot_slug_is_rejected(self, tmp_path):
+        with pytest.raises(Exception, match="slug"):
+            build(tmp_path, [issue(body='+++\nslug = ".hidden"\n+++\nBody.')])
 
-    def test_moving_between_lists_cleans_the_old_location(self, tmp_path):
-        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nBody.')])
-        assert (tmp_path / "dist" / "about.html").exists()
-        # the url front matter is removed: the page moves back under post/
+    def test_reserved_slug_is_rejected(self, tmp_path):
+        with pytest.raises(Exception, match="slug"):
+            build(tmp_path, [issue(body='+++\nslug = "tag"\n+++\nBody.')])
+
+    def test_removing_the_slug_cleans_the_alias(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nslug = "hello"\n+++\nBody.')])
+        assert (tmp_path / "dist" / "hello.html").exists()
+        # the slug front matter is removed: the alias goes away, the
+        # canonical page stays
         build(tmp_path, [issue()], incremental="1")
-        assert state_of(tmp_path)["single_list"] == {}
-        assert not (tmp_path / "dist" / "about.html").exists()
+        assert not (tmp_path / "dist" / "hello.html").exists()
         assert (tmp_path / "dist" / "post" / "1.html").exists()
 
 
@@ -198,16 +207,17 @@ class TestWithdrawal:
         assert not (tmp_path / "dist" / "post" / "1.html").exists()
         assert state_of(tmp_path)["post_list"] == {}
 
-    def test_single_page_withdrawal_also_cleans_up(self, tmp_path):
-        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nBody.')])
+    def test_alias_withdrawal_also_cleans_up(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nslug = "about"\n+++\nBody.')])
         assert (tmp_path / "dist" / "about.html").exists()
         build(
             tmp_path,
-            [issue(body='+++\nurl = "about"\ndraft = true\n+++\nBody.')],
+            [issue(body='+++\nslug = "about"\ndraft = true\n+++\nBody.')],
             incremental="1",
         )
         assert not (tmp_path / "dist" / "about.html").exists()
-        assert state_of(tmp_path)["single_list"] == {}
+        assert not (tmp_path / "dist" / "post" / "1.html").exists()
+        assert state_of(tmp_path)["post_list"] == {}
 
     def test_republishing_restores_the_post(self, tmp_path):
         build(tmp_path, [issue()])
@@ -316,28 +326,24 @@ class TestPullRequestsAreNotPosts:
 
     def test_pull_request_is_not_in_the_listing(self, tmp_path):
         build(tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)])
-        assert "PR" not in index_of(tmp_path)
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
+        )
+        assert all(record["title"] != "PR" for record in index["posts"])
 
     def test_pull_request_is_not_in_the_feed(self, tmp_path):
         build(tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)])
         rss = (tmp_path / "dist" / "rss.xml").read_text(encoding="utf-8")
         assert "PR" not in rss
 
-    def test_pull_request_is_not_in_the_search_index(self, tmp_path):
-        build(tmp_path, [issue(number=1), issue(number=2, title="PR", pull_request=True)])
-        index = json.loads(
-            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
-        )
-        assert all(record["title"] != "PR" for record in index["posts"])
-
     def test_a_pull_request_with_the_about_slug_is_still_skipped(self, tmp_path):
         """Routing happens after the PR check, so a PR carrying
-        `url = "about"` could otherwise have claimed about.html."""
+        `slug = "about"` could otherwise have claimed the alias."""
         build(
             tmp_path,
-            [issue(number=1, pull_request=True, body='+++\nurl = "about"\n+++\nBody.')],
+            [issue(number=1, pull_request=True, body='+++\nslug = "about"\n+++\nBody.')],
         )
-        assert state_of(tmp_path)["single_list"] == {}
+        assert state_of(tmp_path)["post_list"] == {}
         assert not (tmp_path / "dist" / "about.html").exists()
 
     def test_issue_without_pull_request_attribute_still_builds(self, tmp_path):
@@ -362,33 +368,33 @@ class TestClosedIssuesUnpublish:
         assert "post/2.html" not in (
             tmp_path / "dist" / "search-index.json"
         ).read_text(encoding="utf-8")
-        assert index_of(tmp_path).count('post/2.html') == 0
 
-    def test_closing_a_single_page_removes_it(self, tmp_path):
-        build(tmp_path, [issue(body='+++\nurl = "about"\n+++\nBody.')])
+    def test_closing_a_slugged_post_removes_alias_and_page(self, tmp_path):
+        build(tmp_path, [issue(body='+++\nslug = "about"\n+++\nBody.')])
         assert (tmp_path / "dist" / "about.html").exists()
 
         build(
             tmp_path,
-            [issue(body='+++\nurl = "about"\n+++\nBody.', state="closed")],
+            [issue(body='+++\nslug = "about"\n+++\nBody.', state="closed")],
             incremental="1",
         )
         assert not (tmp_path / "dist" / "about.html").exists()
-        assert state_of(tmp_path)["single_list"] == {}
+        assert not (tmp_path / "dist" / "post" / "1.html").exists()
+        assert state_of(tmp_path)["post_list"] == {}
 
     def test_closing_drops_it_from_the_search_index_too(self, tmp_path):
-        about = '+++\nurl = "about"\n+++\nBody.'
-        build(tmp_path, [issue(number=1), issue(number=2, body=about)])
+        slugged = '+++\nslug = "hello"\n+++\nBody.'
+        build(tmp_path, [issue(number=1), issue(number=2, body=slugged)])
 
         build(
             tmp_path,
-            [issue(number=1), issue(number=2, body=about, state="closed")],
+            [issue(number=1), issue(number=2, body=slugged, state="closed")],
             incremental="2",
         )
         index = json.loads(
             (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )
-        assert all(record["url"] != "about.html" for record in index["posts"])
+        assert all(record["url"] != "post/2.html" for record in index["posts"])
 
 
 class TestIncrementalKeepsOthers:
@@ -401,24 +407,26 @@ class TestIncrementalKeepsOthers:
 
 
 class TestSearchIndexFile:
-    """dist/search-index.json feeds the client-side search plugin."""
+    """dist/search-index.json feeds the search dialog, the index list and
+    the tag page."""
 
-    def test_full_build_writes_index_with_both_lists(self, tmp_path):
+    def test_full_build_writes_a_sorted_index(self, tmp_path):
         build(
             tmp_path,
             [
                 issue(number=1, labels=("a", "b")),
-                issue(number=4, labels=("about",), body='+++\nurl = "about"\n+++\nAbout.'),
+                issue(number=2, body="+++\npinned = true\n+++\nPinned."),
             ],
         )
         index = json.loads(
             (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
         )
-        by_url = {record["url"]: record for record in index["posts"]}
-        assert set(by_url) == {"post/1.html", "about.html"}
-        assert by_url["post/1.html"]["labels"] == ["a", "b"]
-        assert by_url["post/1.html"]["date"] == "2026-01-02"
-        assert by_url["post/1.html"]["date_color"]
+        records = index["posts"]
+        assert [r["url"] for r in records] == ["post/2.html", "post/1.html"]
+        assert records[0]["top"] == 1
+        assert records[1]["labels"] == ["a", "b"]
+        assert records[1]["date"] == "2026-01-02"
+        assert records[1]["date_color"]
         assert isinstance(index["label_colors"], dict)
 
     def test_incremental_rebuild_keeps_index_current(self, tmp_path):

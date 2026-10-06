@@ -39,18 +39,20 @@ ALERT_STYLES = {
     "caution": "danger",
 }
 
-def _list_item(entry: dict) -> dict:
-    """Convert a stored entry to the template's list-item shape."""
-    return {
-        "title": entry["post_title"],
-        "url": entry["post_url"],
-        "description": entry["description"],
-        "labels": entry["labels"],
-        "created_date": entry["created_date"],
-        "date_label_color": entry["date_label_color"],
-        "comment_num": entry.get("comment_num", 0),
-        "top": entry.get("top", 0),
-    }
+#: Root file names the build itself owns. A slug colliding with one of
+#: these would shadow generator output, so it is rejected up front.
+#: ``about`` is deliberately allowed — it is the conventional alias.
+RESERVED_SLUGS = {
+    "index",
+    "post",
+    "tag",
+    "rss",
+    "search-index",
+    "assets",
+    "plugins",
+    "sources",
+    "internote",
+}
 
 
 class Generator:
@@ -128,8 +130,6 @@ class Generator:
             self._add_entry(issue)
         for entry in list(self.ctx["post_list"].values()):
             self._create_post(entry)
-        for entry in list(self.ctx["single_list"].values()):
-            self._create_post(entry)
         self._create_lists()
         self._create_feed()
         self._finalize()
@@ -196,8 +196,13 @@ class Generator:
 
     def _load_state(self):
         data = json.loads(self.state_path.read_text(encoding="utf-8"))
-        self.ctx["post_list"] = data.get("post_list", {})
-        self.ctx["single_list"] = data.get("single_list", {})
+        post_list = data.get("post_list", {})
+        # Pre-alias state kept single pages in a separate list; fold them in
+        # so the stale-path cleanup in _add_entry migrates them to the
+        # canonical post/<id>.html URL on the next incremental build.
+        for key, entry in data.get("single_list", {}).items():
+            post_list.setdefault(key, entry)
+        self.ctx["post_list"] = post_list
 
     def _drop_entry(self, number: int, reason: str) -> bool:
         """Withdraw a post: remove its page and its entry from the state.
@@ -208,17 +213,18 @@ class Generator:
         that no longer exists.
         """
         key = f"P{number}"
-        for list_name in ("post_list", "single_list"):
-            entry = self.ctx[list_name].get(key)
-            if entry is None:
+        entry = self.ctx["post_list"].get(key)
+        if entry is None:
+            return False
+        for path in (entry["html_dir"], entry.get("alias_dir")):
+            if not path:
                 continue
-            page = Path(entry["html_dir"])
+            page = Path(path)
             if page.exists():
                 page.unlink()
-            del self.ctx[list_name][key]
-            print("withdraw #{} ({}): {}".format(number, reason, entry["html_dir"]))
-            return True
-        return False
+        del self.ctx["post_list"][key]
+        print("withdraw #{} ({}): {}".format(number, reason, entry["html_dir"]))
+        return True
 
     # -------------------------------------------------------------- entries
 
@@ -250,33 +256,30 @@ class Generator:
         # `default`, so forgetting a label never silences a post.
         labels = [label.name for label in issue.labels] or ["default"]
 
-        # `url` front matter replaces the issue number in the URL. `about`
-        # is the reserved slug for the root single page; anything else is a
-        # post filename under post/.
-        slug = str(meta.get("url") or "").strip()
-        if "url" in meta and not slug:
+        # The canonical URL is always post/<id>.html. `slug` never changes
+        # it; the slug only mints a root-level alias page that redirects
+        # there, so renames never break inbound links to the canonical URL.
+        slug = str(meta.get("slug") or "").strip()
+        if "slug" in meta and not slug:
             raise FrontMatterError(
-                "issue #{}: front matter 'url' must not be empty".format(
+                "issue #{}: front matter 'slug' must not be empty".format(
                     issue.number
                 )
             )
-        if slug == "about":
-            list_name = "single_list"
-            html_dir = self.dist_dir / "about.html"
-        elif slug:
-            if slug.startswith("."):
+        alias_dir = None
+        if slug:
+            if slug.startswith(".") or slug in RESERVED_SLUGS or re.fullmatch(
+                r"page\d+", slug
+            ):
                 raise FrontMatterError(
-                    "issue #{}: invalid front matter 'url': {!r}".format(
-                        issue.number, meta["url"]
+                    "issue #{}: invalid front matter 'slug': {!r}".format(
+                        issue.number, meta["slug"]
                     )
                 )
             file_name = re.sub(r'[<>:/\\|?*\"]|[\0-\31]', "-", slug)
-            list_name = "post_list"
-            html_dir = self.post_dir / f"{file_name}.html"
-        else:
-            list_name = "post_list"
-            html_dir = self.post_dir / f"{issue.number}.html"
+            alias_dir = self.dist_dir / f"{file_name}.html"
 
+        html_dir = self.post_dir / f"{issue.number}.html"
         post_url = urllib.parse.quote(
             html_dir.relative_to(self.dist_dir).as_posix()
         )
@@ -284,7 +287,6 @@ class Generator:
         entry = {
             "number": issue.number,
             "html_dir": str(html_dir),
-            "single": list_name == "single_list",
             "labels": labels,
             "post_title": meta.get("title") or issue.title,
             "post_url": post_url,
@@ -297,6 +299,9 @@ class Generator:
             "script": self.ctx["script"] + meta.get("script", ""),
             "head": self.ctx["head"] + meta.get("head", ""),
         }
+        if alias_dir is not None:
+            entry["slug"] = file_name
+            entry["alias_dir"] = str(alias_dir)
 
         if meta.get("description"):
             entry["description"] = meta["description"]
@@ -346,18 +351,20 @@ class Generator:
         (self.sources_dir / f"{issue.number}.md").write_text(body, encoding="utf-8")
 
         key = f"P{issue.number}"
-        # An issue lives in exactly one list. If routing moved it (a url was
-        # added or removed), drop the stale entry and its page so an
-        # incremental build cannot serve both locations.
-        other = "single_list" if list_name == "post_list" else "post_list"
-        stale = self.ctx[other].pop(key, None)
+        # The canonical file name is stable, but the alias is not. When a
+        # slug is added, renamed or removed, drop the stale files so an
+        # incremental build cannot serve leftovers (the canonical page is
+        # re-rendered right after by the caller).
+        stale = self.ctx["post_list"].get(key)
         if stale is not None:
-            page = Path(stale["html_dir"])
-            if page.exists():
-                page.unlink()
-            print("moved #{}: {} -> {}".format(issue.number, stale["html_dir"], entry["html_dir"]))
+            for path in (stale["html_dir"], stale.get("alias_dir")):
+                if not path:
+                    continue
+                page = Path(path)
+                if page.exists():
+                    page.unlink()
 
-        self.ctx[list_name][key] = entry
+        self.ctx["post_list"][key] = entry
         return entry
 
     def _render_body(self, body: str) -> str:
@@ -425,9 +432,6 @@ class Generator:
             "highlight": 0,
         }
 
-        if entry.get("single"):
-            page["post"]["footer_text"] = ""
-
         if '<pre class="notranslate">' in post_body:
             if '<div class="highlight' in post_body:
                 page["post"]["highlight"] = 1
@@ -457,81 +461,61 @@ class Generator:
             % (entry["post_title"], entry["html_dir"])
         )
 
-    def _create_lists(self):
-        posts = dict(
-            sorted(
-                self.ctx["post_list"].items(),
-                key=lambda item: (item[1]["top"], item[1]["created_at"]),
-                reverse=True,
+        alias_dir = entry.get("alias_dir")
+        if alias_dir:
+            # `slug` mints a root-level alias that redirects to the canonical
+            # post/<id>.html page: meta refresh covers no-JS crawlers,
+            # location.replace covers everything else, canonical+noindex
+            # keep the alias itself out of search results.
+            target = self.ctx["home_url"] + "/" + entry["post_url"]
+            alias_context = {
+                "site": self.ctx,
+                "post": {"title": entry["post_title"], "url": target},
+            }
+            self.renderer.render_to("alias", alias_context, Path(alias_dir))
+            print(
+                "create alias %s -> %s"
+                % (Path(alias_dir).name, entry["post_url"])
             )
-        )
+
+    def _create_lists(self):
         nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post"]
         nav_icon = {key: ICONS.get(key) for key in nav_keys}
         # tag.html does not link to itself, but its empty state and rows are
-        # JS-built, so `tag` and `post` must both reach window.icons.
+        # JS-built, so `tag` and `post` must both reach window.icons. The
+        # index is JS-built too, so it needs `post`/`upload` for the cards.
         tag_icon = {
             key: ICONS.get(key)
             for key in ["sun", "moon", "sync", "home", "search", "tag", "post", "rss", "github"]
         }
 
-        page_size = self.ctx["posts_per_page"]
-        post_num = len(posts)
-        page_flag = 0
-        while True:
-            top_num = page_flag * page_size
-            print("topNum=%d postNum=%d" % (top_num, post_num))
-            if post_num <= page_size:
-                if page_flag == 0:
-                    one_page = dict(list(posts.items())[:post_num])
-                    html_dir = self.dist_dir / "index.html"
-                    self.ctx["prev_url"] = "disabled"
-                    self.ctx["next_url"] = "disabled"
-                else:
-                    one_page = dict(
-                        list(posts.items())[top_num : top_num + post_num]
-                    )
-                    html_dir = self.dist_dir / f"page{page_flag + 1}.html"
-                    self.ctx["prev_url"] = (
-                        "/index.html"
-                        if page_flag == 1
-                        else f"/page{page_flag}.html"
-                    )
-                    self.ctx["next_url"] = "disabled"
-                self._render_list(one_page, html_dir, nav_icon)
-                break
-            else:
-                one_page = dict(
-                    list(posts.items())[top_num : top_num + page_size]
-                )
-                post_num = post_num - page_size
-                if page_flag == 0:
-                    html_dir = self.dist_dir / "index.html"
-                    self.ctx["prev_url"] = "disabled"
-                    self.ctx["next_url"] = "/page2.html"
-                else:
-                    html_dir = self.dist_dir / f"page{page_flag + 1}.html"
-                    self.ctx["prev_url"] = (
-                        "/index.html"
-                        if page_flag == 1
-                        else f"/page{page_flag}.html"
-                    )
-                    self.ctx["next_url"] = f"/page{page_flag + 2}.html"
-                self._render_list(one_page, html_dir, nav_icon)
-            page_flag = page_flag + 1
+        # The conventional `about` alias earns a nav link on the index.
+        about = next(
+            (e for e in self.ctx["post_list"].values() if e.get("slug") == "about"),
+            None,
+        )
+        self.ctx["about"] = (
+            {"url": about["post_url"], "title": about["post_title"]}
+            if about
+            else None
+        )
+
+        # index.html is a shell: the card list and pagination are rendered
+        # client-side from search-index.json, so there is exactly one list
+        # page no matter how many posts exist.
+        self._render_list(self.dist_dir / "index.html", nav_icon)
 
         tag_context = {
             "site": self.ctx,
-            "posts": {k: _list_item(v) for k, v in one_page.items()},
             "i18n": self.i18n,
             "icons": tag_icon,
         }
         self.renderer.render_to("tag", tag_context, self.dist_dir / "tag.html")
         print("create tag.html")
 
-    def _render_list(self, one_page, html_dir, nav_icon):
+    def _render_list(self, html_dir, nav_icon):
         context = {
             "site": self.ctx,
-            "posts": {k: _list_item(v) for k, v in one_page.items()},
             "i18n": self.i18n,
             "icons": nav_icon,
         }
@@ -548,9 +532,7 @@ class Generator:
                 reverse=False,
             )
         )
-        entries = list(self.ctx["single_list"].values()) + list(
-            posts_sorted.values()
-        )
+        entries = list(posts_sorted.values())
         new_xml = build_feed(self.ctx, entries)
 
         if self.old_feed and strip_build_date(new_xml) == strip_build_date(
@@ -574,7 +556,6 @@ class Generator:
         self.render_cache = pruned
         state = {
             "post_list": self.ctx["post_list"],
-            "single_list": self.ctx["single_list"],
             "render_cache": pruned,
         }
         self.state_path.write_text(
@@ -587,33 +568,25 @@ class Generator:
     def _write_search_index(self):
         """Write dist/search-index.json, the site's single client-side data file.
 
-        Consumed by both the search dialog (plugins/search.js) and the tag
-        page (tag.j2.html), so it carries everything the listings need:
-        `{label_colors: {name: "#hex"}, posts: [{title, labels, date,
-        date_color, url}]}` — no body text, no third-party service, no keys.
-        post_list and single_list are merged so about.html is searchable too.
+        Consumed by the search dialog (plugins/search.js), the homepage list
+        (post-list.j2.html) and the tag page (tag.j2.html), so it carries
+        everything the listings need: `{label_colors: {name: "#hex"}, posts:
+        [{title, labels, date, date_color, top, url}]}` — no body text, no
+        third-party service, no keys. Pinned posts sort first, then date
+        descending, so every client renders the same order for free.
         """
-        records = []
-        for entry in self.ctx["post_list"].values():
-            records.append(
-                {
-                    "title": entry["post_title"],
-                    "labels": entry["labels"],
-                    "date": entry["created_date"],
-                    "date_color": entry["date_label_color"],
-                    "url": entry["post_url"],
-                }
-            )
-        for label, entry in self.ctx["single_list"].items():
-            records.append(
-                {
-                    "title": entry["post_title"],
-                    "labels": entry["labels"],
-                    "date": entry["created_date"],
-                    "date_color": entry["date_label_color"],
-                    "url": entry["post_url"],
-                }
-            )
+        records = [
+            {
+                "title": entry["post_title"],
+                "labels": entry["labels"],
+                "date": entry["created_date"],
+                "date_color": entry["date_label_color"],
+                "top": entry.get("top", 0),
+                "url": entry["post_url"],
+            }
+            for entry in self.ctx["post_list"].values()
+        ]
+        records.sort(key=lambda r: (r["top"], r["date"]), reverse=True)
         index = {
             "label_colors": self.ctx["label_color_dict"],
             "posts": records,

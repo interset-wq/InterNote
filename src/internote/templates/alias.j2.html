@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ post.title }}</title>
+  {# `slug` alias: the canonical page lives at post/<id>.html. The meta
+     refresh covers no-JS clients and crawlers, location.replace() covers
+     everything else without polluting history, and noindex+canonical keep
+     the alias itself out of search results. #}
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="{{ post.url }}">
+  <meta http-equiv="refresh" content="0; url={{ post.url }}">
+  <script>location.replace({{ post.url | tojson }});</script>
+</head>
+<body>
+  <p>Redirecting to <a href="{{ post.url }}">{{ post.url }}</a></p>
+</body>
+</html>
