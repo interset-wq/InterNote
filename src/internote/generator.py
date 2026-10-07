@@ -130,6 +130,9 @@ class Generator:
         # favicon/avatar state: source URL each cached dist/assets/*.png
         # was downloaded from, keyed by file name
         self.favicon_src: dict[str, str] = {}
+        # :shortcode: -> <img> map for emoji inlining, loaded lazily by
+        # _load_emoji_map() before the first page renders
+        self.emoji_map: dict[str, str] = {}
         if self.state_path.exists():
             try:
                 cached = json.loads(self.state_path.read_text(encoding="utf-8"))
@@ -278,6 +281,7 @@ class Generator:
         self._clean()
         self._fetch_favicon()
         self._fetch_social_icons()
+        self._load_emoji_map()
         for issue in self.repo.get_issues():
             self._add_entry(issue)
         for entry in list(self.ctx["post_list"].values()):
@@ -296,6 +300,7 @@ class Generator:
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         self._fetch_favicon()
         self._fetch_social_icons()
+        self._load_emoji_map()
         issue = self.repo.get_issue(int(number_str))
         if issue.state != "open":
             self._drop_entry(issue.number, "issue is closed")
@@ -654,7 +659,7 @@ class Generator:
         entry["subs"] = kept
 
     def _render_sub_page(self, entry, parsed, kept, crumb, pager):
-        sub_body = self._render_body(parsed["body"])
+        sub_body = self._decorate_body(entry, self._render_body(parsed["body"]))
         page = dict(self.ctx)
         page["post"] = {
             "title": kept["title"],
@@ -725,10 +730,17 @@ class Generator:
 
     # ---------------------------------------------------------------- pages
 
-    def _create_post(self, entry):
-        md_path = self.sources_dir / f"{entry['number']}.md"
-        post_body = self._render_body(md_path.read_text(encoding="utf-8"))
+    def _decorate_body(self, entry, post_body):
+        """Post-process rendered markdown for BOTH parent and sub pages.
 
+        Three GitHub-look fixes the /markdown API output still needs:
+        - math: <math-renderer> wrappers are stripped and MathJax loaded;
+        - alerts: the markdown-alert markup ships unstyled, so the colour
+          CSS is injected per type actually present in the body;
+        - emoji: the API does not convert :shortcode:, so shortcodes are
+          replaced with GitHub's emoji images (see _load_emoji_map).
+        Mutates entry["style"]/entry["script"]; returns the new body.
+        """
         if "<math-renderer" in post_body:
             post_body = re.sub(r"<math-renderer.*?>", "", post_body)
             post_body = re.sub(r"</math-renderer>", "", post_body)
@@ -748,6 +760,57 @@ class Generator:
                         f"color: var(--fgColor-{style},"
                         f"var(--color-{style}-fg));}}"
                     )
+
+        if ":" in post_body and self.emoji_map:
+            post_body = re.sub(
+                r":([a-z0-9_+-]+):",
+                lambda m: self.emoji_map.get(
+                    m.group(1), m.group(0)
+                ),
+                post_body,
+            )
+        return post_body
+
+    def _load_emoji_map(self):
+        """Load the :shortcode: -> <img> mapping for emoji inlining.
+
+        The GitHub /markdown endpoint leaves emoji shortcodes untouched
+        (only github.com pages convert them), so the generator does the
+        conversion itself from the public emoji API list, cached in
+        internote.json like the other downloads. A failure only warns:
+        pages then show the raw shortcode instead of the image.
+        """
+        if self.state_path.exists():
+            try:
+                cached = json.loads(self.state_path.read_text(encoding="utf-8"))
+                if isinstance(cached.get("emoji_map"), dict) and cached["emoji_map"]:
+                    self.emoji_map = cached["emoji_map"]
+                    return
+            except json.JSONDecodeError:
+                pass
+        try:
+            request = urllib.request.Request(
+                "https://api.github.com/emojis",
+                headers={"User-Agent": "Internote"},
+            )
+            with urllib.request.urlopen(request, timeout=30) as response:
+                raw = json.loads(response.read().decode("utf-8"))
+            self.emoji_map = {
+                name: '<img class="emoji" alt=":{}:" height="20" width="20" src="{}">'.format(
+                    name, url
+                )
+                for name, url in raw.items()
+            }
+            print("create emoji map:", len(self.emoji_map), "shortcodes")
+        except Exception as error:  # noqa: BLE001 - never fail the build
+            print("warning: emoji map download failed ({}); "
+                  "emoji shortcodes stay as text".format(error))
+            self.emoji_map = {}
+
+    def _create_post(self, entry):
+        md_path = self.sources_dir / f"{entry['number']}.md"
+        post_body = self._render_body(md_path.read_text(encoding="utf-8"))
+        post_body = self._decorate_body(entry, post_body)
 
         page = dict(self.ctx)
         page["post"] = {
@@ -907,6 +970,7 @@ class Generator:
             "post_list": self.ctx["post_list"],
             "render_cache": pruned,
             "favicon_src": self.favicon_src,
+            "emoji_map": self.emoji_map,
         }
         self.state_path.write_text(
             json.dumps(state, ensure_ascii=False), encoding="utf-8"

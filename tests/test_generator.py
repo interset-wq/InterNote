@@ -509,6 +509,8 @@ class TestFavicon:
                     # glyphs from the Simple Icons CDN in the same run
                     if "simpleicons.org" in request.full_url:
                         return b"<svg/>"
+                    if request.full_url.endswith("/emojis"):
+                        return b"{}"
                     return b"png-bytes"
 
             return Response()
@@ -524,6 +526,8 @@ class TestFavicon:
             # the built-in rss/github footer glyphs ride the social pipeline
             "https://cdn.simpleicons.org/rss",
             "https://cdn.simpleicons.org/github",
+            # _load_emoji_map() converts :shortcode: on post pages
+            "https://api.github.com/emojis",
         ]
         assert (tmp_path / "dist" / "assets" / "favicon.png").read_bytes() == b"png-bytes"
         assert (tmp_path / "dist" / "assets" / "avatar.png").read_bytes() == b"png-bytes"
