@@ -224,7 +224,29 @@ class Generator:
         one icon: a flaky network must not fail the blog build.
         """
         self.ctx["social_icons"] = {}
-        for item in self.ctx.get("social") or []:
+        # The built-in RSS and GitHub buttons ride the same [[social]]
+        # pipeline: one code path downloads, inlines and renders every
+        # footer icon. A user entry with the same id replaces the built-in.
+        user_ids = {item["id"] for item in self.ctx.get("social") or []}
+        builtins = [
+            item
+            for item in (
+                {
+                    "id": "rss",
+                    "title": "RSS",
+                    "action": "link",
+                    "url": self.ctx["home_url"] + "/rss.xml",
+                },
+                {
+                    "id": "github",
+                    "title": "GitHub",
+                    "action": "link",
+                    "url": self.ctx["blog_repo_url"],
+                },
+            )
+            if item["id"] not in user_ids
+        ]
+        for item in builtins + (self.ctx.get("social") or []):
             name = "social/{}.svg".format(item["id"])
             source = "https://cdn.simpleicons.org/{}".format(item["id"])
             path = self.dist_dir / "assets" / name

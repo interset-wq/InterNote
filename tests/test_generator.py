@@ -505,6 +505,10 @@ class TestFavicon:
                     return False
 
                 def read(self):
+                    # the social pipeline also fetches built-in rss/github
+                    # glyphs from the Simple Icons CDN in the same run
+                    if "simpleicons.org" in request.full_url:
+                        return b"<svg/>"
                     return b"png-bytes"
 
             return Response()
@@ -517,6 +521,9 @@ class TestFavicon:
         assert downloads == [
             "https://example.test/avatar?size=64",
             "https://example.test/avatar?size=200",
+            # the built-in rss/github footer glyphs ride the social pipeline
+            "https://cdn.simpleicons.org/rss",
+            "https://cdn.simpleicons.org/github",
         ]
         assert (tmp_path / "dist" / "assets" / "favicon.png").read_bytes() == b"png-bytes"
         assert (tmp_path / "dist" / "assets" / "avatar.png").read_bytes() == b"png-bytes"
@@ -565,8 +572,13 @@ class TestSocialIcons:
     def test_no_social_config_leaves_footer_untouched(self, tmp_path):
         build(tmp_path, [issue()])
         html = index_of(tmp_path)
-        assert "in-social" not in html
+        # rss/github stay built-in: still rendered (now via the social
+        # pipeline, with the bundled octicon as glyph) and still pointing
+        # at the feed / repo.
         assert 'href="https://example.com/rss.xml"' in html
+        assert 'aria-label="GitHub"' in html
+        # no user-configured icon buttons beyond the two built-ins
+        assert html.count("in-social") == 2
 
     def _gen_with_social(self, tmp_path, responses, repo):
         cfg = load_config(

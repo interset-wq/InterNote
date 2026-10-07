@@ -1,17 +1,18 @@
 {# Site footer component - expects: site, icons, i18n #}
-{% from 'components/macros.j2.html' import nav_link with context %}
+{% from 'components/macros.j2.html' import icon with context %}
 <div class="in-footer-icons" id="footer-icons" data-copied="{{ i18n.copied }}">
-  {{ nav_link('rss', site.home_url ~ '/rss.xml', 'RSS', 'RSS Feed', '_blank') }}
-  {{ nav_link('github', site.blog_repo_url, 'GitHub', 'GitHub Repository', '_blank') }}
-  {# Configured [[social]] icons. Glyphs are inlined server-side from
-     dist/assets/social/<id>.svg (Simple Icons, brand colour included);
-     an entry whose download failed is skipped. The action decides the
-     element: link renders a plain anchor, copy/qrcode render buttons
-     the footer script wires up. #}
+  {# Every footer icon rides the [[social]] pipeline: the generator
+     prepends built-in rss/github entries, so they inline the same
+     Simple Icons SVG as user icons. A glyph whose download failed
+     falls back to the bundled octicon so the button never vanishes. #}
+  {% set rss_url = site.home_url ~ '/rss.xml' %}
+  {% set github_url = site.blog_repo_url %}
   {% for item in site.social %}
   {% set glyph = site.social_icons.get(item.id, '') %}
-  {% if glyph %}
   {% set label = item.title or item.id %}
+  {% if item.id == 'rss' %}{% set label = 'RSS' %}{% set rss_url = None %}{% endif %}
+  {% if item.id == 'github' %}{% set label = 'GitHub' %}{% set github_url = None %}{% endif %}
+  {% if glyph %}
   {% if item.action == 'link' %}
   <a class="in-nav-btn in-social" href="{{ item.url }}" target="_blank" rel="noopener" title="{{ label }}" aria-label="{{ label }}">{{ glyph }}</a>
   {% elif item.action == 'copy' %}
@@ -19,8 +20,17 @@
   {% elif item.action == 'qrcode' %}
   <button class="in-nav-btn in-social" type="button" title="{{ label }}" aria-label="{{ label }}" data-qrcode="{{ item.qrcode }}">{{ glyph }}</button>
   {% endif %}
+  {# A user glyph whose download failed is skipped: only the built-in
+     rss/github ids have an octicon to fall back to. #}
   {% endif %}
   {% endfor %}
+  {# Built-in RSS / GitHub, unless a [[social]] entry already covers the id. #}
+  {% if rss_url %}
+  <a class="in-nav-btn in-social" href="{{ rss_url }}" target="_blank" rel="noopener" title="RSS" aria-label="RSS">{{ site.social_icons.get('rss') or icon('rss') }}</a>
+  {% endif %}
+  {% if github_url %}
+  <a class="in-nav-btn in-social" href="{{ github_url }}" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">{{ site.social_icons.get('github') or icon('github') }}</a>
+  {% endif %}
 </div>
 <div class="in-footer-line" id="footer-copyright">
   Copyright &copy; <span id="copyright-year"></span>
