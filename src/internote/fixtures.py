@@ -14,11 +14,6 @@ from types import SimpleNamespace
 from . import frontmatter
 
 
-class _CommentList:
-    def __init__(self, total: int):
-        self.totalCount = total
-
-
 class FixtureIssue:
     def __init__(self, raw: dict):
         self.number = raw["number"]
@@ -35,11 +30,7 @@ class FixtureIssue:
         self.pull_request = (
             SimpleNamespace(number=raw["number"]) if raw.get("pull_request") else None
         )
-        self._comments_total = raw["comments_total"]
         self._events = raw["events"]
-
-    def get_comments(self):
-        return _CommentList(self._comments_total)
 
     def get_events(self):
         return [SimpleNamespace(**ev) for ev in self._events]

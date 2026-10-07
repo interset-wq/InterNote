@@ -415,7 +415,6 @@ class Generator:
             "labels": labels,
             "post_title": issue.title,
             "post_url": post_url,
-            "comment_num": issue.get_comments().totalCount,
             "word_count": len(body),
             "top": 0,
             # Default is on: a page opts out with `comments = false`.
@@ -541,7 +540,6 @@ class Generator:
             "url": self.ctx["home_url"] + "/" + entry["post_url"],
             "description": entry["description"],
             "body": post_body,
-            "comment_num": entry["comment_num"],
             "comments": entry["comments"],
             "style": entry["style"],
             "script": entry["script"],
@@ -732,10 +730,6 @@ class Generator:
         if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
             return
 
-        comments = sum(
-            entry.get("comment_num", 0)
-            for entry in self.ctx["post_list"].values()
-        )
         words = sum(
             entry.get("word_count", 0)
             for entry in self.ctx["post_list"].values()
@@ -745,7 +739,6 @@ class Generator:
         lines = [
             f"# {self.ctx['title']} :link: {home} \r\n",
             f"### :page_facing_up: [{len(self.ctx['post_list'])}]({home}/tag.html) \r\n",
-            f"### :speech_balloon: {comments} \r\n",
             f"### :hibiscus: {words} \r\n",
             f"### :alarm_clock: {now} \r\n",
             "### Powered by :heart: [Internote]"

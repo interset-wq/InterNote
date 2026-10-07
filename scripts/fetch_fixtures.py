@@ -64,9 +64,6 @@ def fetch(repo: str) -> dict:
         if "pull_request" in issue:
             continue
         number = issue["number"]
-        comments = _gh_json(
-            "repos/{}/issues/{}/comments?per_page=100".format(repo, number)
-        )
         events = _gh_json(
             "repos/{}/issues/{}/events?per_page=100".format(repo, number)
         )
@@ -91,7 +88,6 @@ def fetch(repo: str) -> dict:
                 ],
                 "created_at": issue["created_at"],
                 "updated_at": issue["updated_at"],
-                "comments_total": len(comments),
                 "events": [{"event": ev["event"]} for ev in events],
             }
         )

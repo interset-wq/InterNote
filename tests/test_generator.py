@@ -70,7 +70,6 @@ def issue(
         "labels": [{"name": name, "color": "ededed"} for name in labels],
         "created_at": "2026-01-02T03:04:05Z",
         "updated_at": "2026-01-02T03:04:05Z",
-        "comments_total": 0,
         "events": [],
         "state": state,
         "pull_request": pull_request,

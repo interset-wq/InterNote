@@ -64,7 +64,6 @@
       ],
       "created_at": "2026-09-30T01:36:19Z",
       "updated_at": "2026-09-30T01:36:19Z",
-      "comments_total": 0,
       "events": [
         {
           "event": "labeled"
@@ -88,7 +87,6 @@
       ],
       "created_at": "2026-09-30T01:24:30Z",
       "updated_at": "2026-09-30T01:24:30Z",
-      "comments_total": 0,
       "events": [
         {
           "event": "labeled"
@@ -111,7 +109,6 @@
       ],
       "created_at": "2026-09-30T01:23:36Z",
       "updated_at": "2026-09-30T01:23:36Z",
-      "comments_total": 0,
       "events": [
         {
           "event": "labeled"
@@ -131,7 +128,6 @@
       ],
       "created_at": "2026-09-30T01:22:26Z",
       "updated_at": "2026-09-30T01:26:49Z",
-      "comments_total": 0,
       "events": [
         {
           "event": "labeled"
