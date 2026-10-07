@@ -848,6 +848,13 @@ a:hover { text-decoration: underline; }
   line-height: 1.8;
 }
 
+/* timestamp of the build that produced this artifact */
+.in-footer-built {
+  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
+  font-size: 12px;
+  line-height: 1.8;
+}
+
 /* ===== Series (sub posts) ===== */
 .in-series-crumb {
   display: flex;

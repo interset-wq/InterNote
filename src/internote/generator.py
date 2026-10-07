@@ -114,6 +114,10 @@ class Generator:
         print("GitHub Pages URL: ", self.ctx["home_url"])
 
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
+        # stamped into every page footer: when this exact artifact was built
+        self.ctx["build_time"] = datetime.datetime.now(self.tz).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         self.i18n = get_i18n(self.ctx["language"])
         self.renderer = Renderer(Path(__file__).resolve().parent / "templates")
 
