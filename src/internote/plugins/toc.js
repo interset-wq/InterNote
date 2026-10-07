@@ -92,6 +92,28 @@
     return list;
   }
 
+  function scrollTocTo(link) {
+    var toc = link.closest('.in-toc');
+    if (!toc) {
+      return;
+    }
+    // Keep the active entry inside the panel's viewport once the list
+    // overflows. Rect-based maths on purpose: offsetTop would be relative
+    // to whichever positioned ancestor hosts the panel, and fab.js moves
+    // the panel into an overlay below 1250px.
+    var y =
+      link.getBoundingClientRect().top -
+      toc.getBoundingClientRect().top +
+      toc.scrollTop;
+    var viewTop = toc.scrollTop;
+    var viewBottom = viewTop + toc.clientHeight;
+    if (y < viewTop + 8) {
+      toc.scrollTop = Math.max(0, y - 8);
+    } else if (y + link.offsetHeight > viewBottom - 8) {
+      toc.scrollTop = y + link.offsetHeight - toc.clientHeight + 8;
+    }
+  }
+
   function setActive(link) {
     var active = link.classList.contains('is-active');
     if (active) {
@@ -102,6 +124,7 @@
       node.classList.remove('is-active');
     });
     link.classList.add('is-active');
+    scrollTocTo(link);
   }
 
   function trackActive(headings, links) {
