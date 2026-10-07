@@ -31,10 +31,12 @@
         if (heading.textContent.trim() === '') {
           return false;
         }
-        // Posts that demo markdown headings (e.g. a syntax cheat sheet)
-        // would otherwise inject one TOC entry per demo heading; such
-        // demos are wrapped in <div class="in-toc-skip"> by the author.
-        return !heading.closest('.in-toc-skip');
+        // Post bodies come from the GitHub /markdown API, which strips
+        // class attributes, so an author marker class cannot survive.
+        // Collapsible <details> blocks (which do survive sanitization)
+        // hold heading demos and supplementary content - keep their
+        // headings out of the TOC.
+        return !heading.closest('details');
       })
       .map(function (heading) {
         if (!heading.id) {
