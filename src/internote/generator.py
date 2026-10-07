@@ -669,8 +669,10 @@ class Generator:
             # Sub pages carry giscus too; the parent's comments = false
             # opt-out applies to the whole series.
             "comments": entry["comments"],
-            "style": self.ctx["style"],
-            "script": self.ctx["script"],
+            # _decorate_body may have appended alert CSS / MathJax to the
+            # entry copies; ctx["style"] would silently drop them.
+            "style": entry["style"],
+            "script": entry["script"],
             "head": self.ctx["head"],
             "top": 0,
             "created_date": kept["created_date"],
