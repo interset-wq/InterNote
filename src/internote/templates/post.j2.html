@@ -9,7 +9,23 @@
   {{ post.head }}
 {% endblock %}
 
-{% block style %}{{ post.style }}{% endblock %}
+{% block style %}{{ post.style }}
+  {# reading progress bar, 2px fixed under the top edge #}
+  <style>
+    .in-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+      width: 100%;
+      height: 2px;
+      background: var(--in-color-accent);
+      transform-origin: 0 0;
+      transform: scaleX(0);
+      pointer-events: none;
+    }
+  </style>
+{% endblock %}
 
 {% block header %}
   <h1 class="in-post-title">{{ post.title }}</h1>
@@ -41,6 +57,7 @@
       {% endfor %}
     </div>
     <nav class="in-toc" id="in-toc" data-toc-title="{{ i18n.toc }}" data-toc-top="{{ i18n.top }}" aria-label="{{ i18n.toc }}"></nav>
+    <div class="in-progress" id="in-progress"></div>
     <div class="in-post-body markdown-body">{{ post.body }}</div>
     {% if post.footer_text %}
     <div class="in-post-footer-text">{{ post.footer_text }}</div>
@@ -91,5 +108,20 @@
   {% if post.highlight != 0 %}
   <script src="{{ site.home_url }}/plugins/code-copy.js"></script>
   {% endif %}
+  <script>
+    (function () {
+      'use strict';
+      var bar = document.getElementById('in-progress');
+      var body = document.querySelector('.in-post-body');
+      function update() {
+        var start = body.offsetTop - 80;
+        var end = body.offsetTop + body.offsetHeight - window.innerHeight + 40;
+        var t = (window.scrollY - start) / Math.max(end - start, 1);
+        bar.style.transform = 'scaleX(' + Math.min(Math.max(t, 0), 1) + ')';
+      }
+      window.addEventListener('scroll', update, { passive: true });
+      update();
+    })();
+  </script>
   {{ post.script }}
 {% endblock %}

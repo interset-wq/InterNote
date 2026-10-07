@@ -97,8 +97,8 @@
       var top = window.scrollY;
       var max =
         document.documentElement.scrollHeight - window.innerHeight;
-      topBtn.hidden = top < 80;
-      bottomBtn.hidden = top > max - 80;
+      topBtn.classList.toggle('is-dimmed', top < 80);
+      bottomBtn.classList.toggle('is-dimmed', top > max - 80);
     }
     window.addEventListener(
       'scroll',

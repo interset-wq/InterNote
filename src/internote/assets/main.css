@@ -883,6 +883,9 @@ a:hover { text-decoration: underline; }
   border-radius: 6px;
   pointer-events: none;
   user-select: none;
+  /* quiet by default, surfacing when the block is hovered */
+  opacity: 0.45;
+  transition: opacity 0.15s;
 }
 .in-copy-feedback {
   display: none;
@@ -900,6 +903,25 @@ a:hover { text-decoration: underline; }
 .in-code-block {
   position: relative;
   overflow: auto;
+  /* visual layering: lift the block off the prose */
+  border: 1px solid var(--in-color-border);
+  border-radius: 8px;
+  transition: box-shadow 0.15s;
+}
+
+.in-code-block:hover {
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
+}
+
+.in-code-block:hover .in-code-lang,
+.in-code-block:hover .clipboard-container {
+  opacity: 1;
+}
+
+/* the copy button shares the quiet-until-hover treatment */
+.in-code-block .clipboard-container {
+  transition: opacity 0.15s;
+  opacity: 0.45;
 }
 
 /* ===== Table of Contents ===== */
@@ -956,6 +978,7 @@ a:hover { text-decoration: underline; }
 .in-toc-link.is-active {
   border-left-color: var(--in-color-accent);
   color: var(--in-color-accent);
+  font-weight: 600;
 }
 
 .in-toc-top {
@@ -1021,7 +1044,15 @@ a:hover { text-decoration: underline; }
   color: var(--in-color-muted);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, opacity 0.2s, transform 0.2s;
+}
+
+/* fade instead of a hard hidden flip: out-of-range buttons slide down
+   and dim; still clickable-free since pointer-events is disabled */
+.in-fab-btn.is-dimmed {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
 }
 
 .in-fab-btn:hover {
