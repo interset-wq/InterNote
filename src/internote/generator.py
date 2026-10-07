@@ -667,6 +667,11 @@ class Generator:
                 "url": entry["post_url"],
             }
             for entry in self.ctx["post_list"].values()
+            # The `about` page already has a dedicated header nav button;
+            # listing it again on the index, tag pages and search only
+            # duplicates the entry point. Its canonical page, alias and
+            # feed entry are unaffected.
+            if entry.get("slug") != "about"
         ]
         records.sort(key=lambda r: (r["top"], r["date"]), reverse=True)
         index = {

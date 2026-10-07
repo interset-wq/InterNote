@@ -113,6 +113,26 @@ class TestEntryPlacement:
         assert "post/1.html" in alias
         assert "noindex" in alias
 
+    def test_about_is_excluded_from_search_index_listings(self, tmp_path):
+        # The header nav already links the about page; listing it again on
+        # the index, tag page and search only duplicates the entry point.
+        build(
+            tmp_path,
+            [
+                issue(number=1, body='+++\nslug = "about"\n+++\nAbout.'),
+                issue(number=2, body="Regular."),
+            ],
+        )
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
+        )
+        assert [p["url"] for p in index["posts"]] == ["post/2.html"]
+        # the canonical page, alias and feed are untouched
+        assert (tmp_path / "dist" / "post" / "1.html").exists()
+        assert (tmp_path / "dist" / "about.html").exists()
+        rss = (tmp_path / "dist" / "rss.xml").read_text(encoding="utf-8")
+        assert "post/1.html" in rss
+
     def test_unlabelled_issue_publishes_as_default(self, tmp_path):
         # Labels are optional: a forgotten label must not silence a post.
         build(tmp_path, [issue(labels=())])
