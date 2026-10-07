@@ -35,6 +35,14 @@ DELIMITER = "+++"
 #: neither can be overridden here.
 FIELDS = frozenset({"date", "draft", "comments", "pinned", "slug"})
 
+#: Keys a *sub-post comment* may set. A sub post is a collaborator
+#: comment on an issue; its body is the page content. The title falls
+#: back to the first ``# `` heading in the body (an h1 already carries
+#: title semantics), so ``title`` is optional; a comment with neither a
+#: title nor an h1 fails the build rather than showing an empty row in
+#: the series listing.
+SUB_FIELDS = frozenset({"title", "order"})
+
 
 class FrontMatterError(ValueError):
     """Raised when a front matter block cannot be parsed."""
@@ -51,13 +59,14 @@ def has_front_matter(text: str) -> bool:
     )
 
 
-def split(text: str) -> tuple[dict, str]:
+def split(text: str, fields: frozenset = FIELDS) -> tuple[dict, str]:
     """Split leading front matter off *text*.
 
     Returns ``(meta, body)``; ``meta`` is empty and *body* is *text*
     unchanged when there is no front matter. Idempotent: a body that has
     already been stripped does not start with the delimiter, so splitting
-    it again is a no-op.
+    it again is a no-op. *fields* names the allowed keys (sub-post
+    comments pass :data:`SUB_FIELDS`).
     """
     if not has_front_matter(text):
         return {}, text
@@ -91,7 +100,7 @@ def split(text: str) -> tuple[dict, str]:
     except tomllib.TOMLDecodeError as error:
         raise FrontMatterError("invalid TOML in front matter: {}".format(error)) from error
 
-    unknown = sorted(set(meta) - FIELDS)
+    unknown = sorted(set(meta) - fields)
     if unknown:
         raise FrontMatterError(
             "unknown front matter key(s) {}; allowed: {}".format(
@@ -101,6 +110,44 @@ def split(text: str) -> tuple[dict, str]:
 
     _check_types(meta)
     return meta, body
+
+
+def split_sub(text: str) -> tuple[dict, str]:
+    """Split front matter off a *sub-post comment* body.
+
+    Same delimiter and parsing as :func:`split` but validates against
+    :data:`SUB_FIELDS` (``title``/``order`` only — post keys like
+    ``date`` or ``slug`` make no sense for a comment page).
+    """
+    meta, body = split(text, fields=SUB_FIELDS)
+    if "title" in meta and not isinstance(meta["title"], str):
+        raise FrontMatterError(
+            "sub-post front matter 'title' must be a string, got {}".format(
+                type(meta["title"]).__name__
+            )
+        )
+    if "order" in meta and not isinstance(meta["order"], int):
+        raise FrontMatterError(
+            "sub-post front matter 'order' must be an integer, got {}".format(
+                type(meta["order"]).__name__
+            )
+        )
+    return meta, body
+
+
+def first_h1(body: str) -> str:
+    """Return the text of the first ATX ``# `` heading in *body*.
+
+    Setext headings (underlined with ``===``) are not recognised; a body
+    using them simply yields ``""`` and the caller raises. Runs after the
+    front matter has been stripped, so a heading inside the ``+++`` block
+    cannot win.
+    """
+    for line in body.split("\n"):
+        line = line.rstrip("\r").strip()
+        if line.startswith("# ") and len(line) > 2:
+            return line[2:].strip()
+    return ""
 
 
 def _check_types(meta: dict) -> None:

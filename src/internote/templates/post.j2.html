@@ -22,6 +22,13 @@
 
 {% block content %}
   <article>
+    {% if post.series_crumb %}
+    {# Sub post: breadcrumb back to the parent + position in the series. #}
+    <nav class="in-series-crumb" aria-label="Series">
+      <a href="{{ site.home_url }}/{{ post.series_crumb.parent_url }}">{{ post.series_crumb.parent_title }}</a>
+      <span>{{ post.series_crumb.index }} / {{ post.series_crumb.total }}</span>
+    </nav>
+    {% endif %}
     <div class="in-post-meta">
       <span class="Label" style="background-color:{{ post.date_label_color }};color:#fff">{{ post.created_date }}</span>
       {% if post.updated_date and post.updated_date != post.created_date %}
@@ -37,6 +44,30 @@
     <div class="in-post-body markdown-body">{{ post.body }}</div>
     {% if post.footer_text %}
     <div class="in-post-footer-text">{{ post.footer_text }}</div>
+    {% endif %}
+    {% if post.series %}
+    {# Parent page only: the series listing (`parts`, not `items` —
+       Jinja would resolve dict.items). #}
+    {% if post.series.parts %}
+    <nav class="in-series-list" aria-label="Series">
+      <h2>{{ post.title }}</h2>
+      <ol>
+        {% for item in post.series.parts %}
+        <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
+        {% endfor %}
+      </ol>
+    </nav>
+    {% endif %}
+    {% endif %}
+    {% if post.series_pager %}
+    <nav class="in-series-pager" aria-label="Series pages">
+      {% if post.series_pager.prev %}
+      <a class="in-series-prev" href="{{ site.home_url }}/{{ post.series_pager.prev.url }}">{{ post.series_pager.prev.title }}</a>
+      {% endif %}
+      {% if post.series_pager.next %}
+      <a class="in-series-next" href="{{ site.home_url }}/{{ post.series_pager.next.url }}">{{ post.series_pager.next.title }}</a>
+      {% endif %}
+    </nav>
     {% endif %}
   </article>
   {% if site.need_comment and post.comments %}

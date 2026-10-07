@@ -30,10 +30,28 @@ class FixtureIssue:
         self.pull_request = (
             SimpleNamespace(number=raw["number"]) if raw.get("pull_request") else None
         )
+        # PyGithub exposes the comment count as a plain int; the generator
+        # uses it to decide whether comments must be fetched at all.
+        self.comments = raw.get("comments_total", len(raw.get("comments", [])))
         self._events = raw["events"]
+        # Sub-post comments: the generator renders their bodies through the
+        # same markdown pipeline, so keep them raw for the html lookup too.
+        self._comments = raw.get("comments", [])
 
     def get_events(self):
         return [SimpleNamespace(**ev) for ev in self._events]
+
+    def get_comments(self):
+        return [
+            SimpleNamespace(
+                id=raw["id"],
+                body=raw["body"],
+                author_association=raw.get("author_association", "NONE"),
+                created_at=datetime.fromisoformat(raw["created_at"]),
+                updated_at=datetime.fromisoformat(raw["updated_at"]),
+            )
+            for raw in self._comments
+        ]
 
 
 class FixtureRepo:
@@ -72,6 +90,15 @@ def load_repo(path: str | Path):
         except frontmatter.FrontMatterError:
             cleaned = issue.body
         html_by_body[cleaned] = issue.body_html
+        # Sub-post comments may carry a pre-rendered body_html (the fetch
+        # script renders it); without one markdown() falls back to raw text.
+        for raw in issue._comments:
+            try:
+                _, cleaned = frontmatter.split(raw["body"])
+            except frontmatter.FrontMatterError:
+                cleaned = raw["body"]
+            if raw.get("body_html"):
+                html_by_body[cleaned] = raw["body_html"]
 
     def markdown(text: str) -> str:
         html = html_by_body.get(text)

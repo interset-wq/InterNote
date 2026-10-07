@@ -18,6 +18,10 @@ from .feed import build_feed, strip_build_date
 from .frontmatter import FrontMatterError
 from .renderer import Renderer
 
+#: Only collaborator comments may become sub posts; reader comments are
+#: never parsed, so a passer-by cannot inject pages into the site.
+SUB_AUTHORS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
+
 MATHJAX_SCRIPT = (
     '<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script>'
     '<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>'
@@ -347,6 +351,10 @@ class Generator:
             page = Path(path)
             if page.exists():
                 page.unlink()
+        # Sub-post pages follow their parent offline (closed series = the
+        # whole series goes), so sweep <issue>_<comment>.html too.
+        for stale_page in self.post_dir.glob(f"{number}_*.html"):
+            stale_page.unlink()
         del self.ctx["post_list"][key]
         print("withdraw #{} ({}): {}".format(number, reason, entry["html_dir"]))
         return True
@@ -472,6 +480,8 @@ class Generator:
         # delimiters never turn into an <hr>.
         (self.sources_dir / f"{issue.number}.md").write_text(body, encoding="utf-8")
 
+        self._sync_sub_posts(issue, entry)
+
         key = f"P{issue.number}"
         # The canonical file name is stable, but the alias is not. When a
         # slug is added, renamed or removed, drop the stale files so an
@@ -488,6 +498,155 @@ class Generator:
 
         self.ctx["post_list"][key] = entry
         return entry
+
+    def _sync_sub_posts(self, issue, entry):
+        """Turn collaborator comments carrying front matter into sub posts.
+
+        A comment whose body opens with a ``+++`` block (``title``/``order``
+        only) becomes a page at ``post/<issue>_<comment>.html``; its position
+        under the parent *is* the relationship, so no link syntax is needed.
+        Reader comments are ignored entirely. The comment count on the issue
+        object decides whether ``get_comments()`` is worth a call: full
+        builds re-pull every issue that has comments (editing a comment does
+        not change the count, so this is the only reliable refresh), issues
+        without comments cost nothing.
+        """
+        count = getattr(issue, "comments", 0)
+        cached = self.ctx["post_list"].get(f"P{issue.number}", {}).get("subs")
+        if not count and not cached:
+            entry["subs"] = []
+            return
+
+        parsed = []
+        for comment in issue.get_comments():
+            if getattr(comment, "author_association", "NONE") not in SUB_AUTHORS:
+                continue
+            raw = comment.body or ""
+            if not frontmatter.has_front_matter(raw):
+                continue
+            try:
+                meta, sub_body = frontmatter.split_sub(raw)
+            except frontmatter.FrontMatterError as error:
+                raise FrontMatterError(
+                    "issue #{} comment {}: {}".format(issue.number, comment.id, error)
+                ) from error
+            title = meta.get("title") or frontmatter.first_h1(sub_body)
+            if not title:
+                raise FrontMatterError(
+                    "issue #{} comment {}: a sub post needs a 'title' or a "
+                    "leading '# ' heading".format(issue.number, comment.id)
+                )
+            created = comment.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=datetime.timezone.utc)
+            parsed.append(
+                {
+                    "id": str(comment.id),
+                    "title": title,
+                    "order": meta.get("order"),
+                    "created_at": int(created.timestamp()),
+                    "body": sub_body,
+                }
+            )
+
+        # explicit `order` first (smaller = earlier), then comment time
+        parsed.sort(
+            key=lambda s: (
+                s["order"] if s["order"] is not None else float("inf"),
+                s["created_at"],
+            )
+        )
+
+        total = len(parsed)
+        kept = []
+        for index, sub in enumerate(parsed):
+            html_dir = self.post_dir / f"{issue.number}_{sub['id']}.html"
+            sub_url = urllib.parse.quote(
+                html_dir.relative_to(self.dist_dir).as_posix()
+            )
+            (self.sources_dir / f"{issue.number}_{sub['id']}.md").write_text(
+                sub["body"], encoding="utf-8"
+            )
+            created_time = datetime.datetime.fromtimestamp(
+                sub["created_at"], tz=self.tz
+            )
+            year_colors = ["#bc4c00", "#0969da", "#1f883d", "#A333D0"]
+            kept.append(
+                {
+                    "id": sub["id"],
+                    "title": sub["title"],
+                    "url": sub_url,
+                    "html_dir": str(html_dir),
+                    "created_date": created_time.strftime("%Y-%m-%d"),
+                    "date_label_color": year_colors[
+                        created_time.year % len(year_colors)
+                    ],
+                }
+            )
+        for index, sub in enumerate(kept):
+            crumb = {
+                "parent_title": entry["post_title"],
+                "parent_url": entry["post_url"],
+                "index": index + 1,
+                "total": total,
+            }
+            pager = {"prev": None, "next": None}
+            if index > 0:
+                pager["prev"] = {
+                    "title": kept[index - 1]["title"],
+                    "url": kept[index - 1]["url"],
+                }
+            if index + 1 < total:
+                pager["next"] = {
+                    "title": kept[index + 1]["title"],
+                    "url": kept[index + 1]["url"],
+                }
+            self._render_sub_page(entry, parsed[index], kept[index], crumb, pager)
+
+        # Comments that were deleted (or lost their front matter) must not
+        # keep serving stale pages on an incremental build.
+        live = {Path(s["html_dir"]).name for s in kept}
+        for stale_page in self.post_dir.glob(f"{issue.number}_*.html"):
+            if stale_page.name not in live:
+                stale_page.unlink()
+                print("withdraw sub post", stale_page.name)
+
+        entry["subs"] = kept
+
+    def _render_sub_page(self, entry, parsed, kept, crumb, pager):
+        sub_body = self._render_body(parsed["body"])
+        page = dict(self.ctx)
+        page["post"] = {
+            "title": kept["title"],
+            "url": self.ctx["home_url"] + "/" + kept["url"],
+            "description": "",
+            "body": sub_body,
+            "comments": False,  # giscus lives on the parent page only
+            "style": self.ctx["style"],
+            "script": self.ctx["script"],
+            "head": self.ctx["head"],
+            "top": 0,
+            "created_date": kept["created_date"],
+            "date_label_color": kept["date_label_color"],
+            "updated_date": kept["created_date"],
+            "labels": entry["labels"],
+            "footer_text": self.ctx["footer_text"],
+            "highlight": 0,
+            "series": None,  # sub pages have no children of their own
+            "series_crumb": crumb,
+            "series_pager": pager,
+        }
+        keys = ["sun", "moon", "sync", "home", "github", "rss", "search", "tag"]
+        icon_list = {key: ICONS.get(key) for key in keys}
+        context = {
+            "site": page,
+            "post": page["post"],
+            "post_list": {},
+            "i18n": self.i18n,
+            "icons": icon_list,
+        }
+        self.renderer.render_to("post", context, Path(kept["html_dir"]))
+        print("create sub post %s" % kept["url"])
 
     def _render_body(self, body: str) -> str:
         """Render markdown to HTML, reusing the previous build's result.
@@ -551,6 +710,18 @@ class Generator:
             "labels": entry["labels"],
             "footer_text": self.ctx["footer_text"],
             "highlight": 0,
+            # All three series keys exist on every post page (None when
+            # not applicable): the renderer uses StrictUndefined, so even
+            # an `{% if %}` truth test on a missing key would raise.
+            "series": {
+                "parts": [
+                    {"title": s["title"], "url": s["url"]} for s in entry["subs"]
+                ],
+            }
+            if entry.get("subs")
+            else None,
+            "series_crumb": None,
+            "series_pager": None,
         }
 
         if '<pre class="notranslate">' in post_body:
@@ -706,6 +877,9 @@ class Generator:
                 "date_color": entry["date_label_color"],
                 "top": entry.get("top", 0),
                 "url": entry["post_url"],
+                # Sub posts never enter the index themselves, but the card
+                # shows a badge so readers know the series has more parts.
+                "subs": len(entry.get("subs") or ()),
             }
             for entry in self.ctx["post_list"].values()
             # The `about` page already has a dedicated header nav button;

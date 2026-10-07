@@ -94,6 +94,11 @@
           labelsBox.appendChild(badge(name, colors[name] || '#6e7781'));
         });
         meta.appendChild(labelsBox);
+        if (item.subs) {
+          // Series badge: the sub posts themselves stay out of the index,
+          // the card only signals that the series has more parts.
+          meta.appendChild(badge(item.subs + ' \u2192', '#8250df'));
+        }
         var date = document.createElement('span');
         date.className = 'in-post-card-date';
         date.textContent = item.date;

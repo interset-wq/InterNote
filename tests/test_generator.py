@@ -61,6 +61,7 @@ def issue(
     labels=("blog",),
     state="open",
     pull_request=False,
+    comments=(),
 ):
     return {
         "number": number,
@@ -73,6 +74,18 @@ def issue(
         "events": [],
         "state": state,
         "pull_request": pull_request,
+        # (id, body, author_association) tuples become sub-post comments
+        "comments_total": len(comments),
+        "comments": [
+            {
+                "id": cid,
+                "body": cbody,
+                "author_association": who,
+                "created_at": "2026-01-03T03:04:05Z",
+                "updated_at": "2026-01-03T03:04:05Z",
+            }
+            for cid, cbody, who in comments
+        ],
     }
 
 
@@ -631,3 +644,79 @@ class TestSocialIcons:
         html = index_of(tmp_path)
         assert 'data-copy="someone"' in html
         assert "tiktok.com" not in html  # failed icon skipped, build fine
+
+
+class TestSubPosts:
+    """Series sub posts: collaborator comments with front matter become
+    pages at post/<issue>_<comment>.html."""
+
+    SUB = '+++\ntitle = "Part One"\n+++\n# Part One\nSub body.'
+
+    def test_comment_becomes_a_sub_post(self, tmp_path):
+        build(tmp_path, [issue(number=7, comments=[(9001, self.SUB, "OWNER")])])
+        page = tmp_path / "dist" / "post" / "7_9001.html"
+        assert page.exists()
+        html = page.read_text(encoding="utf-8")
+        assert "Sub body." in html or "Part One" in html
+        # breadcrumb back to the parent
+        assert "post/7.html" in html
+        # parent lists the sub post
+        parent = (tmp_path / "dist" / "post" / "7.html").read_text(encoding="utf-8")
+        assert "post/7_9001.html" in parent and "Part One" in parent
+        # sub posts stay out of the search index, parent carries the badge
+        index = json.loads(
+            (tmp_path / "dist" / "search-index.json").read_text(encoding="utf-8")
+        )
+        assert [p["url"] for p in index["posts"]] == ["post/7.html"]
+        assert index["posts"][0]["subs"] == 1
+
+    def test_title_falls_back_to_first_h1(self, tmp_path):
+        body = "+++\n+++\n# The H1 Wins\nBody."
+        build(tmp_path, [issue(number=7, comments=[(9001, body, "OWNER")])])
+        parent = (tmp_path / "dist" / "post" / "7.html").read_text(encoding="utf-8")
+        assert "The H1 Wins" in parent
+
+    def test_missing_title_and_h1_fails_the_build(self, tmp_path):
+        with pytest.raises(FrontMatterError, match="title"):
+            build(tmp_path, [issue(number=7, comments=[(9001, "+++\n+++\nBody.", "OWNER")])])
+
+    def test_reader_comments_are_ignored(self, tmp_path):
+        build(tmp_path, [issue(number=7, comments=[(9001, self.SUB, "NONE")])])
+        assert not (tmp_path / "dist" / "post" / "7_9001.html").exists()
+        parent = (tmp_path / "dist" / "post" / "7.html").read_text(encoding="utf-8")
+        assert "in-series-list" not in parent
+
+    def test_unknown_sub_key_fails(self, tmp_path):
+        raw = '+++\ntitle = "x"\nslug = "y"\n+++\nBody.'
+        with pytest.raises(FrontMatterError, match="slug"):
+            build(tmp_path, [issue(number=7, comments=[(9001, raw, "OWNER")])])
+
+    def test_order_sorts_the_listing(self, tmp_path):
+        second = '+++\ntitle = "Second"\norder = 2\n+++\nBody 2.'
+        first = '+++\ntitle = "First"\norder = 1\n+++\nBody 1.'
+        build(tmp_path, [issue(number=7, comments=[(9002, second, "OWNER"), (9001, first, "OWNER")])])
+        parent = (tmp_path / "dist" / "post" / "7.html").read_text(encoding="utf-8")
+        assert parent.index("First") < parent.index("Second")
+
+    def test_pager_links_between_sub_pages(self, tmp_path):
+        first = '+++\ntitle = "First"\n+++\nOne.'
+        second = '+++\ntitle = "Second"\n+++\nTwo.'
+        build(tmp_path, [issue(number=7, comments=[(9001, first, "OWNER"), (9002, second, "OWNER")])])
+        page1 = (tmp_path / "dist" / "post" / "7_9001.html").read_text(encoding="utf-8")
+        page2 = (tmp_path / "dist" / "post" / "7_9002.html").read_text(encoding="utf-8")
+        assert "post/7_9002.html" in page1  # next
+        assert "post/7_9001.html" in page2  # prev
+
+    def test_deleted_comment_withdraws_the_page(self, tmp_path):
+        build(tmp_path, [issue(number=7, comments=[(9001, self.SUB, "OWNER")])])
+        assert (tmp_path / "dist" / "post" / "7_9001.html").exists()
+        # rebuild with the comment gone
+        build(tmp_path, [issue(number=7, comments=[])])
+        assert not (tmp_path / "dist" / "post" / "7_9001.html").exists()
+
+    def test_closed_parent_takes_the_series_offline(self, tmp_path):
+        build(tmp_path, [issue(number=7, comments=[(9001, self.SUB, "OWNER")])])
+        assert (tmp_path / "dist" / "post" / "7_9001.html").exists()
+        build(tmp_path, [issue(number=7, state="closed")], incremental="7")
+        assert not (tmp_path / "dist" / "post" / "7.html").exists()
+        assert not (tmp_path / "dist" / "post" / "7_9001.html").exists()
