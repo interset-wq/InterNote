@@ -1153,7 +1153,9 @@ a:hover { text-decoration: underline; }
   .in-search-panel { max-height: 100vh; border-radius: 0; border: none; }
 
   .in-post-title { font-size: 24px; }
-  .in-page-title { display: none; }
+  /* `.in-page-title` (the tag page filter heading, e.g. "Tag #blog") is
+     NOT hidden on mobile: it is the only place that shows the active
+     filter, so hiding it would make tag.html look unresponsive. */
   /* The site name stays on mobile - only the heading above it goes. It has to
      shrink, since avatar + title + a four-icon nav will not fit one row on a
      375px screen; the header wraps the nav when it cannot. */
