@@ -27,9 +27,11 @@
      so a build with zero posts is still valid HTML. #}
   <ul class="in-post-list" id="post-list" aria-label="Posts"></ul>
   <nav class="in-pagination" id="pagination" aria-label="Pagination" hidden>
+    <button class="in-page-btn" id="page-first" type="button" aria-label="First Page">{{ i18n.First }}</button>
     <button class="in-page-btn" id="page-prev" type="button" aria-label="Previous Page">{{ i18n.Previous }}</button>
     <span class="in-page-status" id="page-status"></span>
     <button class="in-page-btn" id="page-next" type="button" aria-label="Next Page">{{ i18n.Next }}</button>
+    <button class="in-page-btn" id="page-last" type="button" aria-label="Last Page">{{ i18n.Last }}</button>
   </nav>
 {% endblock %}
 
@@ -41,8 +43,10 @@
       var PER_PAGE = {{ site.posts_per_page | tojson }};
       var list = document.getElementById('post-list');
       var pagination = document.getElementById('pagination');
+      var firstBtn = document.getElementById('page-first');
       var prevBtn = document.getElementById('page-prev');
       var nextBtn = document.getElementById('page-next');
+      var lastBtn = document.getElementById('page-last');
       var status = document.getElementById('page-status');
       var posts = [];
 
@@ -126,8 +130,10 @@
           list.appendChild(card(item, colors));
         });
 
+        firstBtn.disabled = page <= 1;
         prevBtn.disabled = page <= 1;
         nextBtn.disabled = page >= pages;
+        lastBtn.disabled = page >= pages;
         status.textContent = pages > 1 ? page + ' / ' + pages : '';
         pagination.hidden = pages <= 1;
       }
@@ -149,8 +155,10 @@
         .then(function (data) {
           posts = Array.isArray(data.posts) ? data.posts : [];
           window.__label_colors = data.label_colors || {};
+          firstBtn.addEventListener('click', function () { show(1); });
           prevBtn.addEventListener('click', function () { show(pageFromHash() - 1); });
           nextBtn.addEventListener('click', function () { show(pageFromHash() + 1); });
+          lastBtn.addEventListener('click', function () { show(Math.max(1, Math.ceil(posts.length / PER_PAGE))); });
           window.addEventListener('hashchange', function () { renderPage(pageFromHash()); });
           renderPage(pageFromHash());
         });
