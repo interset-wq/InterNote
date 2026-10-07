@@ -148,6 +148,26 @@ a:hover { text-decoration: underline; }
   margin-bottom: 24px;
 }
 
+/* pencil link to the source issue: content is edited on GitHub */
+.in-post-edit {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
+  text-decoration: none;
+}
+
+.in-post-edit:hover {
+  color: var(--in-color-accent, var(--color-accent-fg, #0969da));
+  text-decoration: none;
+}
+
+.in-post-edit svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
 .in-post-meta .Label a {
   color: inherit;
   text-decoration: none;

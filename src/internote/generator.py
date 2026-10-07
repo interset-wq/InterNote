@@ -664,6 +664,9 @@ class Generator:
         page["post"] = {
             "title": kept["title"],
             "url": self.ctx["home_url"] + "/" + kept["url"],
+            # a sub post IS a comment on the parent issue: that issue is
+            # where its content is edited
+            "issue_url": self.ctx["blog_repo_url"] + "/issues/" + str(entry["number"]),
             "description": "",
             "body": sub_body,
             # Sub pages carry giscus too; the parent's comments = false
@@ -694,7 +697,7 @@ class Generator:
                 page["post"]["highlight"] = 1
             else:
                 page["post"]["highlight"] = 2
-        keys = ["sun", "moon", "sync", "home", "github", "rss"]
+        keys = ["sun", "moon", "sync", "home", "github", "rss", "pencil"]
         if page["post"]["highlight"] != 0:
             keys.extend(["copy", "check"])
         # FAB buttons live on every post page (toc overlay + scroll), so
@@ -819,6 +822,7 @@ class Generator:
         page["post"] = {
             "title": entry["post_title"],
             "url": self.ctx["home_url"] + "/" + entry["post_url"],
+            "issue_url": self.ctx["blog_repo_url"] + "/issues/" + str(entry["number"]),
             "description": entry["description"],
             "body": post_body,
             "comments": entry["comments"],
@@ -851,10 +855,10 @@ class Generator:
                 page["post"]["highlight"] = 1
             else:
                 page["post"]["highlight"] = 2
-            keys = ["sun", "moon", "sync", "home", "github", "rss", "copy", "check"]
+            keys = ["sun", "moon", "sync", "home", "github", "rss", "pencil", "copy", "check"]
         else:
             page["post"]["highlight"] = 0
-            keys = ["sun", "moon", "sync", "home", "github", "rss"]
+            keys = ["sun", "moon", "sync", "home", "github", "rss", "pencil"]
 
         # Every page header links to the tag cloud, so `tag` is never optional,
         # and the nav search button needs its magnifier glyph since search.js
@@ -1033,15 +1037,19 @@ class Generator:
         )
         now = datetime.datetime.now(self.tz).strftime("%Y-%m-%d %H:%M:%S")
         home = self.ctx["home_url"]
-        lines = [
-            f"# {self.ctx['title']} :link: {home} \r\n",
-            f"### :page_facing_up: [{len(self.ctx['post_list'])}]({home}/tag.html) \r\n",
-            f"### :hibiscus: {words} \r\n",
-            f"### :alarm_clock: {now} \r\n",
-            "### Powered by :heart: [Internote]"
-            "(https://github.com/interset-wq/InterNote)\r\n",
-        ]
+        title = self.ctx["title"]
+        text = f"""\
+# {title}
+
+> {home}
+
+- 文章：{len(self.ctx['post_list'])} 篇 · [标签页]({home}/tag.html)
+- 字数：{words}
+- 构建：{now}
+
+Powered by [Internote](https://github.com/interset-wq/InterNote)
+"""
         (Path(workspace) / "README.md").write_text(
-            "".join(lines), encoding="utf-8"
+            text, encoding="utf-8"
         )
         print("====== update readme file ======")
