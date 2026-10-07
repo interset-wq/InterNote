@@ -918,6 +918,14 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--in-color-border);
   border-radius: 8px;
   transition: box-shadow 0.15s;
+  /* overflow makes this a BFC: the markdown-body pre's 16px bottom
+     margin would end up INSIDE the border - an empty strip under the
+     code. Zero the pre's margins and keep the rhythm on the wrapper. */
+  margin-bottom: 16px;
+}
+
+.in-code-block pre {
+  margin: 0;
 }
 
 .in-code-block:hover {
