@@ -51,6 +51,7 @@
         var button = document.createElement('button');
         button.className = 'in-tag-cloud-item';
         button.type = 'button';
+        button.dataset.label = text;
         var dot = document.createElement('span');
         dot.className = 'in-tag-cloud-dot';
         dot.style.backgroundColor = color || '#6e7781';
