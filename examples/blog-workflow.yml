@@ -28,6 +28,12 @@ on:
     # state and drops the entry from the pages, the lists, the feed, the state
     # file and the search index. Without a cron there is no later sweep.
     types: [opened, edited, closed]
+  issue_comment:
+    # Series sub posts are born from comments: the issues events above do
+    # NOT fire when a comment is added, so without this trigger a new sub
+    # post page never builds. `deleted` withdraws the sub page when the
+    # comment is removed. The owner guard on the job still applies.
+    types: [created, edited, deleted]
 
 jobs:
   build:
