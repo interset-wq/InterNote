@@ -41,9 +41,11 @@
       }
 
       function badge(text, color) {
+        // Neutral chip + colour dot: label colours stay visible without
+        // betting on a readable bg/text pair (same look as the tag cloud).
         var node = document.createElement('span');
         node.className = 'in-badge';
-        node.style.backgroundColor = color;
+        node.style.setProperty('--in-badge-dot', color || '#6e7781');
         node.textContent = text;
         return node;
       }
