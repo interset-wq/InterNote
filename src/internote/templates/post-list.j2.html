@@ -49,6 +49,8 @@
       var lastBtn = document.getElementById('page-last');
       var status = document.getElementById('page-status');
       var posts = [];
+      // "%d" placeholder swapped for the sub-post count at render time
+      var SERIES_PARTS = {{ i18n.seriesParts | tojson }};
 
       function badge(text, color) {
         // Neutral chip + colour dot: label colours stay visible without
@@ -103,7 +105,7 @@
         if (item.subs) {
           // Series badge: the sub posts themselves stay out of the index,
           // the card only signals that the series has more parts.
-          meta.appendChild(badge(item.subs + ' \u2192', '#8250df'));
+          meta.appendChild(badge(SERIES_PARTS.replace('%d', item.subs), '#8250df'));
         }
         var date = document.createElement('span');
         date.className = 'in-post-card-date';

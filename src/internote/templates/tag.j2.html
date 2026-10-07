@@ -31,6 +31,8 @@
       var heading = document.querySelector('.in-page-title');
       var timeline = document.getElementById('timeline');
       var knownLabels = [];
+      // "%d" placeholder swapped for the sub-post count at render time
+      var SERIES_PARTS = {{ i18n.seriesParts | tojson }};
 
       // `时间轴` is a pseudo-tag: selecting it hides the card flow and
       // shows the month-grouped timeline instead of filtering rows.
@@ -143,7 +145,7 @@
           if (item.subs) {
             // Series badge, same as the index card: sub posts stay out of
             // the index, the row only signals the series has more parts.
-            meta.appendChild(badge(item.subs + ' \u2192', '#8250df'));
+            meta.appendChild(badge(SERIES_PARTS.replace('%d', item.subs), '#8250df'));
           }
           var date = document.createElement('span');
           date.className = 'in-post-card-date';
