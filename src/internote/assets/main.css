@@ -1063,15 +1063,25 @@ a:hover { text-decoration: underline; }
   color: var(--in-color-muted);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, opacity 0.2s, transform 0.2s;
+  transition: color 0.15s, border-color 0.15s, opacity 0.2s, transform 0.2s,
+    height 0.2s, margin 0.2s;
 }
 
 /* fade instead of a hard hidden flip: out-of-range buttons slide down
-   and dim; still clickable-free since pointer-events is disabled */
+   and dim. opacity alone keeps the 44px slot alive, which pushed the
+   visible siblings around as buttons dimmed in and out - collapse the
+   box (height/border to 0) and cancel the two 8px flex gaps with
+   negative margins so the layout matches the old [hidden] behaviour
+   while the fade still animates. */
 .in-fab-btn.is-dimmed {
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
+  height: 0;
+  min-height: 0;
+  border-width: 0;
+  margin: -4px 0;
+  overflow: hidden;
 }
 
 .in-fab-btn:hover {
