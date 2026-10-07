@@ -138,6 +138,11 @@
             labelsBox.appendChild(badge(name, data.label_colors[name]));
           });
           meta.appendChild(labelsBox);
+          if (item.subs) {
+            // Series badge, same as the index card: sub posts stay out of
+            // the index, the row only signals the series has more parts.
+            meta.appendChild(badge(item.subs + ' \u2192', '#8250df'));
+          }
           var date = document.createElement('span');
           date.className = 'in-post-card-date';
           date.textContent = item.date;
