@@ -720,3 +720,25 @@ class TestSubPosts:
         build(tmp_path, [issue(number=7, state="closed")], incremental="7")
         assert not (tmp_path / "dist" / "post" / "7.html").exists()
         assert not (tmp_path / "dist" / "post" / "7_9001.html").exists()
+
+    def test_bare_h1_comment_without_front_matter_becomes_a_sub_post(self, tmp_path):
+        # the relaxed trigger that made #108 work: no +++ block at all
+        build(tmp_path, [issue(number=7, comments=[(9001, "# m\n\nmn", "OWNER")])])
+        page = tmp_path / "dist" / "post" / "7_9001.html"
+        assert page.exists()
+        html = page.read_text(encoding="utf-8")
+        assert "mn" in html
+        assert ">m<" in html or "m" in page.name  # title came from the h1
+
+    def test_leading_h1_is_consumed_not_duplicated(self, tmp_path):
+        build(tmp_path, [issue(number=7, comments=[(9001, "# Only Title\n\nbody text", "OWNER")])])
+        html = (tmp_path / "dist" / "post" / "7_9001.html").read_text(encoding="utf-8")
+        # the h1 was consumed as the page title: the raw heading must not
+        # render again inside the body (the bare title text also appears
+        # in <title> and the page <h1>, so count the hashed form instead)
+        assert "# Only Title" not in html
+        assert "body text" in html
+
+    def test_hash_hash_led_comment_stays_an_ordinary_comment(self, tmp_path):
+        build(tmp_path, [issue(number=7, comments=[(9001, "## not an h1\n\nplain reply", "OWNER")])])
+        assert not (tmp_path / "dist" / "post" / "7_9001.html").exists()

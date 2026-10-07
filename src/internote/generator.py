@@ -426,7 +426,7 @@ class Generator:
             "word_count": len(body),
             "top": 0,
             # Default is on: a page opts out with `comments = false`.
-            "comments": not meta.get("comments") is False,
+            "comments": meta.get("comments") is not False,
             "style": self.ctx["style"],
             "script": self.ctx["script"],
             "head": self.ctx["head"],
@@ -522,20 +522,35 @@ class Generator:
             if getattr(comment, "author_association", "NONE") not in SUB_AUTHORS:
                 continue
             raw = comment.body or ""
-            if not frontmatter.has_front_matter(raw):
-                continue
-            try:
-                meta, sub_body = frontmatter.split_sub(raw)
-            except frontmatter.FrontMatterError as error:
-                raise FrontMatterError(
-                    "issue #{} comment {}: {}".format(issue.number, comment.id, error)
-                ) from error
-            title = meta.get("title") or frontmatter.first_h1(sub_body)
-            if not title:
-                raise FrontMatterError(
-                    "issue #{} comment {}: a sub post needs a 'title' or a "
-                    "leading '# ' heading".format(issue.number, comment.id)
-                )
+            meta: dict = {}
+            if frontmatter.has_front_matter(raw):
+                try:
+                    meta, sub_body = frontmatter.split_sub(raw)
+                except frontmatter.FrontMatterError as error:
+                    raise FrontMatterError(
+                        "issue #{} comment {}: {}".format(
+                            issue.number, comment.id, error
+                        )
+                    ) from error
+                title = meta.get("title")
+                if not title:
+                    # No explicit title: the leading h1 carries the title
+                    # semantics and is consumed out of the body so the
+                    # page does not render it twice.
+                    title, sub_body = frontmatter.take_leading_h1(sub_body)
+                if not title:
+                    raise FrontMatterError(
+                        "issue #{} comment {}: a sub post needs a 'title' or "
+                        "a leading '# ' heading".format(issue.number, comment.id)
+                    )
+            else:
+                # Relaxed trigger: a comment that opens with a bare ATX h1
+                # (no front matter at all) is a sub post too — the h1
+                # becomes the title and is consumed. Anything else is an
+                # ordinary comment and is ignored.
+                title, sub_body = frontmatter.take_leading_h1(raw)
+                if not title:
+                    continue
             created = comment.created_at
             if created.tzinfo is None:
                 created = created.replace(tzinfo=datetime.timezone.utc)
@@ -621,7 +636,9 @@ class Generator:
             "url": self.ctx["home_url"] + "/" + kept["url"],
             "description": "",
             "body": sub_body,
-            "comments": False,  # giscus lives on the parent page only
+            # Sub pages carry giscus too; the parent's comments = false
+            # opt-out applies to the whole series.
+            "comments": entry["comments"],
             "style": self.ctx["style"],
             "script": self.ctx["script"],
             "head": self.ctx["head"],
@@ -636,7 +653,21 @@ class Generator:
             "series_crumb": crumb,
             "series_pager": pager,
         }
-        keys = ["sun", "moon", "sync", "home", "github", "rss", "search", "tag"]
+
+        # Same code-block detection as _create_post: highlight=1 pages link
+        # the starry-night stylesheet and the code-copy plugin needs its
+        # copy/check glyphs in window.icons.
+        if '<pre class="notranslate">' in sub_body:
+            if '<div class="highlight' in sub_body:
+                page["post"]["highlight"] = 1
+            else:
+                page["post"]["highlight"] = 2
+        keys = ["sun", "moon", "sync", "home", "github", "rss"]
+        if page["post"]["highlight"] != 0:
+            keys.extend(["copy", "check"])
+        # FAB buttons live on every post page (toc overlay + scroll), so
+        # their glyphs must reach window.icons here as well.
+        keys.extend(["search", "tag", "bars", "arrow-up", "arrow-down"])
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
             "site": page,

@@ -135,19 +135,24 @@ def split_sub(text: str) -> tuple[dict, str]:
     return meta, body
 
 
-def first_h1(body: str) -> str:
-    """Return the text of the first ATX ``# `` heading in *body*.
+def take_leading_h1(text: str) -> tuple[str, str]:
+    """Split a leading ATX h1 off *text*: ``(title, rest)``.
 
-    Setext headings (underlined with ``===``) are not recognised; a body
-    using them simply yields ``""`` and the caller raises. Runs after the
-    front matter has been stripped, so a heading inside the ``+++`` block
-    cannot win.
+    The h1 carries title semantics, so when it becomes the page title it
+    is consumed out of the body instead of rendering twice. Returns
+    ``("", text)`` when the first non-empty line is not an ``# `` heading
+    — a ``##`` heading, a code fence or plain prose all qualify, so an
+    ordinary comment never trips this. Setext headings are not recognised.
     """
-    for line in body.split("\n"):
-        line = line.rstrip("\r").strip()
-        if line.startswith("# ") and len(line) > 2:
-            return line[2:].strip()
-    return ""
+    lines = text.split("\n")
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("# ") and len(stripped) > 2:
+            return stripped[2:].strip(), "\n".join(lines[index + 1 :])
+        return "", text
+    return "", text
 
 
 def _check_types(meta: dict) -> None:
