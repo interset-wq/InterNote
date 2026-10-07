@@ -866,17 +866,14 @@ a:hover { text-decoration: underline; }
 .in-series-next { margin-left: auto; text-align: right; }
 
 /* ===== Code Copy Button ===== */
-/* Language label on highlighted code blocks, top-right corner. The
-   generator injects <span class="in-code-lang"> before the wrapper div;
-   the wrapper is position:relative, the label absolute. */
-.highlight {
-  position: relative;
-}
-
+/* Language label on highlighted code blocks, top-right corner, left of
+   the copy button. code-copy.js injects <span class="in-code-lang">
+   into the .in-code-block wrapper (which is position:relative) from
+   the highlight-(source|text)- language wrapper class. */
 .in-code-lang {
   position: absolute;
   top: 8px;
-  right: 8px;
+  right: 48px;
   z-index: 2;
   padding: 1px 8px;
   font-size: 12px;
@@ -892,6 +889,7 @@ a:hover { text-decoration: underline; }
   position: absolute;
   top: 10px;
   right: 50px;
+  z-index: 3;
   color: #fff;
   background-color: var(--in-color-muted);
   border-radius: 3px;

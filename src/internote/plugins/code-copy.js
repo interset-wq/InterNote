@@ -1,10 +1,16 @@
 /**
- * Copy buttons on code blocks.
+ * Copy buttons and language labels on code blocks.
  *
  * Rewrites each <pre><code> into a positioned wrapper carrying a
  * <clipboard-copy> element (a Primer web component). The copy/check
  * glyphs are swapped on click, which is why these two icons have to be
  * available at runtime rather than rendered by the template.
+ *
+ * GitHub names the language in the wrapper class
+ * (highlight-source-python / highlight-text-html-basic) but never
+ * displays it; a small label is derived from that class here rather
+ * than server-side, so every class variant and every page (parent and
+ * series sub posts) is covered by one matcher.
  */
 (function () {
   'use strict';
@@ -24,12 +30,24 @@
     );
   }
 
+  var LANG_RE = /(?:^|\s)highlight-(?:source|text)-([a-z0-9-]+)/;
+  var NO_LABEL = {text: 1, plaintext: 1, none: 1};
+
+  function langLabel(highlightClassName) {
+    var match = (highlightClassName || '').match(LANG_RE);
+    if (!match || NO_LABEL[match[1]]) return '';
+    return '<span class="in-code-lang">' + match[1] + '</span>';
+  }
+
   function rewrite(selector) {
     var isHighlight = selector.indexOf('highlight') !== -1;
     document.querySelectorAll(selector).forEach(function (codeElement) {
+      var label = isHighlight
+        ? langLabel(codeElement.parentElement.className)
+        : '';
       var wrapper = document.createElement('div');
       wrapper.className = 'in-code-block';
-      wrapper.innerHTML = wrapCode(codeElement.innerHTML);
+      wrapper.innerHTML = label + wrapCode(codeElement.innerHTML);
 
       var pre = codeElement.parentElement;
       if (isHighlight) {
@@ -55,7 +73,7 @@
 
     document.querySelectorAll('clipboard-copy').forEach(function (button) {
       button.addEventListener('click', function () {
-        copyText(button.closest('.in-code-block').innerText);
+        copyText(button.closest('.in-code-block').querySelector('pre').innerText);
 
         var copyIcon = button.querySelector('.octicon-copy');
         var checkIcon = button.querySelector('.octicon-check');
