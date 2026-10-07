@@ -28,7 +28,13 @@
     var headings = Array.prototype.slice.call(body.querySelectorAll(HEADINGS));
     return headings
       .filter(function (heading) {
-        return heading.textContent.trim() !== '';
+        if (heading.textContent.trim() === '') {
+          return false;
+        }
+        // Posts that demo markdown headings (e.g. a syntax cheat sheet)
+        // would otherwise inject one TOC entry per demo heading; such
+        // demos are wrapped in <div class="in-toc-skip"> by the author.
+        return !heading.closest('.in-toc-skip');
       })
       .map(function (heading) {
         if (!heading.id) {

@@ -769,6 +769,20 @@ class Generator:
                 ),
                 post_body,
             )
+
+        # GitHub names the language in the wrapper class
+        # (highlight-source-python) but never displays it; surface it as a
+        # small label in the block's top-right corner.
+        post_body = re.sub(
+            r'(<div class="highlight highlight-source-[a-z0-9-]+">)'
+            r"(?=<pre)",
+            lambda m: '<span class="in-code-lang">{}</span>'.format(
+                re.search(
+                    r"highlight-source-([a-z0-9-]+)", m.group(1)
+                ).group(1)
+            ) + m.group(1),
+            post_body,
+        )
         return post_body
 
     def _load_emoji_map(self):

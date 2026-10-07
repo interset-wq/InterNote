@@ -866,6 +866,27 @@ a:hover { text-decoration: underline; }
 .in-series-next { margin-left: auto; text-align: right; }
 
 /* ===== Code Copy Button ===== */
+/* Language label on highlighted code blocks, top-right corner. The
+   generator injects <span class="in-code-lang"> before the wrapper div;
+   the wrapper is position:relative, the label absolute. */
+.highlight {
+  position: relative;
+}
+
+.in-code-lang {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-family: var(--in-font-mono, ui-monospace, monospace);
+  color: var(--in-color-muted, #59636e);
+  background-color: var(--in-color-bg-inset, rgba(175, 184, 143, 0.2));
+  border-radius: 6px;
+  pointer-events: none;
+  user-select: none;
+}
 .in-copy-feedback {
   display: none;
   position: absolute;
