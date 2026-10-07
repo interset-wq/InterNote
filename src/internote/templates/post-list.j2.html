@@ -49,17 +49,37 @@
       var lastBtn = document.getElementById('page-last');
       var status = document.getElementById('page-status');
       var posts = [];
+      var labelCounts = {};
       // "%d" placeholder swapped for the sub-post count at render time
       var SERIES_PARTS = {{ i18n.seriesParts | tojson }};
 
-      function badge(text, color) {
-        // Neutral chip + colour dot: label colours stay visible without
-        // betting on a readable bg/text pair (same look as the tag cloud).
-        var node = document.createElement('span');
-        node.className = 'in-badge';
-        node.style.setProperty('--in-badge-dot', color || '#6e7781');
-        node.textContent = text;
-        return node;
+      // EXACTLY the chip the tag cloud renders: button.in-tag-cloud-item
+      // with a colour dot, the label text and (labels only) the global
+      // post count - same DOM, same classes, same CSS. onClick lets the
+      // chip filter/navigate instead of following the card link.
+      function badge(text, color, count, onClick) {
+        var button = document.createElement('button');
+        button.className = 'in-tag-cloud-item';
+        button.type = 'button';
+        var dot = document.createElement('span');
+        dot.className = 'in-tag-cloud-dot';
+        dot.style.backgroundColor = color || '#6e7781';
+        button.appendChild(dot);
+        button.appendChild(document.createTextNode(text));
+        if (count !== undefined) {
+          var num = document.createElement('span');
+          num.className = 'in-tag-cloud-count';
+          num.textContent = count;
+          button.appendChild(num);
+        }
+        if (onClick) {
+          button.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            onClick();
+          });
+        }
+        return button;
       }
 
       function icon(name) {
@@ -99,7 +119,9 @@
         var labelsBox = document.createElement('span');
         labelsBox.className = 'in-post-card-labels';
         item.labels.forEach(function (name) {
-          labelsBox.appendChild(badge(name, colors[name] || '#6e7781'));
+          labelsBox.appendChild(badge(name, colors[name] || '#6e7781', labelCounts[name] || 0, function () {
+            window.location.href = 'tag.html#' + encodeURIComponent(name);
+          }));
         });
         meta.appendChild(labelsBox);
         if (item.subs) {
@@ -158,6 +180,11 @@
         .then(function (response) { return response.json(); })
         .then(function (data) {
           posts = Array.isArray(data.posts) ? data.posts : [];
+          posts.forEach(function (item) {
+            item.labels.forEach(function (name) {
+              labelCounts[name] = (labelCounts[name] || 0) + 1;
+            });
+          });
           window.__label_colors = data.label_colors || {};
           firstBtn.addEventListener('click', function () { show(1); });
           prevBtn.addEventListener('click', function () { show(pageFromHash() - 1); });

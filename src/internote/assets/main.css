@@ -173,35 +173,9 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
 }
 
-.in-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--in-color-text, var(--color-fg-default, #1f2328));
-  background-color: var(--in-color-subtle, var(--color-canvas-subtle, #f6f8fa));
-  line-height: 1.5;
-}
-
-/* the label colour rides a dot, never the chip background: contrast is
-   then always the theme's fg-on-subtle pair, regardless of the colour
-   GitHub picked for the label */
-.in-badge::before {
-  content: '';
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--in-badge-dot, var(--in-color-muted, #59636e));
-}
-
-.in-badge a {
-  color: inherit;
-  text-decoration: none;
-}
+/* Label/series chips in card rows are EXACTLY the tag-cloud chip
+   (button.in-tag-cloud-item + .in-tag-cloud-dot + .in-tag-cloud-count);
+   its styles live in the Tag Cloud section - nothing badge-specific. */
 
 .in-post-body {
   border-bottom: 1px solid var(--in-color-border);
@@ -321,10 +295,6 @@ a:hover { text-decoration: underline; }
   gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
-}
-
-.in-post-card-meta .in-badge {
-  color: #fff;
 }
 
 .in-post-card-labels {
@@ -564,12 +534,6 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   gap: 4px;
   flex-wrap: wrap;
-}
-
-.in-timeline-labels .in-badge {
-  color: #fff;
-  font-size: 11px;
-  padding: 1px 8px;
 }
 
 /* ===== Search Dialog =====

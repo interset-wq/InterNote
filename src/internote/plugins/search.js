@@ -177,7 +177,7 @@
 
       var badges = el('span', 'in-search-hit-labels');
       (record.labels || []).forEach(function (label) {
-        badges.appendChild(el('span', 'in-badge in-search-hit-label', label));
+        badges.appendChild(el('span', 'in-search-hit-label', label));
       });
       link.appendChild(badges);
 
