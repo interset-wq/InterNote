@@ -632,6 +632,9 @@ class Generator:
                     ],
                 }
             )
+        # Must be set BEFORE the render loop: each sub page's ctx carries
+        # the full series listing, which reads entry["subs"].
+        entry["subs"] = kept
         for index, sub in enumerate(kept):
             crumb = {
                 "parent_title": entry["post_title"],
@@ -659,8 +662,6 @@ class Generator:
             if stale_page.name not in live:
                 stale_page.unlink()
                 print("withdraw sub post", stale_page.name)
-
-        entry["subs"] = kept
 
     def _render_sub_page(self, entry, parsed, kept, crumb, pager):
         sub_body = self._decorate_body(entry, self._render_body(parsed["body"]))
