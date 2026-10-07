@@ -765,6 +765,49 @@ a:hover { text-decoration: underline; }
   gap: 8px;
 }
 
+/* [[social]] brand glyphs are inline Simple Icons SVGs (24x24 viewBox,
+   brand fill); size them to match the octicon buttons around them. */
+.in-social svg {
+  width: 18px;
+  height: 18px;
+}
+
+.in-social-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%);
+  z-index: 120;
+  padding: 6px 14px;
+  border-radius: var(--in-radius);
+  background-color: var(--in-color-text);
+  color: var(--in-color-bg);
+  font-size: 13px;
+}
+
+.in-social-toast[hidden] { display: none; }
+
+.in-social-qr {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  cursor: zoom-out;
+}
+
+.in-social-qr[hidden] { display: none; }
+
+.in-social-qr img {
+  max-width: min(320px, 80vw);
+  max-height: 80vh;
+  padding: 8px;
+  border-radius: var(--in-radius);
+  background: #fff;
+}
+
 .in-footer-line { margin-bottom: 8px; }
 
 .in-footer-powered {

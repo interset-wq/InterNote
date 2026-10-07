@@ -101,6 +101,9 @@ class Generator:
         # Resolved by _fetch_favicon before any page renders; empty = no
         # <link rel="icon">.
         self.ctx["favicon_file"] = ""
+        # id -> inline SVG markup, resolved by _fetch_social_icons before
+        # any page renders; empty dict = footer shows only RSS/GitHub.
+        self.ctx["social_icons"] = {}
         print("GitHub Pages URL: ", self.ctx["home_url"])
 
         self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
@@ -203,10 +206,49 @@ class Generator:
         else:
             self.ctx["avatar_file"] = ""
 
+    def _fetch_social_icons(self):
+        """Resolve [social] entries into inline SVG markup for the footer.
+
+        Each entry's brand glyph comes from the Simple Icons CDN by slug
+        and is stored under dist/assets/social/ — the markup is inlined
+        server-side, so the pages carry no extra requests and no third-
+        party script. Downloads share the favicon cache keyed on the
+        source URL in internote.json. A failure only warns and drops that
+        one icon: a flaky network must not fail the blog build.
+        """
+        self.ctx["social_icons"] = {}
+        for item in self.ctx.get("social") or []:
+            name = "social/{}.svg".format(item["id"])
+            source = "https://cdn.simpleicons.org/{}".format(item["id"])
+            path = self.dist_dir / "assets" / name
+            if not (self.favicon_src.get(name) == source and path.exists()):
+                try:
+                    request = urllib.request.Request(
+                        source, headers={"User-Agent": "Internote"}
+                    )
+                    with urllib.request.urlopen(request, timeout=30) as response:
+                        data = response.read()
+                    if not data:
+                        raise ValueError("empty response")
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(data)
+                    self.favicon_src[name] = source
+                    print("create", name, "from", source)
+                except Exception as error:  # noqa: BLE001 - never fail
+                    print(
+                        "warning: social icon {} download failed ({}); "
+                        "it is skipped".format(item["id"], error)
+                    )
+                    continue
+            self.ctx["social_icons"][item["id"]] = path.read_text(
+                encoding="utf-8"
+            )
+
     def run_all(self):
         print("====== start create static html ======")
         self._clean()
         self._fetch_favicon()
+        self._fetch_social_icons()
         for issue in self.repo.get_issues():
             self._add_entry(issue)
         for entry in list(self.ctx["post_list"].values()):
@@ -224,6 +266,7 @@ class Generator:
             self._clean()
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         self._fetch_favicon()
+        self._fetch_social_icons()
         issue = self.repo.get_issue(int(number_str))
         if issue.state != "open":
             self._drop_entry(issue.number, "issue is closed")

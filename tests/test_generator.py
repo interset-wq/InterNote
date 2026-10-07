@@ -544,3 +544,91 @@ class TestFavicon:
         gen.run_all()
         assert gen.ctx["favicon_file"] == ""
         assert 'rel="icon"' not in (tmp_path / "dist" / "index.html").read_text(encoding="utf-8")
+
+
+class TestSocialIcons:
+    """[[social]] footer icons: Simple Icons glyphs downloaded at build
+    time and inlined server-side; actions are data-driven."""
+
+    def test_no_social_config_leaves_footer_untouched(self, tmp_path):
+        build(tmp_path, [issue()])
+        html = index_of(tmp_path)
+        assert "in-social" not in html
+        assert 'href="https://example.com/rss.xml"' in html
+
+    def _gen_with_social(self, tmp_path, responses, repo):
+        cfg = load_config(
+            write_config(
+                tmp_path,
+                extra=(
+                    '\n[[social]]\nid = "wechat"\ntitle = "WeChat"\n'
+                    'action = "copy"\nusername = "someone"\n'
+                    '[[social]]\nid = "tiktok"\naction = "link"\n'
+                    'url = "https://tiktok.com/@you"\n'
+                ),
+            )
+        )
+        gen = Generator(
+            cfg, repo, repo_name="owner/blog", markdown=lambda t: t, root=tmp_path
+        )
+
+        def fake_urlopen(request, timeout):
+            class Response:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+                def read(self):
+                    return responses[request.full_url]
+
+            return Response()
+
+        return gen, fake_urlopen
+
+    def test_icons_are_downloaded_inlined_and_action_bound(self, tmp_path):
+        repo, _ = make_repo(tmp_path, [issue()])
+        responses = {
+            "https://cdn.simpleicons.org/wechat": b'<svg><path d="wechat-glyph"/></svg>',
+            "https://cdn.simpleicons.org/tiktok": b'<svg><path d="tiktok-glyph"/></svg>',
+        }
+        gen, fake_urlopen = self._gen_with_social(tmp_path, responses, repo)
+        with patch("internote.generator.urllib.request.urlopen", fake_urlopen):
+            gen.run_all()
+
+        for name in ("wechat", "tiktok"):
+            assert (tmp_path / "dist" / "assets" / "social" / f"{name}.svg").exists()
+        state = state_of(tmp_path)
+        assert state["favicon_src"]["social/wechat.svg"] == "https://cdn.simpleicons.org/wechat"
+
+        html = index_of(tmp_path)
+        assert 'data-copy="someone"' in html
+        assert '<path d="wechat-glyph"/>' in html  # glyph inlined, brand SVG verbatim
+        assert 'href="https://tiktok.com/@you"' in html
+        assert 'target="_blank"' in html and 'rel="noopener"' in html
+
+    def test_failed_download_drops_only_that_icon(self, tmp_path):
+        repo, _ = make_repo(tmp_path, [issue()])
+        responses = {"https://cdn.simpleicons.org/wechat": b"<svg/>"}
+
+        def flaky_urlopen(request, timeout):
+            if "tiktok" in request.full_url:
+                raise OSError("network down")
+            class Response:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+                def read(self):
+                    return responses[request.full_url]
+            return Response()
+
+        gen, _ = self._gen_with_social(tmp_path, responses, repo)
+        with patch("internote.generator.urllib.request.urlopen", flaky_urlopen):
+            gen.run_all()
+        html = index_of(tmp_path)
+        assert 'data-copy="someone"' in html
+        assert "tiktok.com" not in html  # failed icon skipped, build fine

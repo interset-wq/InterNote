@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import re
+
 import tomllib
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class SiteConfig(BaseModel):
@@ -53,6 +55,40 @@ class GiscusConfig(BaseModel):
     category_id: str = ""
 
 
+class SocialLink(BaseModel):
+    """One footer social icon. `id` names the Simple Icons glyph
+    (https://simpleicons.org slugs); the action decides what clicking
+    does and which other field is required."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    title: str = ""
+    action: Literal["link", "copy", "qrcode"] = "link"
+    url: str = ""
+    username: str = ""
+    qrcode: str = ""
+
+    @model_validator(mode="after")
+    def _check_action_fields(self):
+        if not re.fullmatch(r"[a-z0-9-]+", self.id):
+            # also keeps the id safe to embed in a download URL / file name
+            raise ValueError(
+                "social id must be a Simple Icons slug (lowercase letters, "
+                "digits, hyphens), got {!r}".format(self.id)
+            )
+        needed = {"link": "url", "copy": "username", "qrcode": "qrcode"}[
+            self.action
+        ]
+        if not getattr(self, needed):
+            raise ValueError(
+                "social {!r} with action {!r} requires {!r}".format(
+                    self.id, self.action, needed
+                )
+            )
+        return self
+
+
 class InternoteConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -60,6 +96,7 @@ class InternoteConfig(BaseModel):
     layout: LayoutConfig = LayoutConfig()
     comments: CommentsConfig = CommentsConfig()
     giscus: GiscusConfig = GiscusConfig()
+    social: list[SocialLink] = []
 
     def context(self) -> dict:
         site = self.site
@@ -88,6 +125,7 @@ class InternoteConfig(BaseModel):
             "giscus_repo_id": self.giscus.repo_id,
             "giscus_category": self.giscus.category,
             "giscus_category_id": self.giscus.category_id,
+            "social": [link.model_dump() for link in self.social],
             "theme_mode": "manual",
             "day_theme": "light",
             "night_theme": "dark",

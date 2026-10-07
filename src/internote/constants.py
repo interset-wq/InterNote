@@ -14,6 +14,7 @@ I18N = {
         "top": "Top",
         "noResults": "No results for",
         "tags": "Tags",
+        "copied": "Copied!",
     },
     "CN": {
         "Search": "搜索",
@@ -29,6 +30,7 @@ I18N = {
         "top": "回到顶部",
         "noResults": "未找到结果",
         "tags": "标签",
+        "copied": "已复制",
     },
 }
 

@@ -1,8 +1,26 @@
 {# Site footer component - expects: site, icons, i18n #}
 {% from 'components/macros.j2.html' import nav_link with context %}
-<div class="in-footer-icons" id="footer-icons">
+<div class="in-footer-icons" id="footer-icons" data-copied="{{ i18n.copied }}">
   {{ nav_link('rss', site.home_url ~ '/rss.xml', 'RSS', 'RSS Feed', '_blank') }}
   {{ nav_link('github', site.blog_repo_url, 'GitHub', 'GitHub Repository', '_blank') }}
+  {# Configured [[social]] icons. Glyphs are inlined server-side from
+     dist/assets/social/<id>.svg (Simple Icons, brand colour included);
+     an entry whose download failed is skipped. The action decides the
+     element: link renders a plain anchor, copy/qrcode render buttons
+     the footer script wires up. #}
+  {% for item in site.social %}
+  {% set glyph = site.social_icons.get(item.id, '') %}
+  {% if glyph %}
+  {% set label = item.title or item.id %}
+  {% if item.action == 'link' %}
+  <a class="in-nav-btn in-social" href="{{ item.url }}" target="_blank" rel="noopener" title="{{ label }}" aria-label="{{ label }}">{{ glyph }}</a>
+  {% elif item.action == 'copy' %}
+  <button class="in-nav-btn in-social" type="button" title="{{ label }}" aria-label="{{ label }}" data-copy="{{ item.username }}">{{ glyph }}</button>
+  {% elif item.action == 'qrcode' %}
+  <button class="in-nav-btn in-social" type="button" title="{{ label }}" aria-label="{{ label }}" data-qrcode="{{ item.qrcode }}">{{ glyph }}</button>
+  {% endif %}
+  {% endif %}
+  {% endfor %}
 </div>
 <div class="in-footer-line" id="footer-copyright">
   Copyright &copy; <span id="copyright-year"></span>
@@ -24,6 +42,53 @@
     );
     document.getElementById('run-days').textContent =
       '{{ i18n.run }}' + days + '{{ i18n.days }} • ';
+    {% endif %}
+
+    {% if site.social %}
+    // [[social]] copy + qrcode actions. Everything is data-driven from the
+    // server-rendered buttons; with no such buttons this is a no-op.
+    var icons = document.getElementById('footer-icons');
+    if (!icons.querySelector('[data-copy], [data-qrcode]')) {
+      return;
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'in-social-toast';
+    toast.hidden = true;
+    document.body.appendChild(toast);
+    var toastTimer = null;
+    function showToast(text) {
+      toast.textContent = text;
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toast.hidden = true; }, 1600);
+    }
+
+    var overlay = document.createElement('div');
+    overlay.className = 'in-social-qr';
+    overlay.hidden = true;
+    var img = document.createElement('img');
+    img.alt = '';
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+    function closeOverlay() { overlay.hidden = true; }
+    overlay.addEventListener('click', closeOverlay);
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { closeOverlay(); }
+    });
+
+    icons.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-copy], [data-qrcode]');
+      if (!button) { return; }
+      if (button.dataset.copy) {
+        navigator.clipboard.writeText(button.dataset.copy).then(function () {
+          showToast(icons.dataset.copied || 'Copied!');
+        });
+      } else if (button.dataset.qrcode) {
+        img.src = button.dataset.qrcode;
+        overlay.hidden = false;
+      }
+    });
     {% endif %}
   })();
 </script>

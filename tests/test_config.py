@@ -177,3 +177,62 @@ class TestSampleConfig:
         )
         cfg = load_config(sample)
         assert cfg.site.title
+
+
+class TestSocial:
+    def test_social_defaults_to_empty(self, tmp_path):
+        cfg = load_config(write(tmp_path, MINIMAL))
+        assert cfg.social == []
+        assert cfg.context()["social"] == []
+
+    def test_social_copy_entry(self, tmp_path):
+        cfg = load_config(
+            write(
+                tmp_path,
+                MINIMAL
+                + '\n[[social]]\nid = "wechat"\ntitle = "微信"\n'
+                  'action = "copy"\nusername = "someone"\n',
+            )
+        )
+        assert cfg.social[0].id == "wechat"
+        assert cfg.context()["social"][0]["username"] == "someone"
+
+    def test_social_action_requires_its_field(self, tmp_path):
+        for action in ("link", "copy", "qrcode"):
+            with pytest.raises(ValidationError, match="requires"):
+                load_config(
+                    write(
+                        tmp_path,
+                        MINIMAL
+                        + "\n[[social]]\nid = 'x'\naction = '{}'\n".format(action),
+                    )
+                )
+
+    def test_social_unknown_action_rejected(self, tmp_path):
+        with pytest.raises(ValidationError):
+            load_config(
+                write(
+                    tmp_path,
+                    MINIMAL + "\n[[social]]\nid = 'x'\naction = 'poke'\nurl = 'https://x'\n",
+                )
+            )
+
+    def test_social_id_must_be_a_slug(self, tmp_path):
+        with pytest.raises(ValidationError, match="slug"):
+            load_config(
+                write(
+                    tmp_path,
+                    MINIMAL
+                    + "\n[[social]]\nid = 'We Chat'\naction = 'link'\nurl = 'https://x'\n",
+                )
+            )
+
+    def test_social_unknown_key_rejected(self, tmp_path):
+        with pytest.raises(ValidationError):
+            load_config(
+                write(
+                    tmp_path,
+                    MINIMAL
+                    + "\n[[social]]\nid = 'x'\naction = 'link'\nurl = 'https://x'\nlabel = 'x'\n",
+                )
+            )

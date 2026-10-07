@@ -7,6 +7,22 @@ sub_title = "My notes on everything"
 avatar_url = "https://github.githubassets.com/favicons/favicon.svg"
 # favicon = ""              # 留空 = 自动下载博客仓库 owner 的 GitHub 头像作为站点图标；填 URL 用自定义图；"none" 关闭
 # home_url = ""             # 留空则自动推导（GitHub Pages 地址）
+
+# [[social]]                # footer 追加任意数量的社交图标（可选段，缺省只有 RSS + GitHub）
+# id = "wechat"             # Simple Icons 图标 slug（https://simpleicons.org），构建时下载 SVG 内联进页面
+# title = "微信"             # 悬停/无障碍文案，缺省用 id
+# action = "copy"           # 点击行为：link（跳转，默认）| copy（复制 username）| qrcode（弹出 qrcode 图片浮层）
+# username = "your-wechat"  # action=copy 时必填
+
+# [[social]]
+# id = "tiktok"
+# action = "link"           # action=link 时必填 url，新窗口打开
+# url = "https://www.tiktok.com/@yourname"
+
+# [[social]]
+# id = "qq"
+# action = "qrcode"         # action=qrcode 时必填 qrcode（二维码图片地址）
+# qrcode = "https://example.com/qq-qr.png"
 language = "CN"              # CN | EN
 utc = 8                      # 时区偏移（小时）
 

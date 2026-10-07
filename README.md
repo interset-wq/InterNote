@@ -74,6 +74,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 | `[layout]` | 每页文章数 `posts_per_page`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、注入的 `head/style/script/index_script/index_style/all_head` |
 | `[comments]` | 评论开关 `enabled`（还需配置 giscus 才会渲染评论区） |
 | `[giscus]` | giscus 四项参数（在 [giscus.app](https://giscus.app) 生成；留空则不渲染评论区） |
+| `[[social]]` | footer 追加任意数量的社交图标（可选段，缺省只有 RSS + GitHub）：`id` 为 [Simple Icons](https://simpleicons.org) slug（构建时下载品牌 SVG 内联，无运行时外链）；`title` 悬停文案；`action` 决定点击行为 —— `link`（默认，新窗口跳转 `url`）/ `copy`（复制 `username` 并提示）/ `qrcode`（弹出 `qrcode` 二维码浮层，点空白或 ESC 关闭）。action 对应字段缺失会直接让构建失败 |
 
 主题无需配置：明暗切换内置（亮 / 暗 / 跟随系统三态循环），Primer CSS 与站点样式随包内置并复制到 `dist/assets/`。
 
