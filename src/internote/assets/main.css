@@ -869,6 +869,12 @@ a:hover { text-decoration: underline; }
   border-radius: var(--in-radius, 6px);
 }
 
+/* the top copy sits between the meta row and the body */
+.in-post-meta + .in-series-list {
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
 .in-series-list h2 {
   margin: 0 0 8px;
   font-size: 1em;

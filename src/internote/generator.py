@@ -684,7 +684,16 @@ class Generator:
             "labels": entry["labels"],
             "footer_text": self.ctx["footer_text"],
             "highlight": 0,
-            "series": None,  # sub pages have no children of their own
+            # Sub pages now carry the full series listing too (top + bottom
+            # of the page), not just crumb/pager.
+            "series": {
+                "title": entry["post_title"],
+                "parts": [
+                    {"title": s["title"], "url": s["url"]} for s in entry["subs"]
+                ],
+            }
+            if entry.get("subs")
+            else None,
             "series_crumb": crumb,
             "series_pager": pager,
         }
@@ -840,6 +849,7 @@ class Generator:
             # not applicable): the renderer uses StrictUndefined, so even
             # an `{% if %}` truth test on a missing key would raise.
             "series": {
+                "title": entry["post_title"],
                 "parts": [
                     {"title": s["title"], "url": s["url"]} for s in entry["subs"]
                 ],
