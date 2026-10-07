@@ -27,13 +27,16 @@ MATHJAX_SCRIPT = (
     '<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>'
 )
 
+# Raw CSS (no <style> wrapper): base.j2.html already wraps the {% block
+# style %} content in a <style> tag, and a nested tag would close it
+# early and dump the rest of the CSS onto the page as text.
 ALERT_BASE_STYLE = (
-    "<style>.markdown-alert{padding:0.5rem 1rem;margin-bottom:1rem;"
+    ".markdown-alert{padding:0.5rem 1rem;margin-bottom:1rem;"
     "border-left:.25em solid var(--borderColor-default,var(--color-border-default));}"
     ".markdown-alert .markdown-alert-title {display:flex;"
     "font-weight:var(--base-text-weight-medium,500);align-items:center;line-height:1;}"
     ".markdown-alert>:first-child {margin-top:0;}"
-    ".markdown-alert>:last-child {margin-bottom:0;}</style>"
+    ".markdown-alert>:last-child {margin-bottom:0;}"
 )
 
 ALERT_STYLES = {
@@ -714,14 +717,14 @@ class Generator:
             for alert, style in ALERT_STYLES.items():
                 if f"markdown-alert-{alert}" in post_body:
                     entry["style"] += (
-                        f"<style>.markdown-alert.markdown-alert-{alert} {{"
+                        f".markdown-alert.markdown-alert-{alert} {{"
                         f"border-left-color:var(--borderColor-{style}-emphasis,"
                         f" var(--color-{style}-emphasis));"
                         f"background-color:var(--color-{style}-subtle);}}"
                         f".markdown-alert.markdown-alert-{alert} "
                         f".markdown-alert-title {{"
                         f"color: var(--fgColor-{style},"
-                        f"var(--color-{style}-fg));}}</style>"
+                        f"var(--color-{style}-fg));}}"
                     )
 
         page = dict(self.ctx)

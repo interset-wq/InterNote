@@ -46,6 +46,7 @@ SUB_FIELDS = frozenset({"title", "order"})
 
 class FrontMatterError(ValueError):
     """Raised when a front matter block cannot be parsed."""
+    pass
 
 
 def has_front_matter(text: str) -> bool:
@@ -68,7 +69,10 @@ def split(text: str, fields: frozenset = FIELDS) -> tuple[dict, str]:
     it again is a no-op. *fields* names the allowed keys (sub-post
     comments pass :data:`SUB_FIELDS`).
     """
-    if not has_front_matter(text):
+    # Tolerate leading blank space before the delimiter without touching
+    # the body: only the *detection* sees the stripped form, and the
+    # returned body always comes from the original text unchanged.
+    if not has_front_matter(text.lstrip()):
         return {}, text
 
     lines = text.split("\n")
