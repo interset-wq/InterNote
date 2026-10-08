@@ -123,6 +123,8 @@
   {% if post.highlight != 0 %}
   <script src="{{ site.home_url }}/plugins/code-copy.js"></script>
   {% endif %}
+  {# self-gating: exits immediately when the page has no mermaid block #}
+  <script src="{{ site.home_url }}/plugins/mermaid.js"></script>
   <script>
     (function () {
       'use strict';
