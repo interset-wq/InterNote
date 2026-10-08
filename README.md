@@ -13,6 +13,7 @@
 - 评论：[giscus](https://giscus.app)（按 pathname 映射，`<template>` 懒加载，未配置时不渲染）
 - 文章目录（`toc.js`，自带滚动高亮）、右下角悬浮工具栏（`fab.js`，移动端目录浮层 + 回到顶部/底部）、RSS 订阅（`rss.xml`）
 - 站内搜索：本地 `search-index.json`（按标题/标签/日期匹配，点击导航栏搜索图标弹出）
+- 自定义 404 页：构建生成 `dist/404.html`，替换 GitHub Pages 默认错误页，3 秒后自动返回首页
 - TOML 配置，pydantic 严格校验（未知键报错），`config.sample.toml` 为完整示例
 - 每次构建更新仓库 `README.md` 的文章数 / 评论数 / 字数 / 时间统计（定时任务除外）
 
@@ -37,6 +38,7 @@
 | --- | --- |
 | Issue `opened` / `edited` | 增量重建该篇文章及列表页 |
 | Issue `closed` | 取消发布该篇文章：从页面、列表、RSS、状态文件与搜索索引中移除 |
+| Issue comment `created` / `edited` / `deleted` | 增量重建该 issue（系列子文章即评论，编辑/删除后需重建生效） |
 | `workflow_dispatch` | 手动全局重建（修改 `config.toml` 后执行一次） |
 
 > 关闭 Issue 即取消发布。已删除每日定时构建，因此没有事后清扫，`closed` 触发是唯一
@@ -70,7 +72,7 @@ uv run internote - <owner/repo> --fixtures tests/fixtures/<owner>__<name>.json  
 
 | 分组 | 说明 |
 | --- | --- |
-| `[site]` | 标题、副标题、头像、语言（`CN` / `EN`）、时区 `utc`；`home_url` 留空自动推导 GitHub Pages 地址 |
+| `[site]` | 标题、副标题、头像；`home_url` 留空自动推导 GitHub Pages 地址。界面文案固定简体中文，时间固定中国标准时间（UTC+8），无 language/utc 配置项 |
 | `[layout]` | 每页文章数 `posts_per_page`、建站日期 `start_date`、备案号 `icp`、底部文字 `footer_text`、注入的 `head/style/script/index_script/index_style/all_head` |
 | `[comments]` | 评论开关 `enabled`（还需配置 giscus 才会渲染评论区） |
 | `[giscus]` | giscus 四项参数（在 [giscus.app](https://giscus.app) 生成；留空则不渲染评论区） |
