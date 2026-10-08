@@ -846,9 +846,23 @@ a:hover { text-decoration: underline; }
   margin-bottom: 24px;
 }
 
-.in-series-list h2 {
-  margin: 0 0 8px;
+/* series listings are <details> elements: the top copy starts collapsed,
+   the bottom copy starts open (post.j2.html) */
+.in-series-list summary {
+  margin: 0;
   font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  /* GitHub-style blue marker */
+  list-style: revert;
+}
+
+.in-series-list summary:hover {
+  color: var(--in-color-accent, #0969da);
+}
+
+.in-series-list[open] summary {
+  margin-bottom: 8px;
 }
 
 .in-series-list ol {

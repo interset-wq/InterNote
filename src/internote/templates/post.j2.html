@@ -60,16 +60,16 @@
       {% endif %}
     </div>
     {% if post.series and post.series.parts %}
-    {# Top series listing: both parent and sub pages open with the full
-       chapter list, so a reader landing mid-series sees the whole. #}
-    <nav class="in-series-list" aria-label="Series">
-      <h2>{{ post.series.title }}</h2>
+    {# Top series listing: collapsed by default — it repeats the chapter
+       list on every page of the series, so it starts out of the way. #}
+    <details class="in-series-list" aria-label="Series">
+      <summary>{{ post.series.title }}</summary>
       <ol>
         {% for item in post.series.parts %}
         <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
         {% endfor %}
       </ol>
-    </nav>
+    </details>
     {% endif %}
     <nav class="in-toc" id="in-toc" data-toc-title="{{ i18n.toc }}" data-toc-top="{{ i18n.top }}" aria-label="{{ i18n.toc }}"></nav>
     <div class="in-progress" id="in-progress"></div>
@@ -81,14 +81,16 @@
     {# Parent page only: the series listing (`parts`, not `items` —
        Jinja would resolve dict.items). #}
     {% if post.series.parts %}
-    <nav class="in-series-list" aria-label="Series">
-      <h2>{{ post.series.title }}</h2>
+    {# Bottom listing: open by default — the reader just finished a
+       chapter, the next one is one click away. #}
+    <details class="in-series-list" open aria-label="Series">
+      <summary>{{ post.series.title }}</summary>
       <ol>
         {% for item in post.series.parts %}
         <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
         {% endfor %}
       </ol>
-    </nav>
+    </details>
     {% endif %}
     {% endif %}
     {% if post.series_pager %}
