@@ -73,19 +73,16 @@ class TestTypes:
         with pytest.raises(ValidationError):
             load_config(write(tmp_path, MINIMAL + "\n[layout]\nposts_per_page = 'ten'\n"))
 
-    def test_utc_must_be_int(self, tmp_path):
-        with pytest.raises(ValidationError):
-            load_config(write(tmp_path, MINIMAL + "\nutc = 'eight'\n"))
+    def test_removed_utc_key_is_rejected(self, tmp_path):
+        # timezone support was removed (site is fixed UTC+8); a blog repo
+        # may still carry the old key, which must fail the build loudly
+        with pytest.raises(ValidationError, match="utc"):
+            load_config(write(tmp_path, MINIMAL + "\nutc = 8\n"))
 
-    @pytest.mark.parametrize("value", ["dark", "blue", "", "AUTO"])
-    def test_language_is_restricted(self, tmp_path, value):
-        with pytest.raises(ValidationError):
-            load_config(write(tmp_path, MINIMAL + "\nlanguage = '{}'\n".format(value)))
-
-    def test_language_accepts_cn_and_en(self, tmp_path):
-        for lang in ("CN", "EN"):
-            cfg = load_config(write(tmp_path, MINIMAL + "\nlanguage = '{}'\n".format(lang)))
-            assert cfg.site.language == lang
+    def test_removed_language_key_is_rejected(self, tmp_path):
+        # i18n was removed (site is fixed zh-CN); stale keys fail loudly
+        with pytest.raises(ValidationError, match="language"):
+            load_config(write(tmp_path, MINIMAL + '\nlanguage = "CN"\n'))
 
     def test_comments_enabled_rejects_a_non_boolean(self, tmp_path):
         with pytest.raises(ValidationError):
@@ -111,8 +108,6 @@ class TestDefaults:
         ctx = load_config(write(tmp_path, MINIMAL)).context()
         assert ctx["sub_title"] == ""
         assert ctx["posts_per_page"] == 10
-        assert ctx["language"] == "CN"
-        assert ctx["utc"] == 8
         assert ctx["need_comment"] is True
 
     def test_sections_default_when_absent(self, tmp_path):
@@ -135,8 +130,6 @@ class TestContext:
             "sub_title",
             "avatar_url",
             "home_url",
-            "language",
-            "utc",
             "posts_per_page",
             "start_date",
             "icp",

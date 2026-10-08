@@ -10,6 +10,8 @@ from internote.frontmatter import (
     split,
 )
 
+CST = datetime.timezone(datetime.timedelta(hours=8), "CST")
+
 
 def block(body: str) -> str:
     return "+++\n" + body.strip("\n") + "\n+++\n" + body
@@ -147,14 +149,14 @@ class TestParseDate:
         value = datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.timezone.utc)
         assert parse_date(value) == int(value.timestamp())
 
-    def test_toml_local_datetime_is_treated_as_utc(self):
+    def test_toml_local_datetime_is_treated_as_cst(self):
         naive = datetime.datetime(2026, 1, 2, 3, 4)
-        aware = naive.replace(tzinfo=datetime.timezone.utc)
+        aware = naive.replace(tzinfo=CST)
         assert parse_date(naive) == int(aware.timestamp())
 
     def test_toml_local_date(self):
         assert parse_date(datetime.date(2026, 1, 2)) == int(
-            datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc).timestamp()
+            datetime.datetime(2026, 1, 2, tzinfo=CST).timestamp()
         )
 
     def test_unix_seconds_pass_through(self):
@@ -167,9 +169,9 @@ class TestParseDate:
             ).timestamp()
         )
 
-    def test_iso_string_without_offset_is_utc(self):
+    def test_iso_string_without_offset_is_cst(self):
         assert parse_date("2026-01-02T03:04:05") == parse_date(
-            datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=CST)
         )
 
     def test_bad_iso_string_raises(self):

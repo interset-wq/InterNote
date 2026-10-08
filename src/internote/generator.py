@@ -113,12 +113,13 @@ class Generator:
         self.ctx["social_icons"] = {}
         print("GitHub Pages URL: ", self.ctx["home_url"])
 
-        self.tz = datetime.timezone(datetime.timedelta(hours=self.ctx["utc"]))
+        # China Standard Time, fixed - the site is single-user zh-CN.
+        self.tz = datetime.timezone(datetime.timedelta(hours=8))
         # stamped into every page footer: when this exact artifact was built
         self.ctx["build_time"] = datetime.datetime.now(self.tz).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
-        self.i18n = get_i18n(self.ctx["language"])
+        self.i18n = get_i18n()
         self.renderer = Renderer(Path(__file__).resolve().parent / "templates")
 
         self.old_feed = ""
@@ -470,9 +471,8 @@ class Generator:
             entry["alias_dir"] = str(alias_dir)
 
         if body:
-            period = "。" if self.ctx["language"] == "CN" else "."
             entry["description"] = (
-                body.split(period)[0].replace('"', "'") + period
+                body.split("。")[0].replace('"', "'") + "。"
             )
         else:
             entry["description"] = ""

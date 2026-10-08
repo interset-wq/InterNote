@@ -189,20 +189,23 @@ def _check_types(meta: dict) -> None:
 
 
 def parse_date(value: object) -> int:
-    """Convert a front matter ``date`` into a unix timestamp (seconds)."""
+    """Convert a front matter ``date`` into a unix timestamp (seconds).
+
+    Naive datetimes are interpreted as China Standard Time (UTC+8) - the
+    site's single fixed timezone.
+    """
     if isinstance(value, bool):  # bool is an int subclass; reject it
         raise FrontMatterError("front matter 'date' must not be a boolean")
     if isinstance(value, int):
         return value
+    cst = datetime.timezone(datetime.timedelta(hours=8), "CST")
     if isinstance(value, datetime.datetime):
-        moment = value
-        if moment.tzinfo is None:
-            moment = moment.replace(tzinfo=datetime.timezone.utc)
+        moment = value if value.tzinfo is not None else value.replace(tzinfo=cst)
         return int(moment.timestamp())
     if isinstance(value, datetime.date):
         return int(
             datetime.datetime(
-                value.year, value.month, value.day, tzinfo=datetime.timezone.utc
+                value.year, value.month, value.day, tzinfo=cst
             ).timestamp()
         )
     if isinstance(value, str):
@@ -214,7 +217,7 @@ def parse_date(value: object) -> int:
                 "front matter 'date' is not an ISO 8601 datetime: {}".format(error)
             ) from error
         if moment.tzinfo is None:
-            moment = moment.replace(tzinfo=datetime.timezone.utc)
+            moment = moment.replace(tzinfo=cst)
         return int(moment.timestamp())
     raise FrontMatterError(
         "front matter 'date' must be a TOML datetime, a unix timestamp or an "

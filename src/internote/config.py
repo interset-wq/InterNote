@@ -20,8 +20,6 @@ class SiteConfig(BaseModel):
     # time); a URL = use that image; "none" = no favicon at all.
     favicon: str = ""
     home_url: str = ""
-    language: Literal["CN", "EN"] = "CN"
-    utc: int = 8
 
 
 class LayoutConfig(BaseModel):
@@ -107,8 +105,6 @@ class InternoteConfig(BaseModel):
             "avatar_url": site.avatar_url,
             "favicon": site.favicon,
             "home_url": site.home_url,
-            "language": site.language,
-            "utc": site.utc,
             "posts_per_page": layout.posts_per_page,
             "start_date": layout.start_date,
             "icp": layout.icp,

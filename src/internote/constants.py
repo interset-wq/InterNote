@@ -1,47 +1,26 @@
 # -*- coding: utf-8 -*-
+# Site copy is Simplified Chinese only - this generator is single-user,
+# no i18n switch.
 I18N = {
-    "EN": {
-        "Search": "Search",
-        "switchTheme": "switch theme",
-        "home": "home",
-        "comments": "comments",
-        "run": "run ",
-        "days": " day(s)",
-        "Previous": "Previous",
-        "Next": "Next",
-        "First": "First",
-        "Last": "Last",
-        "edit": "Edit on GitHub",
-        "built": "Built & deployed at",
-        "seriesParts": "Series · %d parts",
-        "updated": "updated",
-        "toc": "Contents",
-        "top": "Top",
-        "noResults": "No results for",
-        "tags": "Tags",
-        "copied": "Copied!",
-    },
-    "CN": {
-        "Search": "搜索",
-        "switchTheme": "切换主题",
-        "home": "首页",
-        "comments": "评论",
-        "run": "网站运行 ",
-        "days": " 天",
-        "Previous": "上一页",
-        "Next": "下一页",
-        "First": "首页",
-        "Last": "尾页",
-        "edit": "在 GitHub 上编辑",
-        "built": "构建部署于",
-        "seriesParts": "系列 · %d 篇",
-        "updated": "更新",
-        "toc": "目录",
-        "top": "回到顶部",
-        "noResults": "未找到结果",
-        "tags": "标签",
-        "copied": "已复制",
-    },
+    "Search": "搜索",
+    "switchTheme": "切换主题",
+    "home": "首页",
+    "comments": "评论",
+    "run": "网站运行 ",
+    "days": " 天",
+    "Previous": "上一页",
+    "Next": "下一页",
+    "First": "首页",
+    "Last": "尾页",
+    "edit": "在 GitHub 上编辑",
+    "built": "构建部署于",
+    "seriesParts": "系列 · %d 篇",
+    "updated": "更新",
+    "toc": "目录",
+    "top": "回到顶部",
+    "noResults": "未找到结果",
+    "tags": "标签",
+    "copied": "已复制",
 }
 
 ICONS = {
@@ -70,5 +49,5 @@ ICONS = {
 }
 
 
-def get_i18n(language: str) -> dict:
-    return I18N.get(language, I18N["EN"])
+def get_i18n() -> dict:
+    return I18N

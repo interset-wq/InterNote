@@ -23,8 +23,6 @@ avatar_url = "https://github.githubassets.com/favicons/favicon.svg"
 # id = "qq"
 # action = "qrcode"         # action=qrcode 时必填 qrcode（二维码图片地址）
 # qrcode = "https://example.com/qq-qr.png"
-language = "CN"              # CN | EN
-utc = 8                      # 时区偏移（小时）
 
 [layout]
 posts_per_page = 10

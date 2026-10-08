@@ -16,8 +16,6 @@ title = "Test"
 sub_title = "sub"
 avatar_url = "https://example.com/a.png"
 home_url = "https://example.com"
-language = "CN"
-utc = 8
 
 [layout]
 posts_per_page = 10
