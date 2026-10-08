@@ -11,6 +11,7 @@
 # 触发方式：
 #   - Issue opened / edited   -> 增量重建该篇文章
 #   - Issue closed            -> 下线该篇（清页面、列表、feed、search-index）
+#   - Comment created/edited/deleted -> 增量重建该篇（系列子文章即评论）
 #   - workflow_dispatch        -> 手动全局重建（修改 config.toml 后执行一次）
 name: build Internote
 

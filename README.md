@@ -15,13 +15,13 @@
 - 站内搜索：本地 `search-index.json`（按标题/标签/日期匹配，点击导航栏搜索图标弹出）
 - 自定义 404 页：构建生成 `dist/404.html`，替换 GitHub Pages 默认错误页，3 秒后自动返回首页
 - TOML 配置，pydantic 严格校验（未知键报错），`config.sample.toml` 为完整示例
-- 每次构建更新仓库 `README.md` 的文章数 / 评论数 / 字数 / 时间统计（定时任务除外）
+- 每次构建更新仓库 `README.md` 的文章数 / 评论数 / 字数 / 时间统计
 
 ## 快速开始（博客仓库）
 
 博客与生成器分两处存放：本仓库是生成器，博客仓库存放 Issue、配置和 workflow。
 
-1. 【创建仓库】新建一个博客仓库（建议 `XXX.github.io`，`XXX` 为你的 GitHub 用户名）
+1. 【创建仓库】新建一个博客仓库（任意名称均可；`XXX.github.io` 形式 Pages 挂根路径，其他名称挂在 `/仓库名/` 子路径——生成器自动适配）
 2. 【添加配置】复制本仓库的 `config.sample.toml` 为博客仓库根目录的 `config.toml` 并修改
 3. 【添加 workflow】复制本仓库的 `examples/blog-workflow.yml` 到博客仓库的 `.github/workflows/internote.yml`
 4. 【启用 Pages】博客仓库 `Settings -> Pages -> Build and deployment -> Source` 选择 `GitHub Actions`
@@ -31,6 +31,10 @@
 > 博客仓库会提交生成产物：`dist/`（站点）、`sources/`（Issue 源码备份）、
 > `internote.json`（构建状态）、`README.md`（统计）。
 > `.gitignore` 不要忽略这些路径。
+>
+> 可选：博客仓库的 `static/` 目录会被原样拷贝到站点根目录，
+> 用来存放配置需要引用的图片（如社交图标的二维码），按
+> `https://…/仓库名/文件名` 引用。
 
 ### 构建触发
 
