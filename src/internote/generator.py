@@ -947,6 +947,11 @@ class Generator:
         self.renderer.render_to("tag", tag_context, self.dist_dir / "tag.html")
         print("create tag.html")
 
+        # GitHub Pages serves this file for any unmatched URL; it needs the
+        # absolute home_url, so it is only rendered once home_url is known.
+        self.renderer.render_to("404", tag_context, self.dist_dir / "404.html")
+        print("create 404.html")
+
     def _render_list(self, html_dir, nav_icon):
         context = {
             "site": self.ctx,

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - {{ site.title }}</title>
+  {# GitHub Pages serves this file for any unmatched path, which can sit
+     at any directory depth - every URL must be absolute. #}
+  <link rel="stylesheet" href="{{ site.home_url }}/assets/main.css">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="3; url={{ site.home_url }}/">
+  <script>setTimeout(function () { location.replace({{ (site.home_url ~ '/') | tojson }}); }, 3000);</script>
+  <style>
+    .in-404 {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      padding: 24px;
+    }
+    .in-404-code {
+      font-size: 72px;
+      font-weight: 600;
+      line-height: 1;
+      color: var(--in-color-accent, #0969da);
+    }
+    .in-404 p {
+      color: var(--in-color-muted);
+    }
+    .in-404 a {
+      color: var(--in-color-accent, #0969da);
+    }
+  </style>
+</head>
+<body>
+  <div class="in-404">
+    <div class="in-404-code">404</div>
+    <h1>页面不存在</h1>
+    <p>你访问的页面不存在或已被删除，3 秒后自动返回首页。</p>
+    <p><a href="{{ site.home_url }}/">立即返回首页</a></p>
+  </div>
+</body>
+</html>
