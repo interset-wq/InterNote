@@ -1,5 +1,12 @@
 /**
- * giscus
+ * giscus comments, lazy-loaded.
+ *
+ * The giscus script ships inside an inert <template> in
+ * components/comments.j2.html and is materialised only when the reader
+ * approaches the section (IntersectionObserver, 300px margin; immediate
+ * load when IntersectionObserver is unavailable). giscus.app is slow on
+ * high-latency networks - loading it up front competed with the page's
+ * own resources for no reason.
  */
 
 (function () {
@@ -21,8 +28,7 @@
     frame.contentWindow.postMessage({ giscus: { setConfig: { theme: theme } } }, 'https://giscus.app');
   }
 
-  function init() {
-    // Comments render immediately now; the script tag lives in the markup.
+  function watchFrameTheme() {
     // Once the frame exists, sync it with the current theme.
     var timer = setInterval(function () {
       var frames = document.getElementsByClassName('giscus-frame');
@@ -37,6 +43,34 @@
       attributes: true,
       attributeFilter: ['data-color-mode']
     });
+  }
+
+  function materialise() {
+    var holder = document.getElementById('comments');
+    var tpl = document.getElementById('in-giscus-template');
+    if (!holder || !tpl) return;
+    var script = tpl.content.querySelector('script');
+    if (!script) return;
+    // load the frame directly in the visitor's theme - no light flash
+    script.setAttribute('data-theme', resolveTheme(currentMode()));
+    holder.appendChild(document.importNode(script, true));
+    watchFrameTheme();
+  }
+
+  function init() {
+    var holder = document.getElementById('comments');
+    if (!holder) return;
+
+    if (!('IntersectionObserver' in window)) {
+      materialise();
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      if (!entries.some(function (e) { return e.isIntersecting; })) return;
+      observer.disconnect();
+      materialise();
+    }, { rootMargin: '300px' });
+    observer.observe(holder);
   }
 
   if (document.readyState === 'loading') {

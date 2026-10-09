@@ -4,7 +4,10 @@
 {% block head %}
   {{ head_meta(post.title, post.description, 'article', post.url) }}
   {% if post.highlight == 1 %}
-  <link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet">
+  {# vendored copy of starry-night's both.css - the unpkg original was a
+     render-blocking cross-origin request that stalled first paint and
+     every plugin script on networks where unpkg is slow #}
+  <link href="{{ site.home_url }}/assets/starry-night.css" rel="stylesheet">
   {% endif %}
   {{ post.head }}
 {% endblock %}

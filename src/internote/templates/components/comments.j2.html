@@ -1,6 +1,11 @@
-{# Comments section - expects: site, i18n, post #}
+{# Comments section - expects: site, i18n, post.
+   giscus.app is slow on high-latency networks (client.js alone is
+   1.3s TTFB cross-border), so the script ships inside an inert
+   <template> and plugins/giscus.js materialises it only when the
+   reader approaches the section (IntersectionObserver, 300px
+   rootMargin; immediate load as the fallback). #}
 <section class="in-comments-section">
-  <div class="in-comments-container" id="comments">
+  <template id="in-giscus-template">
     <script src="https://giscus.app/client.js"
       data-repo="{{ site.giscus_repo }}"
       data-repo-id="{{ site.giscus_repo_id }}"
@@ -15,5 +20,6 @@
       data-lang="zh-CN"
       crossorigin="anonymous"
       async></script>
-  </div>
+  </template>
+  <div class="in-comments-container" id="comments"></div>
 </section>
