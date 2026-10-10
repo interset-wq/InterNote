@@ -88,6 +88,12 @@ class Generator:
         self.state_path = self.root / "internote.json"
 
         self.ctx = config.context()
+        # base.j2.html renders the masthead folio and header nav on EVERY
+        # page, including sub-post renders inside _add_entry - so both keys
+        # need a value from the start; _resolve_folio() overwrites them with
+        # the real numbers before the full page renders run.
+        self.ctx["about"] = None
+        self.ctx["post_count"] = 0
         self.ctx["label_color_dict"] = {
             label.name: "#" + label.color for label in repo.get_labels()
         }
@@ -281,6 +287,22 @@ class Generator:
                 encoding="utf-8"
             )
 
+    def _resolve_folio(self):
+        # masthead folio + header-nav data, needed by base.j2.html on EVERY
+        # page (header-nav.j2.html reads site.about), so both must exist
+        # before the first page renders - not just before _create_lists.
+        # Main posts only: sub pages are series parts.
+        self.ctx["post_count"] = len(self.ctx["post_list"])
+        about = next(
+            (e for e in self.ctx["post_list"].values() if e.get("slug") == "about"),
+            None,
+        )
+        self.ctx["about"] = (
+            {"url": about["post_url"], "title": about["post_title"]}
+            if about
+            else None
+        )
+
     def run_all(self):
         print("====== start create static html ======")
         self._clean()
@@ -289,10 +311,8 @@ class Generator:
         self._load_emoji_map()
         for issue in self.repo.get_issues():
             self._add_entry(issue)
-        # masthead folio: main posts only, sub pages are series parts.
-        # Must be set BEFORE _create_post: base.j2.html renders the folio
-        # on every page and StrictUndefined would fail the post renders.
-        self.ctx["post_count"] = len(self.ctx["post_list"])
+        # masthead folio + header-nav data, before any page renders
+        self._resolve_folio()
         for entry in list(self.ctx["post_list"].values()):
             self._create_post(entry)
         self._create_lists()
@@ -306,8 +326,9 @@ class Generator:
             self._load_state()
         else:
             self._clean()
-        # masthead folio: the state just loaded is the full picture
-        self.ctx["post_count"] = len(self.ctx["post_list"])
+        # masthead folio + header-nav data; the state just loaded is the
+        # full picture
+        self._resolve_folio()
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         self._fetch_favicon()
         self._fetch_social_icons()
@@ -723,7 +744,7 @@ class Generator:
         # FAB buttons live on every post page (toc overlay + scroll), so
         # their glyphs must reach window.icons here as well. `calendar` dates
         # the meta box.
-        keys.extend(["search", "tag", "calendar", "book", "bars", "arrow-up", "arrow-down"])
+        keys.extend(["search", "tag", "calendar", "book", "post", "bars", "arrow-up", "arrow-down"])
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
             "site": page,
@@ -886,7 +907,7 @@ class Generator:
         # and the nav search button needs its magnifier glyph since search.js
         # fetches the local index on every page. FAB buttons live on post
         # pages only (toc + scroll up/down). `calendar` dates the meta box.
-        keys.extend(["search", "tag", "calendar", "book", "bars", "arrow-up", "arrow-down"])
+        keys.extend(["search", "tag", "calendar", "book", "post", "bars", "arrow-up", "arrow-down"])
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
@@ -920,7 +941,7 @@ class Generator:
             )
 
     def _create_lists(self):
-        nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post"]
+        nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post", "home"]
         nav_icon = {key: ICONS.get(key) for key in nav_keys}
         # tag.html does not link to itself, but its empty state and rows are
         # JS-built, so `tag` and `post` must both reach window.icons. The
@@ -931,15 +952,9 @@ class Generator:
         }
 
         # The conventional `about` alias earns a nav link on the index.
-        about = next(
-            (e for e in self.ctx["post_list"].values() if e.get("slug") == "about"),
-            None,
-        )
-        self.ctx["about"] = (
-            {"url": about["post_url"], "title": about["post_title"]}
-            if about
-            else None
-        )
+        # Computed by _resolve_folio now: header-nav.j2.html (included from
+        # base.j2.html on EVERY page) reads site.about, so it must exist
+        # before the first page renders, not just before _create_lists.
 
         # index.html is a shell: the card list and pagination are rendered
         # client-side from search-index.json, so there is exactly one list
