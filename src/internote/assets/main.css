@@ -65,15 +65,27 @@ a:hover { text-decoration: underline; }
   background-color: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
 }
 
-/* Stuck state (index/404 only - the sentinel script toggles it): the
-   text block hides and the bar collapses to one favicon + icons row */
+/* Stuck state (index/404 only - the scroll script toggles it): the
+   text block collapses and the bar settles into one favicon + icons
+   row; transitions keep the collapse smooth instead of a sudden jump */
 .in-site-header.is-stuck {
+  flex-wrap: nowrap; /* keep the nav on row 1 while the text collapses */
+  overflow-x: clip;  /* the nav briefly overflows: clip, no scrollbar */
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
+.in-site-header .in-branding-name {
+  max-width: 480px;
+  max-height: 120px;
+  overflow: hidden;
+  transition: max-width 0.3s ease, max-height 0.3s ease, opacity 0.2s ease;
+}
+
 .in-site-header.is-stuck .in-branding-name {
-  display: none;
+  max-width: 0;
+  max-height: 0;
+  opacity: 0;
 }
 
 .in-site-header.is-stuck .in-site-avatar {
@@ -130,7 +142,7 @@ a:hover { text-decoration: underline; }
   height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  transition: transform 0.8s ease;
+  transition: transform 0.8s ease, width 0.25s ease, height 0.25s ease;
   flex-shrink: 0;
 }
 
