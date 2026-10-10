@@ -19,9 +19,6 @@
 {% endblock %}
 
 {% block content %}
-  {% if site.sub_title %}
-  <p class="in-site-subtitle">{{ site.sub_title }}</p>
-  {% endif %}
   {# Loading marker, same as the tag page: the list is client-rendered
      from search-index.json, so the shell alone would look empty. The
      inline script removes it once the data has rendered. #}

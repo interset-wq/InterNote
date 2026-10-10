@@ -40,7 +40,7 @@
         <div class="in-masthead-name">
           <a class="in-site-title in-masthead-title" href="{{ site.home_url }}">{{ site.title }}</a>
           {% if site.sub_title %}
-          <p class="in-masthead-datetime">{{ site.sub_title }}</p>
+          <p class="in-site-subtitle">{{ site.sub_title }}</p>
           {% endif %}
         </div>
       </div>
@@ -55,7 +55,12 @@
   <header class="in-site-header in-header-compact" id="header">
     <div class="in-site-branding">
       <img src="{{ site.avatar_file or site.avatar_url }}" class="in-site-avatar in-compact-avatar" alt="{{ site.title }} avatar">
-      <a class="in-site-title in-compact-title" href="{{ site.home_url }}">{{ site.title }}</a>
+      <div class="in-branding-name">
+        <a class="in-site-title in-compact-title" href="{{ site.home_url }}">{{ site.title }}</a>
+        {% if site.sub_title %}
+        <p class="in-site-subtitle in-compact-subtitle">{{ site.sub_title }}</p>
+        {% endif %}
+      </div>
     </div>
     {% set nav_label = 'Compact navigation' %}
     {% include 'components/header-nav.j2.html' %}

@@ -44,11 +44,18 @@
 </nav>
 {%- endmacro %}
 
-{# Site branding block for pages that lead with the site identity. #}
+{# Site branding block for pages that lead with the site identity.
+   The subtitle lives in the header on every style, never in the content
+   area. #}
 {% macro branding() -%}
 <div class="in-site-branding">
   <img src="{{ site.avatar_file or site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
-  <a class="in-site-title" href="{{ site.home_url }}">{{ site.title }}</a>
+  <div class="in-branding-name">
+    <a class="in-site-title" href="{{ site.home_url }}">{{ site.title }}</a>
+    {% if site.sub_title %}
+    <p class="in-site-subtitle">{{ site.sub_title }}</p>
+    {% endif %}
+  </div>
 </div>
 {%- endmacro %}
 
