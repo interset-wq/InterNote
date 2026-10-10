@@ -89,16 +89,17 @@
     fab.appendChild(topBtn);
     fab.appendChild(bottomBtn);
 
-    // Hide the button that does nothing: top is invisible at the top,
-    // bottom is invisible at the bottom.
+    // Disable the button that does nothing: top is useless at the top,
+    // bottom at the bottom. Disabled instead of hidden - the stack never
+    // reflows and every button keeps its place.
     var pending = false;
     function update() {
       pending = false;
       var top = window.scrollY;
       var max =
         document.documentElement.scrollHeight - window.innerHeight;
-      topBtn.classList.toggle('is-dimmed', top < 80);
-      bottomBtn.classList.toggle('is-dimmed', top > max - 80);
+      topBtn.disabled = top < 80;
+      bottomBtn.disabled = top > max - 80;
     }
     window.addEventListener(
       'scroll',

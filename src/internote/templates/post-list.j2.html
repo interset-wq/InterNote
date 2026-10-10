@@ -22,6 +22,10 @@
   {% if site.sub_title %}
   <p class="in-site-subtitle">{{ site.sub_title }}</p>
   {% endif %}
+  {# Loading marker, same as the tag page: the list is client-rendered
+     from search-index.json, so the shell alone would look empty. The
+     inline script removes it once the data has rendered. #}
+  <h1 class="in-page-title" id="index-loading"><span>Loading</span><span class="in-animated-ellipsis"></span></h1>
   {# The list is client-rendered from search-index.json — the same file the
      search dialog and the tag page read. Server markup stays an empty shell
      so a build with zero posts is still valid HTML. #}
@@ -42,6 +46,7 @@
       'use strict';
       var PER_PAGE = {{ site.posts_per_page | tojson }};
       var list = document.getElementById('post-list');
+      var loading = document.getElementById('index-loading');
       var pagination = document.getElementById('pagination');
       var firstBtn = document.getElementById('page-first');
       var prevBtn = document.getElementById('page-prev');
@@ -187,6 +192,9 @@
             });
           });
           window.__label_colors = data.label_colors || {};
+          if (loading) {
+            loading.remove();
+          }
           firstBtn.addEventListener('click', function () { show(1); });
           prevBtn.addEventListener('click', function () { show(pageFromHash() - 1); });
           nextBtn.addEventListener('click', function () { show(pageFromHash() + 1); });
