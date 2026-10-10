@@ -155,6 +155,13 @@ a:hover { text-decoration: underline; }
   color: var(--in-color-muted, var(--color-fg-muted, #59636e));
 }
 
+/* series row closes the meta box: dates/labels above, a hairline between */
+.in-meta-series {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--in-color-border, #d0d7de);
+}
+
 /* series row: collapsed chapter list, one summary line. display:flex
    would suppress the native disclosure marker, so the chevron is drawn
    by hand on ::before. */
@@ -166,6 +173,14 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   color: var(--in-color-fg, var(--color-fg-default, #1f2328));
   cursor: pointer;
+}
+
+.in-meta-series summary svg {
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex: none;
 }
 
 .in-meta-series summary::before {
@@ -433,6 +448,13 @@ a:hover { text-decoration: underline; }
   color: var(--in-color-muted);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+/* card rows reuse the cloud chip but smaller: a post with many labels
+   must not blow the card up when they wrap */
+.in-post-card .in-tag-cloud-item {
+  padding: 1px 8px;
+  font-size: 12px;
 }
 
 /* ===== Pagination ===== */

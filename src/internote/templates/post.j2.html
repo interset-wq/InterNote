@@ -42,32 +42,10 @@
 {% block content %}
   <article>
     {# ===== Meta box: one bordered block between title and body =====
-       Series row (if any) on top - the <details> carries the chapter
-       list AND the position badge, replacing the old breadcrumb +
-       standalone listing pair. Meta rows below: dates, labels, edit. #}
+       Meta rows first: dates, labels, edit. The series <details> closes
+       the box - it carries the chapter list AND the position badge,
+       replacing the old breadcrumb + standalone listing pair. #}
     <div class="in-post-meta-box">
-      {% if post.series_crumb %}
-      <details class="in-meta-series" aria-label="Series">
-        <summary>
-          <a href="{{ site.home_url }}/{{ post.series_crumb.parent_url }}">{{ post.series_crumb.parent_title }}</a>
-          <span class="in-meta-series-pos">{{ post.series_crumb.index }} / {{ post.series_crumb.total }}</span>
-        </summary>
-        <ol>
-          {% for item in post.series.parts %}
-          <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
-          {% endfor %}
-        </ol>
-      </details>
-      {% elif post.series and post.series.parts %}
-      <details class="in-meta-series" aria-label="Series">
-        <summary>{{ post.series.title }}</summary>
-        <ol>
-          {% for item in post.series.parts %}
-          <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
-          {% endfor %}
-        </ol>
-      </details>
-      {% endif %}
       <div class="in-post-meta">
         <span class="in-meta-date">
           {{ icon('calendar') }}
@@ -90,6 +68,32 @@
         <a class="in-post-edit" href="{{ post.issue_url }}" target="_blank" rel="noopener" title="{{ i18n.edit }}" aria-label="{{ i18n.edit }}">{{ icon('pencil') }}</a>
         {% endif %}
       </div>
+      {% if post.series_crumb %}
+      <details class="in-meta-series" aria-label="Series">
+        <summary>
+          {{ icon('book') }}
+          <a href="{{ site.home_url }}/{{ post.series_crumb.parent_url }}">{{ post.series_crumb.parent_title }}</a>
+          <span class="in-meta-series-pos">{{ post.series_crumb.index }} / {{ post.series_crumb.total }}</span>
+        </summary>
+        <ol>
+          {% for item in post.series.parts %}
+          <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
+          {% endfor %}
+        </ol>
+      </details>
+      {% elif post.series and post.series.parts %}
+      <details class="in-meta-series" aria-label="Series">
+        <summary>
+          {{ icon('book') }}
+          {{ post.series.title }}
+        </summary>
+        <ol>
+          {% for item in post.series.parts %}
+          <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
+          {% endfor %}
+        </ol>
+      </details>
+      {% endif %}
     </div>
     <nav class="in-toc" id="in-toc" data-toc-title="{{ i18n.toc }}" data-toc-top="{{ i18n.top }}" aria-label="{{ i18n.toc }}"></nav>
     <div class="in-progress" id="in-progress"></div>

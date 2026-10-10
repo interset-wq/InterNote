@@ -717,7 +717,7 @@ class Generator:
         # FAB buttons live on every post page (toc overlay + scroll), so
         # their glyphs must reach window.icons here as well. `calendar` dates
         # the meta box.
-        keys.extend(["search", "tag", "calendar", "bars", "arrow-up", "arrow-down"])
+        keys.extend(["search", "tag", "calendar", "book", "bars", "arrow-up", "arrow-down"])
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
             "site": page,
@@ -880,7 +880,7 @@ class Generator:
         # and the nav search button needs its magnifier glyph since search.js
         # fetches the local index on every page. FAB buttons live on post
         # pages only (toc + scroll up/down). `calendar` dates the meta box.
-        keys.extend(["search", "tag", "calendar", "bars", "arrow-up", "arrow-down"])
+        keys.extend(["search", "tag", "calendar", "book", "bars", "arrow-up", "arrow-down"])
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
