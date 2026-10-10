@@ -1,7 +1,11 @@
 {# The site-identity header: brand row (avatar + title + subtitle) and
    the icon nav row (home / tags / about / search / theme). Used by the
    index and 404 pages; post and tag pages override the header block.
-   On phones the nav wraps to its own centered row. #}
+   On phones the nav wraps to its own centered row.
+   The inline script watches scrollY: once the header is actually stuck
+   it gets .is-stuck - the text hides and the bar collapses to one
+   favicon + icons row. A sentinel/IntersectionObserver cannot work
+   here: any marker inside the sticky header moves with it. #}
 {% from 'components/macros.j2.html' import nav_link, search_button, theme_button with context %}
 <div class="in-site-branding">
   <img src="{{ site.avatar_file or site.avatar_url }}" class="in-site-avatar" alt="{{ site.title }} avatar">
@@ -22,3 +26,15 @@
   {{ search_button() }}
   {{ theme_button() }}
 </nav>
+<script>
+  (function () {
+    'use strict';
+    var header = document.getElementById('header');
+    if (!header) return;
+    function update() {
+      header.classList.toggle('is-stuck', window.scrollY > 8);
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+</script>

@@ -65,6 +65,22 @@ a:hover { text-decoration: underline; }
   background-color: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
 }
 
+/* Stuck state (index/404 only - the sentinel script toggles it): the
+   text block hides and the bar collapses to one favicon + icons row */
+.in-site-header.is-stuck {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.in-site-header.is-stuck .in-branding-name {
+  display: none;
+}
+
+.in-site-header.is-stuck .in-site-avatar {
+  width: 32px;
+  height: 32px;
+}
+
 .in-site-main { flex: 1; }
 
 .in-site-footer {
