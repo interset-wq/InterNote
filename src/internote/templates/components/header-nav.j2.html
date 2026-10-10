@@ -6,7 +6,8 @@
   {{ nav_link('home', site.home_url, i18n.home) }}
   {{ nav_link('tag', site.home_url ~ '/tag.html', i18n.tags) }}
   {% if site.about %}
-  {{ nav_link('post', site.home_url ~ '/' ~ site.about.url, site.about.title) }}
+  {# the person glyph, not 'post' - this points at the about page #}
+  {{ nav_link('about', site.home_url ~ '/' ~ site.about.url, site.about.title) }}
   {% endif %}
   {{ search_button() }}
   {{ theme_button() }}

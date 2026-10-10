@@ -1490,13 +1490,17 @@ a:hover { text-decoration: underline; }
   .in-site-title { font-size: 20px; }
   .in-site-avatar { width: 40px; height: 40px; }
 
-  /* the compact bar must stay one slim row on phones: the subtitle is
-     the first thing to go, the avatar keeps its 32px desktop size, and
-     the bar itself refuses to wrap (the generic header lets the nav
-     drop to a second line - that doubled the bar's height) */
+  /* the compact bar wraps into TWO rows on phones: brand row on top,
+     icon nav centered below with roomier gaps; the subtitle stays hidden
+     and the avatar keeps its 32px size */
   .in-header-compact .in-compact-subtitle { display: none; }
   .in-header-compact .in-compact-avatar { width: 32px; height: 32px; }
-  .in-header-compact { flex-wrap: nowrap; }
+  .in-header-compact { flex-wrap: wrap; }
+  .in-header-compact .in-header-nav {
+    flex-basis: 100%;
+    justify-content: center;
+    gap: 16px;
+  }
 
   .in-site-header { flex-wrap: wrap; }
 
