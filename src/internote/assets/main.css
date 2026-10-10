@@ -52,10 +52,17 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--in-color-border);
-  margin-bottom: 24px;
   gap: 16px;
+  /* sticky from the first paint: cancel body's margin+padding so the
+     header starts at the viewport top instead of sticking only after
+     a dead scroll zone */
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  margin: calc(-1 * var(--in-padding, 45px) - 20px) calc(-1 * var(--in-padding, 45px)) 24px;
+  padding: 16px var(--in-padding, 45px);
+  border-bottom: 1px solid var(--in-color-border);
+  background-color: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
 }
 
 .in-site-main { flex: 1; }
@@ -75,89 +82,10 @@ a:hover { text-decoration: underline; }
   min-width: 0;
 }
 
-/* ===== Masthead (newspaper-style folio) ===== */
-.in-header-masthead {
-  display: block;
-  border-bottom: none;
-  margin-bottom: 32px;
-  padding-bottom: 0;
-}
+/* ===== Masthead + compact (removed styles) =====
+   The configurable header (masthead/compact) is gone; the site header
+   below is the single design: brand row + icon nav, sticky. */
 
-.in-masthead-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.in-masthead-avatar {
-  width: 56px;
-  height: 56px;
-}
-
-.in-masthead-title {
-  font-size: 30px;
-  font-weight: 300;
-  letter-spacing: 0.06em;
-}
-
-.in-masthead-name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.in-masthead-datetime {
-  margin: 0;
-  font-size: 13px;
-  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
-}
-
-/* the folio: post count + build time, the only stats row */
-.in-masthead-folio {
-  margin: 12px 0 0;
-  padding-bottom: 14px;
-  font-size: 12px;
-  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
-  font-variant-numeric: tabular-nums;
-}
-
-/* double rule underneath, newspaper-style */
-.in-header-masthead::after {
-  content: '';
-  display: block;
-  height: 3px;
-  border-top: 1px solid var(--in-color-border, #d0d7de);
-  border-bottom: 1px solid var(--in-color-border, #d0d7de);
-}
-
-/* ===== Compact (slim sticky bar) ===== */
-.in-header-compact {
-  position: sticky;
-  top: 0;
-  z-index: 90;
-  min-height: 0;
-  padding: 8px var(--in-padding, 45px);
-  /* cancel body's margin+padding so the bar starts AT the viewport top -
-     otherwise it only sticks after the visitor scrolls that dead zone */
-  margin: calc(-1 * var(--in-padding, 45px) - 20px) calc(-1 * var(--in-padding, 45px)) 24px;
-  border-bottom: 1px solid var(--in-color-border, #d0d7de);
-  background-color: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
-}
-
-.in-compact-avatar {
-  /* not .in-site-avatar's 64px base: this bar stays slim everywhere */
-  width: 32px;
-  height: 32px;
-}
-
-.in-compact-title {
-  font-size: 18px;
-}
-
-/* shared nav row for compact + masthead: text links + icon buttons */
 .in-header-nav {
   display: flex;
   align-items: center;
@@ -204,16 +132,11 @@ a:hover { text-decoration: underline; }
   min-width: 0;
 }
 
-/* subtitle lives in the header on every style (masthead/classic full
-   size, compact shrunk) - the content area never renders it */
+/* subtitle: stacked under the title in the header, every viewport */
 .in-site-subtitle {
   margin: 0;
+  font-size: 13px;
   color: var(--in-color-muted);
-}
-
-.in-compact-subtitle {
-  font-size: 11px;
-  line-height: 1.3;
 }
 
 .in-site-nav {
@@ -1490,19 +1413,23 @@ a:hover { text-decoration: underline; }
   .in-site-title { font-size: 20px; }
   .in-site-avatar { width: 40px; height: 40px; }
 
-  /* the compact bar wraps into TWO rows on phones: brand row on top,
-     icon nav centered below with roomier gaps; the subtitle stays hidden
-     and the avatar keeps its 32px size */
-  .in-header-compact .in-compact-subtitle { display: none; }
-  .in-header-compact .in-compact-avatar { width: 32px; height: 32px; }
-  .in-header-compact { flex-wrap: wrap; }
-  .in-header-compact .in-header-nav {
+  /* the site header wraps into TWO rows on phones: brand row on top
+     (subtitle stays visible under the title), icon nav centered below
+     with roomier gaps */
+  .in-site-header { flex-wrap: wrap; }
+  .in-header-nav {
     flex-basis: 100%;
     justify-content: center;
     gap: 16px;
   }
 
-  .in-site-header { flex-wrap: wrap; }
+  /* the content header (post/tag) stays one row: long titles truncate */
+  .in-page-title, .in-post-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* Rows are already title-over-badges; just let the chips wrap. */
   .in-post-card-meta { flex-wrap: wrap; }

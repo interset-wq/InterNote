@@ -36,6 +36,12 @@
   </style>
 </head>
 <body>
+  {# Same site-identity header as the index (components/site-header is
+     included directly: this page does not extend base.j2.html). Every
+     URL here is absolute - Pages may serve this file at any depth. #}
+  <header class="in-site-header" id="header">
+    {% include 'components/site-header.j2.html' %}
+  </header>
   <div class="in-404">
     <div class="in-404-code">404</div>
     <h1>页面不存在</h1>

@@ -27,47 +27,12 @@
   {% if extra_css | trim %}<style>{{ extra_css }}</style>{% endif %}
 </head>
 <body>
-  {# ===== Header: three styles picked by [layout].header =====
-     classic (default): avatar + title left, icon nav right.
-     compact: single slim sticky row, text links.
-     masthead: newspaper-style folio - big spaced title + dateline +
-     stats row (post count / build time), double rule underneath. #}
-  {% if site.header == 'masthead' %}
-  <header class="in-site-header in-header-masthead" id="header">
-    <div class="in-masthead-top">
-      <div class="in-site-branding">
-        <img src="{{ site.avatar_file or site.avatar_url }}" class="in-site-avatar in-masthead-avatar" alt="{{ site.title }} avatar">
-        <div class="in-masthead-name">
-          <a class="in-site-title in-masthead-title" href="{{ site.home_url }}">{{ site.title }}</a>
-          {% if site.sub_title %}
-          <p class="in-site-subtitle">{{ site.sub_title }}</p>
-          {% endif %}
-        </div>
-      </div>
-      {% set nav_label = 'Masthead navigation' %}
-      {% include 'components/header-nav.j2.html' %}
-    </div>
-    <p class="in-masthead-folio">
-      {{ site.post_count }} {{ i18n.posts }} · {{ i18n.built }} {{ site.build_time }}
-    </p>
-  </header>
-  {% elif site.header == 'compact' %}
-  <header class="in-site-header in-header-compact" id="header">
-    <div class="in-site-branding">
-      <img src="{{ site.avatar_file or site.avatar_url }}" class="in-site-avatar in-compact-avatar" alt="{{ site.title }} avatar">
-      <div class="in-branding-name">
-        <a class="in-site-title in-compact-title" href="{{ site.home_url }}">{{ site.title }}</a>
-        {% if site.sub_title %}
-        <p class="in-site-subtitle in-compact-subtitle">{{ site.sub_title }}</p>
-        {% endif %}
-      </div>
-    </div>
-    {% set nav_label = 'Compact navigation' %}
-    {% include 'components/header-nav.j2.html' %}
-  </header>
-  {% else %}
-  <header class="in-site-header" id="header">{% block header %}{% endblock %}</header>
-  {% endif %}
+  {# ===== Header =====
+     Default: the site-identity header (avatar + title + subtitle, icon
+     nav) used by the index and 404 pages. Post and tag pages override
+     the block with a single-row, page-title header (title left, home +
+     theme buttons right). Both are sticky. #}
+  <header class="in-site-header" id="header">{% block header %}{% include 'components/site-header.j2.html' %}{% endblock %}</header>
   <main class="in-site-main" id="content">{% block content %}{% endblock %}</main>
   <footer class="in-site-footer" id="footer">{% include 'components/footer.j2.html' %}</footer>
   <script src="{{ site.home_url }}/plugins/theme.js"></script>

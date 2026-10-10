@@ -1,15 +1,15 @@
 {% extends 'base.j2.html' %}
-{% from 'components/macros.j2.html' import head_meta, nav_link, search_button, site_nav with context %}
+{% from 'components/macros.j2.html' import head_meta, nav_link, site_nav, theme_button with context %}
 
 {% block head %}
   {{ head_meta(site.title ~ ' search page') }}
 {% endblock %}
 
 {% block header %}
+  {# single-row content header: page title left, home button right
+     (site_nav appends the theme toggle itself) #}
   <h1 class="in-page-title"><span>Loading</span><span class="in-animated-ellipsis"></span></h1>
   {% call site_nav('Tag navigation') %}
-    {# Search lives in the modal; this page stays a pure tag browser. #}
-    {{ search_button() }}
     {{ nav_link('home', site.home_url, i18n.home) }}
   {% endcall %}
 {% endblock %}

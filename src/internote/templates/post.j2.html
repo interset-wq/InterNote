@@ -1,5 +1,5 @@
 {% extends 'base.j2.html' %}
-{% from 'components/macros.j2.html' import head_meta, icon, nav_link, search_button, site_nav with context %}
+{% from 'components/macros.j2.html' import head_meta, icon, nav_link, search_button, site_nav, theme_button with context %}
 
 {% block head %}
   {{ head_meta(post.title, post.description, 'article', post.url) }}
@@ -31,11 +31,11 @@
 {% endblock %}
 
 {% block header %}
-  <h1 class="in-post-title">{{ post.title }}</h1>
+  {# single-row content header: page title left, home button right
+     (site_nav appends the theme toggle itself) #}
+  <h1 class="in-page-title in-post-title">{{ post.title }}</h1>
   {% call site_nav('Post navigation') %}
     {{ nav_link('home', site.home_url, i18n.home) }}
-    {{ nav_link('tag', site.home_url ~ '/tag.html', i18n.tags) }}
-    {{ search_button() }}
   {% endcall %}
 {% endblock %}
 

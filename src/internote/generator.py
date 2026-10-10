@@ -941,7 +941,7 @@ class Generator:
             )
 
     def _create_lists(self):
-        nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post", "home"]
+        nav_keys = ["sun", "moon", "sync", "tag", "search", "rss", "github", "upload", "post", "home", "about"]
         nav_icon = {key: ICONS.get(key) for key in nav_keys}
         # tag.html does not link to itself, but its empty state and rows are
         # JS-built, so `tag` and `post` must both reach window.icons. The

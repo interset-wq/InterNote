@@ -7,17 +7,6 @@
 
 {% block style %}{{ site.index_style }}{% endblock %}
 
-{% block header %}
-  {{ branding() }}
-  {% call site_nav('Site navigation') %}
-    {{ nav_link('tag', site.home_url ~ '/tag.html', i18n.tags) }}
-    {{ search_button() }}
-    {% if site.about %}
-    {{ nav_link('post', site.home_url ~ '/' ~ site.about.url, site.about.title) }}
-    {% endif %}
-  {% endcall %}
-{% endblock %}
-
 {% block content %}
   {# Loading marker, same as the tag page: the list is client-rendered
      from search-index.json, so the shell alone would look empty. The
