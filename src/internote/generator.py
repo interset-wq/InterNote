@@ -715,8 +715,9 @@ class Generator:
         if page["post"]["highlight"] != 0:
             keys.extend(["copy", "check"])
         # FAB buttons live on every post page (toc overlay + scroll), so
-        # their glyphs must reach window.icons here as well.
-        keys.extend(["search", "tag", "bars", "arrow-up", "arrow-down"])
+        # their glyphs must reach window.icons here as well. `calendar` dates
+        # the meta box.
+        keys.extend(["search", "tag", "calendar", "bars", "arrow-up", "arrow-down"])
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {
             "site": page,
@@ -878,8 +879,8 @@ class Generator:
         # Every page header links to the tag cloud, so `tag` is never optional,
         # and the nav search button needs its magnifier glyph since search.js
         # fetches the local index on every page. FAB buttons live on post
-        # pages only (toc + scroll up/down).
-        keys.extend(["search", "tag", "bars", "arrow-up", "arrow-down"])
+        # pages only (toc + scroll up/down). `calendar` dates the meta box.
+        keys.extend(["search", "tag", "calendar", "bars", "arrow-up", "arrow-down"])
 
         icon_list = {key: ICONS.get(key) for key in keys}
         context = {

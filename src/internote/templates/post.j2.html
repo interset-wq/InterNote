@@ -41,39 +41,56 @@
 
 {% block content %}
   <article>
-    {% if post.series_crumb %}
-    {# Sub post: breadcrumb back to the parent + position in the series. #}
-    <nav class="in-series-crumb" aria-label="Series">
-      <a href="{{ site.home_url }}/{{ post.series_crumb.parent_url }}">{{ post.series_crumb.parent_title }}</a>
-      <span>{{ post.series_crumb.index }} / {{ post.series_crumb.total }}</span>
-    </nav>
-    {% endif %}
-    <div class="in-post-meta">
-      <span class="Label" style="background-color:{{ post.date_label_color }};color:#fff">{{ post.created_date }}</span>
-      {% if post.updated_date and post.updated_date != post.created_date %}
-      <span class="Label" style="background-color:{{ post.date_label_color }};color:#fff">{{ i18n.updated }} {{ post.updated_date }}</span>
+    {# ===== Meta box: one bordered block between title and body =====
+       Series row (if any) on top - the <details> carries the chapter
+       list AND the position badge, replacing the old breadcrumb +
+       standalone listing pair. Meta rows below: dates, labels, edit. #}
+    <div class="in-post-meta-box">
+      {% if post.series_crumb %}
+      <details class="in-meta-series" aria-label="Series">
+        <summary>
+          <a href="{{ site.home_url }}/{{ post.series_crumb.parent_url }}">{{ post.series_crumb.parent_title }}</a>
+          <span class="in-meta-series-pos">{{ post.series_crumb.index }} / {{ post.series_crumb.total }}</span>
+        </summary>
+        <ol>
+          {% for item in post.series.parts %}
+          <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
+          {% endfor %}
+        </ol>
+      </details>
+      {% elif post.series and post.series.parts %}
+      <details class="in-meta-series" aria-label="Series">
+        <summary>{{ post.series.title }}</summary>
+        <ol>
+          {% for item in post.series.parts %}
+          <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
+          {% endfor %}
+        </ol>
+      </details>
       {% endif %}
-      {% for label in post.labels %}
-      <span class="Label" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }};color:#fff">
-        <a href="{{ site.home_url }}/tag.html#{{ label }}">{{ label }}</a>
-      </span>
-      {% endfor %}
-      {% if post.issue_url %}
-      <a class="in-post-edit" href="{{ post.issue_url }}" target="_blank" rel="noopener" title="{{ i18n.edit }}" aria-label="{{ i18n.edit }}">{{ icon('pencil') }}</a>
-      {% endif %}
+      <div class="in-post-meta">
+        <span class="in-meta-date">
+          {{ icon('calendar') }}
+          <span style="color:{{ post.date_label_color }}">{{ post.created_date }}</span>
+          {% if post.updated_date and post.updated_date != post.created_date %}
+          <span class="in-meta-updated">({{ i18n.updated }} {{ post.updated_date }})</span>
+          {% endif %}
+        </span>
+        {% if post.labels %}
+        <span class="in-meta-labels">
+          {{ icon('tag') }}
+          {% for label in post.labels %}
+          <a href="{{ site.home_url }}/tag.html#{{ label }}">
+            <span class="in-meta-dot" style="background-color:{{ site.label_color_dict.get(label, '#6e7781') }}"></span>{{ label }}
+          </a>
+          {% endfor %}
+        </span>
+        {% endif %}
+        {% if post.issue_url %}
+        <a class="in-post-edit" href="{{ post.issue_url }}" target="_blank" rel="noopener" title="{{ i18n.edit }}" aria-label="{{ i18n.edit }}">{{ icon('pencil') }}</a>
+        {% endif %}
+      </div>
     </div>
-    {% if post.series and post.series.parts %}
-    {# Top series listing: collapsed by default — it repeats the chapter
-       list on every page of the series, so it starts out of the way. #}
-    <details class="in-series-list" aria-label="Series">
-      <summary>{{ post.series.title }}</summary>
-      <ol>
-        {% for item in post.series.parts %}
-        <li><a href="{{ site.home_url }}/{{ item.url }}">{{ item.title }}</a></li>
-        {% endfor %}
-      </ol>
-    </details>
-    {% endif %}
     <nav class="in-toc" id="in-toc" data-toc-title="{{ i18n.toc }}" data-toc-top="{{ i18n.top }}" aria-label="{{ i18n.toc }}"></nav>
     <div class="in-progress" id="in-progress"></div>
     <div class="in-post-body markdown-body">{{ post.body }}</div>
