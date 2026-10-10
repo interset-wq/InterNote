@@ -38,6 +38,11 @@
       svg.setAttribute('width', '18');
       svg.setAttribute('height', '18');
       svg.setAttribute('aria-hidden', 'true');
+      // no .octicon class here (that would pull Primer's fill rule via a
+      // class this svg does not carry) - set it directly so the glyph
+      // follows the button colour instead of the default black, which
+      // vanished on the dark-mode button background
+      svg.setAttribute('fill', 'currentColor');
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('fill-rule', 'evenodd');
       path.setAttribute('d', (window.icons || {})[iconName] || '');

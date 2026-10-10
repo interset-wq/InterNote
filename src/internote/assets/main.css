@@ -770,6 +770,13 @@ a:hover { text-decoration: underline; }
   height: 18px;
 }
 
+/* Simple Icons' GitHub glyph is brand-black (#181717): invisible on the
+   dark footer. Lighten it in dark mode; every other brand icon keeps
+   its own colour. */
+[data-color-mode="dark"] .in-social svg[fill="#181717"] {
+  fill: var(--color-fg-default, #f0f6fc);
+}
+
 .in-social-toast {
   position: fixed;
   left: 50%;
