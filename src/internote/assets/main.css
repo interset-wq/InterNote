@@ -81,6 +81,12 @@ a:hover { text-decoration: underline; }
   height: 32px;
 }
 
+/* on phones the nav is a full-width second row; collapsed it must ride
+   the same row again - avatar left, icons right (space-between) */
+.in-site-header.is-stuck .in-header-nav {
+  flex-basis: auto;
+}
+
 .in-site-main { flex: 1; }
 
 .in-site-footer {
