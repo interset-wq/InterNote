@@ -155,15 +155,36 @@ a:hover { text-decoration: underline; }
   color: var(--in-color-muted, var(--color-fg-muted, #59636e));
 }
 
-/* series row: collapsed chapter list, one summary line */
+/* series row: collapsed chapter list, one summary line. display:flex
+   would suppress the native disclosure marker, so the chevron is drawn
+   by hand on ::before. */
 .in-meta-series summary {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   margin: 0;
   font-weight: 600;
+  color: var(--in-color-fg, var(--color-fg-default, #1f2328));
   cursor: pointer;
-  list-style: revert;
+}
+
+.in-meta-series summary::before {
+  content: '';
+  flex: none;
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s;
+}
+
+.in-meta-series[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.in-meta-series summary::after {
+  content: none;
 }
 
 .in-meta-series summary:hover {
@@ -195,21 +216,30 @@ a:hover { text-decoration: underline; }
 
 
 .in-post-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  align-items: center;
+  position: relative;
+  display: block;
 }
 
 .in-post-meta-box .in-post-meta {
   margin-bottom: 0;
 }
 
+/* one row per item: dates on their own line, labels on the next;
+   the edit pencil is pinned to the first line's right edge */
 .in-meta-date,
 .in-meta-labels {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.in-meta-date {
+  margin-bottom: 6px;
+}
+
+.in-meta-labels {
+  flex-wrap: wrap;
+  gap: 4px 12px;
 }
 
 .in-meta-date svg,
@@ -246,9 +276,11 @@ a:hover { text-decoration: underline; }
 
 /* pencil link to the source issue: content is edited on GitHub */
 .in-post-edit {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: inline-flex;
   align-items: center;
-  margin-left: auto;
   color: var(--in-color-muted, var(--color-fg-muted, #59636e));
   text-decoration: none;
 }
