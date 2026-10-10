@@ -530,12 +530,6 @@ a:hover { text-decoration: underline; }
   word-break: break-word;
 }
 
-.in-timeline-labels {
-  display: inline-flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
 /* ===== Search Dialog =====
    Styled after Algolia DocSearch v5's visual language - the dimmed scrim,
    the recessed modal, card-like hit rows with a soft drop shadow, the

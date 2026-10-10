@@ -225,15 +225,8 @@
             title.textContent = item.title;
             body.appendChild(title);
 
-            var labelsBox = document.createElement('span');
-            labelsBox.className = 'in-timeline-labels';
-            item.labels.forEach(function (name) {
-              labelsBox.appendChild(badge(name, data.label_colors[name], labelCounts[name] || 0, function () {
-                showLabel(name);
-              }));
-            });
-            body.appendChild(labelsBox);
-
+            // no label chips here: the timeline stays a pure date rail,
+            // tags live on the cards and in the cloud
             entry.appendChild(day);
             entry.appendChild(body);
             group.appendChild(entry);
