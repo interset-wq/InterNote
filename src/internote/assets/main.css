@@ -469,7 +469,10 @@ a:hover { text-decoration: underline; }
 .in-pagination .in-page-btn {
   padding: 6px 16px;
   border: 1px solid var(--in-color-border);
-  border-radius: 999px;
+  /* a small fixed radius, not a full pill: a pill goes circular the
+     moment the label collapses (font load, narrow squeeze) and width
+     approaches height */
+  border-radius: var(--in-radius, 6px);
   background: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
   color: var(--in-color-accent);
   font-size: 14px;
