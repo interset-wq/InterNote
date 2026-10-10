@@ -210,6 +210,16 @@ a:hover { text-decoration: underline; }
   line-height: 1.2;
 }
 
+/* Content-header titles (post/tag) are flex items in the header: a
+   long title must truncate on every viewport, not just mobile -
+   without min-width:0 the flex item would grow past the header. */
+.in-page-title, .in-post-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ===== Post meta box =====
    One bordered block between title and body: the series <details> row
    (when the post belongs to a series) on top, then the date/label/edit
@@ -1451,18 +1461,13 @@ a:hover { text-decoration: underline; }
      (subtitle stays visible under the title), icon nav centered below
      with roomier gaps */
   .in-site-header { flex-wrap: wrap; }
+  /* content headers (post/tag) must NOT wrap: the single-row title
+     truncates instead of pushing the nav to a second line */
+  .in-site-header:has(.in-page-title) { flex-wrap: nowrap; }
   .in-header-nav {
     flex-basis: 100%;
     justify-content: center;
     gap: 16px;
-  }
-
-  /* the content header (post/tag) stays one row: long titles truncate */
-  .in-page-title, .in-post-title {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   /* Rows are already title-over-badges; just let the chips wrap. */
