@@ -148,6 +148,7 @@ a:hover { text-decoration: underline; }
 }
 
 .in-compact-avatar {
+  /* not .in-site-avatar's 64px base: this bar stays slim everywhere */
   width: 32px;
   height: 32px;
 }
@@ -1488,6 +1489,14 @@ a:hover { text-decoration: underline; }
      375px screen; the header wraps the nav when it cannot. */
   .in-site-title { font-size: 20px; }
   .in-site-avatar { width: 40px; height: 40px; }
+
+  /* the compact bar must stay one slim row on phones: the subtitle is
+     the first thing to go, the avatar keeps its 32px desktop size, and
+     the bar itself refuses to wrap (the generic header lets the nav
+     drop to a second line - that doubled the bar's height) */
+  .in-header-compact .in-compact-subtitle { display: none; }
+  .in-header-compact .in-compact-avatar { width: 32px; height: 32px; }
+  .in-header-compact { flex-wrap: nowrap; }
 
   .in-site-header { flex-wrap: wrap; }
 
