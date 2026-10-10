@@ -140,7 +140,9 @@ a:hover { text-decoration: underline; }
   z-index: 90;
   min-height: 0;
   padding: 8px var(--in-padding, 45px);
-  margin: 0 calc(-1 * var(--in-padding, 45px)) 24px;
+  /* cancel body's margin+padding so the bar starts AT the viewport top -
+     otherwise it only sticks after the visitor scrolls that dead zone */
+  margin: calc(-1 * var(--in-padding, 45px) - 20px) calc(-1 * var(--in-padding, 45px)) 24px;
   border-bottom: 1px solid var(--in-color-border, #d0d7de);
   background-color: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
 }
