@@ -946,9 +946,11 @@ class Generator:
         # tag.html does not link to itself, but its empty state and rows are
         # JS-built, so `tag` and `post` must both reach window.icons. The
         # index is JS-built too, so it needs `post`/`upload` for the cards.
+        # `about` is here because 404.html reuses tag_context and its
+        # site-identity header renders the person glyph for the about link.
         tag_icon = {
             key: ICONS.get(key)
-            for key in ["sun", "moon", "sync", "home", "search", "tag", "post", "rss", "github"]
+            for key in ["sun", "moon", "sync", "home", "search", "tag", "post", "rss", "github", "about"]
         }
 
         # The conventional `about` alias earns a nav link on the index.
