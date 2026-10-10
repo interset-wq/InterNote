@@ -1,0 +1,13 @@
+{# Shared header nav for the compact and masthead header styles -
+   text links + the theme toggle, one row. Expects: site, i18n,
+   icons (theme_button reads them with context), nav_label. #}
+{% from 'components/macros.j2.html' import nav_link, search_button, theme_button with context %}
+<nav class="in-header-nav" aria-label="{{ nav_label }}">
+  {{ nav_link('home', site.home_url, i18n.home) }}
+  {{ nav_link('tag', site.home_url ~ '/tag.html', i18n.tags) }}
+  {% if site.about %}
+  {{ nav_link('post', site.home_url ~ '/' ~ site.about.url, site.about.title) }}
+  {% endif %}
+  {{ search_button() }}
+  {{ theme_button() }}
+</nav>

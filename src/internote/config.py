@@ -35,6 +35,10 @@ class LayoutConfig(BaseModel):
     index_script: str = ""
     index_style: str = ""
     all_head: str = ""
+    # header style: "classic" (avatar + title left, icon nav right), the
+    # default, "compact" (single slim row, sticky), or "masthead"
+    # (newspaper-style folio: large spaced title + dateline + stats row).
+    header: Literal["classic", "compact", "masthead"] = "classic"
 
 
 class CommentsConfig(BaseModel):
@@ -115,6 +119,7 @@ class InternoteConfig(BaseModel):
             "index_script": layout.index_script,
             "index_style": layout.index_style,
             "all_head": layout.all_head,
+            "header": layout.header,
             "need_comment": self.comments.enabled,
             "comment_label_color": self.comments.label_color,
             "giscus_repo": self.giscus.repo,

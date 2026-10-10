@@ -75,6 +75,103 @@ a:hover { text-decoration: underline; }
   min-width: 0;
 }
 
+/* ===== Masthead (newspaper-style folio) ===== */
+.in-header-masthead {
+  display: block;
+  border-bottom: none;
+  margin-bottom: 32px;
+  padding-bottom: 0;
+}
+
+.in-masthead-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.in-masthead-avatar {
+  width: 56px;
+  height: 56px;
+}
+
+.in-masthead-title {
+  font-size: 30px;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+}
+
+.in-masthead-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.in-masthead-datetime {
+  margin: 0;
+  font-size: 13px;
+  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
+}
+
+/* the folio: post count + build time, the only stats row */
+.in-masthead-folio {
+  margin: 12px 0 0;
+  padding-bottom: 14px;
+  font-size: 12px;
+  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
+  font-variant-numeric: tabular-nums;
+}
+
+/* double rule underneath, newspaper-style */
+.in-header-masthead::after {
+  content: '';
+  display: block;
+  height: 3px;
+  border-top: 1px solid var(--in-color-border, #d0d7de);
+  border-bottom: 1px solid var(--in-color-border, #d0d7de);
+}
+
+/* ===== Compact (slim sticky bar) ===== */
+.in-header-compact {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  min-height: 0;
+  padding: 8px var(--in-padding, 45px);
+  margin: 0 calc(-1 * var(--in-padding, 45px)) 24px;
+  border-bottom: 1px solid var(--in-color-border, #d0d7de);
+  background-color: var(--in-color-canvas-default, var(--color-canvas-default, #fff));
+}
+
+.in-compact-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.in-compact-title {
+  font-size: 18px;
+}
+
+/* shared nav row for compact + masthead: text links + icon buttons */
+.in-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.in-header-nav .in-nav-btn {
+  color: var(--in-color-muted, var(--color-fg-muted, #59636e));
+  border-radius: 6px;
+}
+
+.in-header-nav .in-nav-btn:hover {
+  color: var(--in-color-accent, var(--color-accent-fg, #0969da));
+  background-color: var(--in-color-subtle, var(--color-canvas-subtle, #f6f8fa));
+}
+
 .in-site-avatar {
   width: 64px;
   height: 64px;

@@ -21,6 +21,7 @@ I18N = {
     "noResults": "未找到结果",
     "tags": "标签",
     "copied": "已复制",
+    "posts": "篇文章",
 }
 
 ICONS = {

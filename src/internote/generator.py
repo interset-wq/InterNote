@@ -289,6 +289,10 @@ class Generator:
         self._load_emoji_map()
         for issue in self.repo.get_issues():
             self._add_entry(issue)
+        # masthead folio: main posts only, sub pages are series parts.
+        # Must be set BEFORE _create_post: base.j2.html renders the folio
+        # on every page and StrictUndefined would fail the post renders.
+        self.ctx["post_count"] = len(self.ctx["post_list"])
         for entry in list(self.ctx["post_list"].values()):
             self._create_post(entry)
         self._create_lists()
@@ -302,6 +306,8 @@ class Generator:
             self._load_state()
         else:
             self._clean()
+        # masthead folio: the state just loaded is the full picture
+        self.ctx["post_count"] = len(self.ctx["post_list"])
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         self._fetch_favicon()
         self._fetch_social_icons()
